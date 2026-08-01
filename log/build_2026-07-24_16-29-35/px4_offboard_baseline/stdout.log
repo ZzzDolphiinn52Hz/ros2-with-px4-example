@@ -1,0 +1,31 @@
+running egg_info
+creating ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info
+writing ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/PKG-INFO
+writing dependency_links to ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/dependency_links.txt
+writing entry points to ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/entry_points.txt
+writing requirements to ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/requires.txt
+writing top-level names to ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/top_level.txt
+writing manifest file '../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/SOURCES.txt'
+reading manifest file '../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/SOURCES.txt'
+writing manifest file '../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/build/lib/px4_offboard_baseline
+copying px4_offboard_baseline/__init__.py -> /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/build/lib/px4_offboard_baseline
+copying px4_offboard_baseline/offboard_hold.py -> /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/build/lib/px4_offboard_baseline
+running install
+running install_lib
+creating /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages/px4_offboard_baseline
+copying /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/build/lib/px4_offboard_baseline/__init__.py -> /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages/px4_offboard_baseline
+copying /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/build/lib/px4_offboard_baseline/offboard_hold.py -> /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages/px4_offboard_baseline
+byte-compiling /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages/px4_offboard_baseline/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages/px4_offboard_baseline/offboard_hold.py to offboard_hold.cpython-310.pyc
+running install_data
+creating /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/share/ament_index/resource_index/packages
+copying resource/px4_offboard_baseline -> /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/share/ament_index/resource_index/packages
+copying package.xml -> /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/share/px4_offboard_baseline
+running install_egg_info
+Copying ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info to /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages/px4_offboard_baseline-0.0.0-py3.10.egg-info
+running install_scripts
+Installing offboard_hold script to /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/px4_offboard_baseline
+writing list of installed files to '/home/dolphiinn/ros2_ws/build/px4_offboard_baseline/install.log'

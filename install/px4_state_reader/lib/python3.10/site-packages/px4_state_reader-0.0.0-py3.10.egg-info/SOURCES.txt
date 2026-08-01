@@ -1,0 +1,16 @@
+package.xml
+setup.cfg
+setup.py
+../../build/px4_state_reader/px4_state_reader.egg-info/PKG-INFO
+../../build/px4_state_reader/px4_state_reader.egg-info/SOURCES.txt
+../../build/px4_state_reader/px4_state_reader.egg-info/dependency_links.txt
+../../build/px4_state_reader/px4_state_reader.egg-info/entry_points.txt
+../../build/px4_state_reader/px4_state_reader.egg-info/requires.txt
+../../build/px4_state_reader/px4_state_reader.egg-info/top_level.txt
+../../build/px4_state_reader/px4_state_reader.egg-info/zip-safe
+px4_state_reader/__init__.py
+px4_state_reader/state_reader.py
+resource/px4_state_reader
+test/test_copyright.py
+test/test_flake8.py
+test/test_pep257.py

@@ -1,0 +1,30 @@
+[1.561s] Invoking command in '/home/dolphiinn/ros2_ws/src/px4_offboard_baseline': PYTHONPATH=/home/dolphiinn/ros2_ws/build/px4_offboard_baseline/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/px4_offboard_baseline build --build-base /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/build install --record /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/install.log --install-scripts $base/lib/px4_offboard_baseline --single-version-externally-managed install_data
+[1.998s] running egg_info
+[2.027s] writing ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/PKG-INFO
+[2.028s] writing dependency_links to ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/dependency_links.txt
+[2.029s] writing entry points to ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/entry_points.txt
+[2.029s] writing requirements to ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/requires.txt
+[2.030s] writing top-level names to ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/top_level.txt
+[2.086s] reading manifest file '../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/SOURCES.txt'
+[2.089s] writing manifest file '../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info/SOURCES.txt'
+[2.089s] running build
+[2.090s] running build_py
+[2.090s] copying px4_offboard_baseline/__init__.py -> /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/build/lib/px4_offboard_baseline
+[2.090s] copying px4_offboard_baseline/offboard_hold.py -> /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/build/lib/px4_offboard_baseline
+[2.090s] copying px4_offboard_baseline/offboard_hold_ground.py -> /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/build/lib/px4_offboard_baseline
+[2.091s] running install
+[2.098s] running install_lib
+[2.126s] copying /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/build/lib/px4_offboard_baseline/offboard_hold.py -> /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages/px4_offboard_baseline
+[2.126s] copying /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/build/lib/px4_offboard_baseline/offboard_hold_ground.py -> /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages/px4_offboard_baseline
+[2.127s] byte-compiling /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages/px4_offboard_baseline/offboard_hold.py to offboard_hold.cpython-310.pyc
+[2.130s] byte-compiling /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages/px4_offboard_baseline/offboard_hold_ground.py to offboard_hold_ground.cpython-310.pyc
+[2.132s] running install_data
+[2.133s] copying resource/px4_offboard_baseline -> /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/share/ament_index/resource_index/packages
+[2.133s] copying package.xml -> /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/share/px4_offboard_baseline
+[2.133s] running install_egg_info
+[2.165s] removing '/home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages/px4_offboard_baseline-0.0.0-py3.10.egg-info' (and everything under it)
+[2.165s] Copying ../../build/px4_offboard_baseline/px4_offboard_baseline.egg-info to /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages/px4_offboard_baseline-0.0.0-py3.10.egg-info
+[2.166s] running install_scripts
+[2.225s] Installing offboard_hold script to /home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/px4_offboard_baseline
+[2.226s] writing list of installed files to '/home/dolphiinn/ros2_ws/build/px4_offboard_baseline/install.log'
+[2.277s] Invoked command in '/home/dolphiinn/ros2_ws/src/px4_offboard_baseline' returned '0': PYTHONPATH=/home/dolphiinn/ros2_ws/build/px4_offboard_baseline/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/dolphiinn/ros2_ws/install/px4_offboard_baseline/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/px4_offboard_baseline build --build-base /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/build install --record /home/dolphiinn/ros2_ws/build/px4_offboard_baseline/install.log --install-scripts $base/lib/px4_offboard_baseline --single-version-externally-managed install_data

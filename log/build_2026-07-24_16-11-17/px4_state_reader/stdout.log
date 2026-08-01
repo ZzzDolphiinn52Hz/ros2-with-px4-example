@@ -1,0 +1,31 @@
+running egg_info
+creating ../../build/px4_state_reader/px4_state_reader.egg-info
+writing ../../build/px4_state_reader/px4_state_reader.egg-info/PKG-INFO
+writing dependency_links to ../../build/px4_state_reader/px4_state_reader.egg-info/dependency_links.txt
+writing entry points to ../../build/px4_state_reader/px4_state_reader.egg-info/entry_points.txt
+writing requirements to ../../build/px4_state_reader/px4_state_reader.egg-info/requires.txt
+writing top-level names to ../../build/px4_state_reader/px4_state_reader.egg-info/top_level.txt
+writing manifest file '../../build/px4_state_reader/px4_state_reader.egg-info/SOURCES.txt'
+reading manifest file '../../build/px4_state_reader/px4_state_reader.egg-info/SOURCES.txt'
+writing manifest file '../../build/px4_state_reader/px4_state_reader.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/dolphiinn/ros2_ws/build/px4_state_reader/build/lib/px4_state_reader
+copying px4_state_reader/__init__.py -> /home/dolphiinn/ros2_ws/build/px4_state_reader/build/lib/px4_state_reader
+copying px4_state_reader/state_reader.py -> /home/dolphiinn/ros2_ws/build/px4_state_reader/build/lib/px4_state_reader
+running install
+running install_lib
+creating /home/dolphiinn/ros2_ws/install/px4_state_reader/lib/python3.10/site-packages/px4_state_reader
+copying /home/dolphiinn/ros2_ws/build/px4_state_reader/build/lib/px4_state_reader/__init__.py -> /home/dolphiinn/ros2_ws/install/px4_state_reader/lib/python3.10/site-packages/px4_state_reader
+copying /home/dolphiinn/ros2_ws/build/px4_state_reader/build/lib/px4_state_reader/state_reader.py -> /home/dolphiinn/ros2_ws/install/px4_state_reader/lib/python3.10/site-packages/px4_state_reader
+byte-compiling /home/dolphiinn/ros2_ws/install/px4_state_reader/lib/python3.10/site-packages/px4_state_reader/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/dolphiinn/ros2_ws/install/px4_state_reader/lib/python3.10/site-packages/px4_state_reader/state_reader.py to state_reader.cpython-310.pyc
+running install_data
+creating /home/dolphiinn/ros2_ws/install/px4_state_reader/share/ament_index/resource_index/packages
+copying resource/px4_state_reader -> /home/dolphiinn/ros2_ws/install/px4_state_reader/share/ament_index/resource_index/packages
+copying package.xml -> /home/dolphiinn/ros2_ws/install/px4_state_reader/share/px4_state_reader
+running install_egg_info
+Copying ../../build/px4_state_reader/px4_state_reader.egg-info to /home/dolphiinn/ros2_ws/install/px4_state_reader/lib/python3.10/site-packages/px4_state_reader-0.0.0-py3.10.egg-info
+running install_scripts
+Installing state_reader script to /home/dolphiinn/ros2_ws/install/px4_state_reader/lib/px4_state_reader
+writing list of installed files to '/home/dolphiinn/ros2_ws/build/px4_state_reader/install.log'
