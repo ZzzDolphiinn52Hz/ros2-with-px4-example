@@ -1,0 +1,16 @@
+# Bridge Gazebo Harmonic topics → ROS 2 for SLAM on urban_uavcup
+# Model name is usually x500_lidar_2d_0 when spawned by PX4 SITL.
+# If ros2 topic list (via bridge) is empty, check model name with:
+#   gz topic -l | grep lidar
+
+- ros_topic_name: "scan"
+  gz_topic_name: "/world/urban_uavcup/model/x500_lidar_2d_0/link/link/sensor/lidar_2d_v2/scan"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS

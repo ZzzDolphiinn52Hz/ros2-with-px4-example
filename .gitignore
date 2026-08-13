@@ -1,0 +1,60 @@
+# ROS 2 / colcon build outputs
+build/
+build/**
+install/
+install/**
+log/
+log/**
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# C/C++ / ROS generated artifacts
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# CMake / catkin
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+CTestTestfile.cmake
+
+# ROS message generated code
+*.msg
+*.srv
+*.action
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local environment / secrets
+.env
+.env.*
+*.local
+
+# Optional: keep package metadata files tracked if needed
+# Uncomment if you want to version custom launch/config files
+# !src/**/launch/*.launch
+# !src/**/config/*.yaml
