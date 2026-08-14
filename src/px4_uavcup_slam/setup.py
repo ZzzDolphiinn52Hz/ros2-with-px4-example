@@ -29,6 +29,7 @@ setup(
         'console_scripts': [
             'px4_odom_tf = px4_uavcup_slam.px4_odom_tf:main',
             'gz_lidar_bridge = px4_uavcup_slam.gz_lidar_bridge:main',
+            'cmd_vel_to_px4 = px4_uavcup_slam.cmd_vel_to_px4:main',
         ],
     },
 )

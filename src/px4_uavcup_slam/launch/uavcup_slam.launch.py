@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Launch: Harmonic-compatible GZ→ROS lidar/clock bridge + PX4 odom/TF + slam_toolbox.
+Mapping bringup: robot interfaces + slam_toolbox + RViz.
 
 Prerequisites:
   1) make px4_sitl gz_x500_lidar_2d_urban_uavcup
@@ -12,8 +12,13 @@ decode Harmonic (gz-msgs10) LaserScan — use gz_lidar_bridge instead.
 """
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    OpaqueFunction,
+)
 from launch.conditions import IfCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
@@ -21,47 +26,23 @@ import os
 
 
 def _launch_setup(context, *args, **kwargs):
-    world = LaunchConfiguration('world').perform(context)
-    model = LaunchConfiguration('model').perform(context)
+    del args, kwargs
     pkg = get_package_share_directory('px4_uavcup_slam')
-
-    scan_gz = (
-        f'/world/{world}/model/{model}/link/link/sensor/lidar_2d_v2/scan'
+    use_sim_time = (
+        LaunchConfiguration('use_sim_time').perform(context).strip().lower()
+        in ('1', 'true', 'yes', 'on')
     )
 
-    bridge = Node(
-        package='px4_uavcup_slam',
-        executable='gz_lidar_bridge',
-        name='gz_lidar_bridge',
-        output='screen',
-        parameters=[{
-            'use_sim_time': True,
-            'gz_scan_topic': scan_gz,
-            'gz_clock_topic': '/clock',
-            'ros_scan_topic': 'scan',
-            'frame_id': 'link',
-            'publish_rate_hz': 30.0,
-            'max_tilt_deg': 5.0,
-            'min_mapping_altitude_m': 0.5,
-            'attitude_topic': '/fmu/out/vehicle_attitude',
-            'local_position_topic': '/fmu/out/vehicle_local_position_v1',
-        }],
-    )
-
-    odom_tf = Node(
-        package='px4_uavcup_slam',
-        executable='px4_odom_tf',
-        name='px4_odom_tf',
-        output='screen',
-        parameters=[{
-            'use_sim_time': True,
-            'odom_frame': 'odom',
-            'base_frame': 'base_footprint',
-            'body_frame': 'base_link',
-            'laser_frame': 'link',
-            'laser_xyz': [0.12, 0.0, 0.26],
-            'publish_rate_hz': 30.0,
-        }],
+    robot_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(pkg, 'launch', 'uavcup_robot.launch.py')),
+        launch_arguments={
+            'world': LaunchConfiguration('world'),
+            'model': LaunchConfiguration('model'),
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+            'cmd_vel_adapter': LaunchConfiguration('cmd_vel_adapter'),
+            'target_altitude_m': LaunchConfiguration('target_altitude_m'),
+        }.items(),
     )
 
     slam_params = os.path.join(pkg, 'config', 'mapper_params_online_async.yaml')
@@ -72,7 +53,7 @@ def _launch_setup(context, *args, **kwargs):
         output='screen',
         parameters=[
             slam_params,
-            {'use_sim_time': True},
+            {'use_sim_time': use_sim_time},
         ],
     )
 
@@ -83,17 +64,20 @@ def _launch_setup(context, *args, **kwargs):
         name='rviz2',
         output='screen',
         arguments=['-d', rviz_config],
-        parameters=[{'use_sim_time': True}],
+        parameters=[{'use_sim_time': use_sim_time}],
         condition=IfCondition(LaunchConfiguration('rviz')),
     )
 
-    return [bridge, odom_tf, slam, rviz]
+    return [robot_launch, slam, rviz]
 
 
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('world', default_value='urban_uavcup'),
         DeclareLaunchArgument('model', default_value='x500_lidar_2d_0'),
+        DeclareLaunchArgument('use_sim_time', default_value='true'),
+        DeclareLaunchArgument('cmd_vel_adapter', default_value='true'),
+        DeclareLaunchArgument('target_altitude_m', default_value='0.7'),
         DeclareLaunchArgument('rviz', default_value='true'),
         OpaqueFunction(function=_launch_setup),
     ])
