@@ -11,6 +11,8 @@
   <license>Apache-2.0</license>
 
   <depend>rclpy</depend>
+  <depend>builtin_interfaces</depend>
+  <depend>rosgraph_msgs</depend>
   <depend>px4_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>geometry_msgs</depend>
@@ -20,6 +22,13 @@
   <depend>ros_gz_bridge</depend>
   <depend>slam_toolbox</depend>
   <depend>nav2_map_server</depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+
+  <test_depend>python3-pytest</test_depend>
 
   <export>
     <build_type>ament_python</build_type>

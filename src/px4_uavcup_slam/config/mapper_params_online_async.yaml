@@ -6,7 +6,8 @@ slam_toolbox:
     # Frames
     odom_frame: odom
     map_frame: map
-    base_frame: base_link
+    # Planar frame only. The drone's z/roll/pitch remain under base_link.
+    base_frame: base_footprint
     scan_topic: /scan
 
     mode: mapping

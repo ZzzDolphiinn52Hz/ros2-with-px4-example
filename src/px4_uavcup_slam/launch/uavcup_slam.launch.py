@@ -13,6 +13,7 @@ decode Harmonic (gz-msgs10) LaserScan — use gz_lidar_bridge instead.
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
@@ -40,6 +41,10 @@ def _launch_setup(context, *args, **kwargs):
             'ros_scan_topic': 'scan',
             'frame_id': 'link',
             'publish_rate_hz': 30.0,
+            'max_tilt_deg': 5.0,
+            'min_mapping_altitude_m': 0.5,
+            'attitude_topic': '/fmu/out/vehicle_attitude',
+            'local_position_topic': '/fmu/out/vehicle_local_position_v1',
         }],
     )
 
@@ -51,7 +56,8 @@ def _launch_setup(context, *args, **kwargs):
         parameters=[{
             'use_sim_time': True,
             'odom_frame': 'odom',
-            'base_frame': 'base_link',
+            'base_frame': 'base_footprint',
+            'body_frame': 'base_link',
             'laser_frame': 'link',
             'laser_xyz': [0.12, 0.0, 0.26],
             'publish_rate_hz': 30.0,
@@ -70,12 +76,24 @@ def _launch_setup(context, *args, **kwargs):
         ],
     )
 
-    return [bridge, odom_tf, slam]
+    rviz_config = os.path.join(pkg, 'rviz', 'uavcup_slam.rviz')
+    rviz = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', rviz_config],
+        parameters=[{'use_sim_time': True}],
+        condition=IfCondition(LaunchConfiguration('rviz')),
+    )
+
+    return [bridge, odom_tf, slam, rviz]
 
 
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('world', default_value='urban_uavcup'),
         DeclareLaunchArgument('model', default_value='x500_lidar_2d_0'),
+        DeclareLaunchArgument('rviz', default_value='true'),
         OpaqueFunction(function=_launch_setup),
     ])
