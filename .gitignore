@@ -1,10 +1,32 @@
 # ROS 2 / colcon build outputs
-build/
-build/**
-install/
-install/**
-log/
-log/**
+/build/
+**/build/
+/install/
+**/install/
+/log/
+**/log/
+.devel/
+**/.devel/
+.colcon/
+**/.colcon/
+
+# CMake / catkin generated files
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/Makefile
+**/CTestTestfile.cmake
+**/CTestConfiguration.ini
+**/colcon_build.rc
+**/*.cmake
+
+# ROS generated artifacts
+*.msg
+*.srv
+*.action
+**/rosidl_*_arguments*.json
+**/ament_cmake_*/
+**/ament_cmake_index/
 
 # Python cache and virtual environments
 __pycache__/
@@ -24,26 +46,13 @@ env/
 *.swo
 *~
 
-# C/C++ / ROS generated artifacts
+# C/C++ compiled artifacts
 *.o
 *.obj
 *.a
-*.so
 *.dylib
 *.dll
 *.exe
-
-# CMake / catkin
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-CTestTestfile.cmake
-
-# ROS message generated code
-*.msg
-*.srv
-*.action
 
 # OS files
 .DS_Store
@@ -54,7 +63,7 @@ Thumbs.db
 .env.*
 *.local
 
-# Optional: keep package metadata files tracked if needed
-# Uncomment if you want to version custom launch/config files
-# !src/**/launch/*.launch
-# !src/**/config/*.yaml
+# Optional: keep selected launch/config files tracked if needed
+!src/**/launch/*.launch
+!src/**/config/*.yaml
+!src/**/config/*.yml

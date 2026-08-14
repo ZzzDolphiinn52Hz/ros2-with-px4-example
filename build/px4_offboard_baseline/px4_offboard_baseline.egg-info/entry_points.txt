@@ -1,2 +1,0 @@
-[console_scripts]
-offboard_hold = px4_offboard_baseline.offboard_hold:main

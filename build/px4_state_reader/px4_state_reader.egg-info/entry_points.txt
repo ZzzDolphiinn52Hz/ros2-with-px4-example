@@ -1,2 +1,0 @@
-[console_scripts]
-state_reader = px4_state_reader.state_reader:main
