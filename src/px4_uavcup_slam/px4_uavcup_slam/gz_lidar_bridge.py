@@ -232,8 +232,10 @@ class GzLidarBridge(Node):
 
         if (
             self._max_tilt_rad > 0.0
-            and tilt is not None
-            and tilt > self._max_tilt_rad
+            and (
+                tilt is None
+                or tilt > self._max_tilt_rad
+            )
         ):
             with self._lock:
                 self._scan_rejected_count += 1
