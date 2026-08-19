@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
-"""
+""" about version compatibility
 Gazebo Harmonic (gz-transport13 / gz-msgs10) → ROS 2 LaserScan + Clock.
 
 Why not ros_gz_bridge?
   ros-humble-ros-gz-bridge links ignition-msgs8 / transport11 (Fortress).
-  PX4 SITL uses Gazebo Harmonic (gz-msgs10 / transport13).
+  PX4 (v1.15+) SITL uses Gazebo Harmonic (gz-msgs10 / transport13).
   Result: bridge starts but prints "Unknown message type [8/9]" and /scan stays empty.
 
 This node uses the system Python bindings that match Harmonic.
 """
 
+""" overview
+This node is the one brigde between Gazebo and ROS2.
+
+- recv LaserScan & Clock from Gazebo
+- pub to ROS2 sensor_msgs/LaserScan (/scan) & rosgraph_msgs/Clock (/clock)
+- filter LaserScan by tilt and altitude from PX4 for SLAM 2D
+"""
 from __future__ import annotations
 
 import math
@@ -35,8 +42,8 @@ from gz.msgs10.laserscan_pb2 import LaserScan as GzLaserScan
 from gz.msgs10.clock_pb2 import Clock as GzClock
 
 
+# calc body tilt from earth vertical, independent of yaw
 def px4_quat_tilt_rad(q_wxyz) -> float:
-    """Return body tilt from earth vertical, independent of yaw."""
     w, x, y, z = (float(value) for value in q_wxyz)
     norm_sq = w * w + x * x + y * y + z * z
     if norm_sq == 0.0:
@@ -49,6 +56,7 @@ class GzLidarBridge(Node):
     def __init__(self) -> None:
         super().__init__('gz_lidar_bridge')
 
+        # declare parameters
         self.declare_parameter(
             'gz_scan_topic',
             '/world/urban_uavcup/model/x500_lidar_2d_0/link/link/sensor/lidar_2d_v2/scan',
@@ -64,28 +72,44 @@ class GzLidarBridge(Node):
         self.declare_parameter(
             'local_position_topic', '/fmu/out/vehicle_local_position_v1')
 
+        # get parameters
         self._gz_scan_topic = self.get_parameter('gz_scan_topic').value
         self._gz_clock_topic = self.get_parameter('gz_clock_topic').value
+        self._ros_scan_topic = self.get_parameter('ros_scan_topic').value
         self._frame_id = self.get_parameter('frame_id').value
+        self._publish_rate_hz = float(
+            self.get_parameter('publish_rate_hz').value)
         self._max_tilt_rad = math.radians(
             float(self.get_parameter('max_tilt_deg').value))
         self._min_mapping_altitude_m = float(
             self.get_parameter('min_mapping_altitude_m').value)
+        self._attitude_topic = self.get_parameter('attitude_topic').value
+        self._local_position_topic = self.get_parameter(
+            'local_position_topic').value
 
-        self._scan_pub = self.create_publisher(
-            LaserScan, self.get_parameter('ros_scan_topic').value, 10)
-        self._clock_pub = self.create_publisher(RosClock, '/clock', 10)
-
+        # initialize shared state
+        # locking protects latest_* and *_count variables
+        # which are updated by subscription callbacks and read by timer callback
         self._lock = threading.Lock()
+        # latest_*: updated by subscription callbacks
         self._latest_scan: Optional[GzLaserScan] = None
         self._latest_clock: Optional[GzClock] = None
         self._latest_tilt_rad: Optional[float] = None
         self._latest_altitude_m: Optional[float] = None
+        # *_count: hearbeat each 2s, reset to 0 after heartbeat
         self._scan_received_count = 0
         self._scan_published_count = 0
         self._scan_rejected_count = 0
         self._scan_altitude_rejected_count = 0
 
+        # pub ROS topics
+        # laser scan
+        self._scan_pub = self.create_publisher(
+            LaserScan, self._ros_scan_topic, 10)
+        # clock
+        self._clock_pub = self.create_publisher(RosClock, '/clock', 10)
+
+        # sub PX4 topics
         px4_qos = QoSProfile(
             reliability=QoSReliabilityPolicy.BEST_EFFORT,
             durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
@@ -94,17 +118,18 @@ class GzLidarBridge(Node):
         )
         self.create_subscription(
             VehicleAttitude,
-            self.get_parameter('attitude_topic').value,
+            self._attitude_topic,
             self._on_attitude,
             px4_qos,
         )
         self.create_subscription(
             VehicleLocalPosition,
-            self.get_parameter('local_position_topic').value,
+            self._local_position_topic,
             self._on_local_position,
             px4_qos,
         )
 
+        # sub Gazebo topics
         self._gz = GzNode()
         # Python binding may return None even when subscription succeeds.
         self._gz.subscribe(GzLaserScan, self._gz_scan_topic, self._on_gz_scan)
@@ -116,7 +141,7 @@ class GzLidarBridge(Node):
         # wall time; a ROS-time timer would wait for /clock and deadlock before
         # it could publish the first clock or scan message.
         self._wall_clock = RclpyClock(clock_type=ClockType.SYSTEM_TIME)
-        period = 1.0 / float(self.get_parameter('publish_rate_hz').value)
+        period = 1.0 / self._publish_rate_hz
         self.create_timer(period, self._publish, clock=self._wall_clock)
         self.create_timer(2.0, self._heartbeat, clock=self._wall_clock)
 
@@ -167,6 +192,10 @@ class GzLidarBridge(Node):
             f'altitude_rejected={altitude_rejected} '
             f'tilt={tilt_text} altitude={altitude_text}')
 
+    # node publishes /scan and /clock at a fixed rate
+    # using the latest received messages
+    # pub /scan to SLAM ToolBox, AMCL, Nav2, Rviz
+    # pub /clock to all node for correct time sync, including this node itself
     def _publish(self) -> None:
         with self._lock:
             scan = self._latest_scan
