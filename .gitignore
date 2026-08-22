@@ -33,6 +33,7 @@ __pycache__/
 *.py[cod]
 *.so
 .venv/
+.venv-depth/
 venv/
 env/
 .pytest_cache/
@@ -62,6 +63,10 @@ Thumbs.db
 .env
 .env.*
 *.local
+
+# Downloaded perception dependencies and neural-network weights
+/third_party/Depth-Anything-V2/
+/models/*.pth
 
 # Optional: keep selected launch/config files tracked if needed
 !src/**/launch/*.launch

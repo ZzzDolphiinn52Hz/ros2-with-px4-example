@@ -24,6 +24,7 @@ Gazebo 2D LiDAR + PX4 local state
 | `px4_uavcup_nav` | AMCL + Navigation2 trên saved map |
 | `px4_state_reader` | Đọc và quan sát state PX4 qua uXRCE-DDS |
 | `px4_offboard_baseline` | Các bài Offboard sớm: hold, takeoff/hover, tiến rồi dừng |
+| `px4_uavcup_perception` | Camera Gazebo Harmonic, Depth Anything V2 metric và free-space summary |
 | `px4_msgs` | Message interface khớp PX4 v1.17 |
 
 Nhật ký kỹ thuật, checkpoint và xử lý lỗi nằm tại
@@ -44,6 +45,15 @@ Context đầy đủ cho AI/engineer tiếp tục project nằm tại
 
 Chưa làm: waypoint mission bằng code, dynamic obstacle, failsafe mất scan,
 takeoff/landing tự động, nhận/thả kiện, thử trên drone thật.
+
+## Camera perception không dùng SLAM/Nav2
+
+Pipeline mới dùng model Gazebo `x500_uavcup`, camera trước và Depth Anything V2
+Small. Nó chỉ publish perception, chưa gửi lệnh bay và không xung đột với
+`px4_offboard_baseline`.
+
+Hướng dẫn cài, build, chạy và danh sách topic nằm tại
+[`src/px4_uavcup_perception/README.md`](src/px4_uavcup_perception/README.md).
 
 ## Cây TF
 
