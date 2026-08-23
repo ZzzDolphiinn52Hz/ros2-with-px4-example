@@ -25,7 +25,7 @@ jetson_depth_node:
     health_minimum_brightness: 8.0
     health_maximum_brightness: 247.0
     health_minimum_contrast_stddev: 6.0
-    health_minimum_gradient_mean: 1.0
+    health_minimum_gradient_mean: 2.0
     health_maximum_dark_fraction: 0.98
     health_maximum_bright_fraction: 0.98
     health_failure_frames: 3

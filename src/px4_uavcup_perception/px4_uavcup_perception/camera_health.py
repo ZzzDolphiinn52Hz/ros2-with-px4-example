@@ -26,7 +26,7 @@ def assess_camera_health(
         minimum_brightness: float = 8.0,
         maximum_brightness: float = 247.0,
         minimum_contrast_stddev: float = 6.0,
-        minimum_gradient_mean: float = 1.0,
+        minimum_gradient_mean: float = 2.0,
         maximum_dark_fraction: float = 0.98,
         maximum_bright_fraction: float = 0.98) -> CameraHealth:
     """Detect covered, saturated and textureless camera frames.

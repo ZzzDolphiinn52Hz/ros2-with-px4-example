@@ -71,7 +71,7 @@ class JetsonDepthNode(Node):
         self.declare_parameter('health_minimum_brightness', 8.0)
         self.declare_parameter('health_maximum_brightness', 247.0)
         self.declare_parameter('health_minimum_contrast_stddev', 6.0)
-        self.declare_parameter('health_minimum_gradient_mean', 1.0)
+        self.declare_parameter('health_minimum_gradient_mean', 2.0)
         self.declare_parameter('health_maximum_dark_fraction', 0.98)
         self.declare_parameter('health_maximum_bright_fraction', 0.98)
         self.declare_parameter('health_failure_frames', 3)

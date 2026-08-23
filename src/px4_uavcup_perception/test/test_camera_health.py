@@ -40,6 +40,20 @@ def test_uniform_mid_gray_camera_is_rejected_as_textureless():
     assert health.bright_fraction == 0.0
 
 
+def test_dim_low_texture_lens_cover_from_xavier_is_rejected():
+    rows, columns = np.indices((64, 64))
+    gray = (15 + ((rows + columns) % 3)).astype(np.uint8)
+    image = np.repeat(gray[:, :, None], 3, axis=2)
+
+    health = assess_camera_health(image, sample_stride=1)
+
+    assert 15.0 <= health.brightness_mean <= 17.0
+    assert health.contrast_stddev < 2.0
+    assert 1.0 < health.gradient_mean < 2.0
+    assert not health.healthy
+    assert 'texture' in health.reason
+
+
 def test_gate_debounces_failure_and_requires_stable_recovery():
     gate = CameraHealthGate(failure_frames=3, recovery_frames=2)
 
