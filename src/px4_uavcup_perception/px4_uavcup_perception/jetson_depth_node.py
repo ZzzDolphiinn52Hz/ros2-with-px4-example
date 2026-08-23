@@ -336,8 +336,10 @@ class JetsonDepthNode(Node):
             )
             self.get_logger().info(
                 f'FPS={fps:.1f} inference={inference_ms:.1f} ms '
-                f'total={total_ms:.1f} ms nearest='
-                f'{summary.nearest_m:.2f} m valid='
+                f'total={total_ms:.1f} ms '
+                f'L/C/R={summary.left_m:.2f}/'
+                f'{summary.center_m:.2f}/{summary.right_m:.2f} m '
+                f'nearest={summary.nearest_m:.2f} m valid='
                 f'{summary.valid_fraction:.2f}')
             self._frames_since_report = 0
             self._report_started = now
@@ -422,6 +424,9 @@ class JetsonDepthNode(Node):
         ]
         if summary is not None:
             values.extend([
+                KeyValue(key='left_m', value=f'{summary.left_m:.3f}'),
+                KeyValue(key='center_m', value=f'{summary.center_m:.3f}'),
+                KeyValue(key='right_m', value=f'{summary.right_m:.3f}'),
                 KeyValue(
                     key='nearest_m', value=f'{summary.nearest_m:.3f}'),
                 KeyValue(
