@@ -27,7 +27,7 @@ def test_linear_calibration_preserves_invalid_pixels():
     assert math.isnan(float(calibrated[0, 0]))
     assert math.isinf(float(calibrated[0, 1]))
     assert math.isinf(float(calibrated[0, 2]))
-    assert calibrated[0, 3] == 1.2
+    assert np.isclose(calibrated[0, 3], 1.2)
 
 
 def test_linear_calibration_rejects_non_positive_scale():
