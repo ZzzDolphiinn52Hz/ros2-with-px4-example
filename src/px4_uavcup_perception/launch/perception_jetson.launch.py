@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Start the hardware-side consumer of an existing metric-depth pipeline."""
+"""Start the optimized Jetson TensorRT flight-perception pipeline."""
 
 import os
 
@@ -8,6 +8,11 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
+
+
+def _boolean_argument(name):
+    return ParameterValue(LaunchConfiguration(name), value_type=bool)
 
 
 def generate_launch_description():
@@ -18,19 +23,32 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('config', default_value=default_config),
         DeclareLaunchArgument(
-            'depth_topic',
-            default_value='/uav/depth/image',
-            description=(
-                'Existing metric depth topic (sensor_msgs/Image, 32FC1, m)'),
-        ),
+            'publish_depth_image',
+            default_value='false',
+            description='Publish the 32FC1 depth image for debugging'),
+        DeclareLaunchArgument(
+            'publish_visualization',
+            default_value='false',
+            description='Publish mono8 depth visualization for debugging'),
+        DeclareLaunchArgument(
+            'publish_pointcloud',
+            default_value='false',
+            description='Publish PointCloud2 for RViz debugging'),
         Node(
             package='px4_uavcup_perception',
-            executable='free_space_node',
-            name='free_space_node',
+            executable='jetson_depth_node',
+            name='jetson_depth_node',
             output='screen',
             parameters=[
                 LaunchConfiguration('config'),
-                {'depth_topic': LaunchConfiguration('depth_topic')},
+                {
+                    'publish_depth_image': _boolean_argument(
+                        'publish_depth_image'),
+                    'publish_visualization': _boolean_argument(
+                        'publish_visualization'),
+                    'publish_pointcloud': _boolean_argument(
+                        'publish_pointcloud'),
+                },
             ],
         ),
     ])

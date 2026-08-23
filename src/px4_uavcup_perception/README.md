@@ -13,9 +13,9 @@ trajectory setpoint, vì vậy không xung đột với `px4_offboard_baseline`.
 Hai môi trường được tách rõ:
 
 - `perception_sim.launch.py`: bridge Gazebo và chạy Depth Anything V2 PyTorch.
-- `perception_jetson.launch.py`: chỉ nhận depth metric từ pipeline TensorRT đã
-  có trên Jetson rồi tạo dữ liệu `left/center/right`. Launch này không cần
-  Gazebo, PyTorch, Nav2 hay SLAM.
+- `perception_jetson.launch.py`: đọc camera, chạy TensorRT và tính trực tiếp
+  `left/center/right` trên depth. PointCloud, ảnh depth và ảnh visualization đều
+  tắt mặc định để giảm copy/serialization khi bay.
 
 ## Topic
 
@@ -23,10 +23,12 @@ Hai môi trường được tách rõ:
 | --- | --- | --- |
 | `/uav/front_camera/image_raw` | `sensor_msgs/Image` | Ảnh RGB 320x240 (downsample từ sensor 640x480) |
 | `/uav/front_camera/camera_info` | `sensor_msgs/CameraInfo` | Intrinsics camera mô phỏng |
-| `/uav/depth/image` | `sensor_msgs/Image` | Depth mét, encoding `32FC1` |
+| `/uav/depth/image` | `sensor_msgs/Image` | Depth mô phỏng, encoding `32FC1` |
+| `/camera/depth/image` | `sensor_msgs/Image` | Depth Jetson tùy chọn, encoding `32FC1` |
 | `/uav/depth/visualization` | `sensor_msgs/Image` | Depth `mono8`, vật gần sáng hơn |
 | `/uav/depth/free_space` | `std_msgs/Float32MultiArray` | `[left, center, right, nearest, valid_fraction]` |
 | `/uav/depth/status` | `diagnostic_msgs/DiagnosticArray` | Model, device và latency |
+| `/camera/depth/points` | `sensor_msgs/PointCloud2` | Point cloud FLU tùy chọn để debug RViz |
 
 ## Cài Depth Anything V2
 
@@ -120,13 +122,34 @@ colcon --log-base log_foxy build \
 source ~/uavcup_ws/install_foxy/setup.bash
 ```
 
-Sau khi pipeline TensorRT đã publish depth metric dạng `sensor_msgs/Image`, chạy:
+Chế độ bay chỉ chạy TensorRT và publish free-space/status:
+
+```bash
+ros2 launch px4_uavcup_perception perception_jetson.launch.py
+```
+
+Kiểm tra output điều khiển và hiệu năng:
+
+```bash
+ros2 topic hz /uav/depth/free_space
+ros2 topic echo /uav/depth/free_space
+ros2 topic echo /uav/depth/status
+```
+
+Chế độ debug có thể bật từng output nặng khi cần:
 
 ```bash
 ros2 launch px4_uavcup_perception perception_jetson.launch.py \
-  depth_topic:=/ten/topic/depth/thuc/te
+  publish_depth_image:=true \
+  publish_visualization:=true \
+  publish_pointcloud:=true
 ```
 
-Depth đầu vào phải có encoding `32FC1` và đơn vị mét. Nếu pipeline hiện chỉ
-publish `sensor_msgs/PointCloud2` hoặc depth `16UC1`, cần dùng adapter đúng với
-kiểu dữ liệu đó; không nối trực tiếp khi chưa kiểm tra type và encoding.
+Không chạy đồng thời launch `depth_to_pointcloud/octomap_depth.launch.py` cũ vì
+hai node sẽ tranh `/dev/video0`. Pipeline vận hành không khởi động OctoMap,
+RTAB-Map, SLAM, Nav2, visual odometry tự viết hoặc TF `map -> camera_link`.
+
+Point cloud debug dùng hệ FLU (`x` trước, `y` trái, `z` lên). Intrinsics mặc
+định giữ giá trị thử nghiệm `fx=fy=300 px`; phải thay bằng calibration camera
+trước khi dùng point cloud để đo hình học chính xác. Depth metric cũng phải được
+đối chiếu với vài khoảng cách đo thật trước khi nối vào local controller.
