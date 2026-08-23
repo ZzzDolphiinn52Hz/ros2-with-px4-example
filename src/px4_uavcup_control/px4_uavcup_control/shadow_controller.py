@@ -19,9 +19,9 @@ class AvoidanceState(str, Enum):
 
 @dataclass(frozen=True)
 class ControllerConfig:
-    emergency_distance_m: float = 0.7
-    avoid_enter_distance_m: float = 1.2
-    clear_exit_distance_m: float = 1.5
+    emergency_distance_m: float = 0.35
+    avoid_enter_distance_m: float = 0.45
+    clear_exit_distance_m: float = 0.50
     minimum_valid_fraction: float = 0.25
     forward_speed_mps: float = 0.4
     avoidance_forward_speed_mps: float = 0.1
@@ -196,6 +196,33 @@ class ShadowController:
             return self._transition(
                 selected,
                 'maintaining avoidance direction',
+                filtered,
+                now_sec,
+            )
+
+        if self._state in (
+                AvoidanceState.FAILSAFE,
+                AvoidanceState.BRAKE):
+            if (
+                    center >= self.config.clear_exit_distance_m
+                    and nearest >= self.config.avoid_enter_distance_m):
+                return self._transition(
+                    AvoidanceState.CLEAR,
+                    'path clear with hysteresis',
+                    filtered,
+                    now_sec,
+                )
+            selected = self._select_direction(left, right, now_sec)
+            if selected is None:
+                return self._transition(
+                    AvoidanceState.BRAKE,
+                    'waiting for 0.5 m clear distance',
+                    filtered,
+                    now_sec,
+                )
+            return self._transition(
+                selected,
+                'forward clearance below clear threshold',
                 filtered,
                 now_sec,
             )

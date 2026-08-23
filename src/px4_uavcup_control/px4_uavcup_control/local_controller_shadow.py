@@ -38,9 +38,9 @@ class LocalControllerShadowNode(Node):
         self.declare_parameter('watchdog_rate_hz', 20.0)
         self.declare_parameter('input_timeout_sec', 0.3)
 
-        self.declare_parameter('emergency_distance_m', 0.7)
-        self.declare_parameter('avoid_enter_distance_m', 1.2)
-        self.declare_parameter('clear_exit_distance_m', 1.5)
+        self.declare_parameter('emergency_distance_m', 0.35)
+        self.declare_parameter('avoid_enter_distance_m', 0.45)
+        self.declare_parameter('clear_exit_distance_m', 0.50)
         self.declare_parameter('minimum_valid_fraction', 0.25)
         self.declare_parameter('forward_speed_mps', 0.4)
         self.declare_parameter('avoidance_forward_speed_mps', 0.1)

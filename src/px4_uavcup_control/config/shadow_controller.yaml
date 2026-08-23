@@ -10,9 +10,11 @@ local_controller_shadow:
     input_timeout_sec: 0.3
     recovery_frames: 3
 
-    emergency_distance_m: 0.7
-    avoid_enter_distance_m: 1.2
-    clear_exit_distance_m: 1.5
+    # CLEAR requires at least 0.50 m after startup/braking. Once CLEAR, the
+    # 0.45 m enter threshold prevents rapid CLEAR/AVOID oscillation.
+    emergency_distance_m: 0.35
+    avoid_enter_distance_m: 0.45
+    clear_exit_distance_m: 0.50
     minimum_valid_fraction: 0.25
 
     median_window: 5

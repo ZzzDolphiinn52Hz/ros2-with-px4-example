@@ -26,3 +26,6 @@ Output:
 
 Các trạng thái: `CLEAR`, `AVOID_LEFT`, `AVOID_RIGHT`, `BRAKE`, `FAILSAFE`.
 Mất depth, depth invalid hoặc quá timeout luôn tạo advisory bằng zero.
+
+Ngưỡng shadow hiện tại: emergency `0.35 m`, vào tránh dưới `0.45 m`, và chỉ
+chuyển về `CLEAR` khi khoảng trống đạt ít nhất `0.50 m`.
