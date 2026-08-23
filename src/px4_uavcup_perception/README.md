@@ -10,6 +10,13 @@ Gazebo RGB camera -> ROS Image -> Depth Anything V2 metric
 Package này chỉ cảm nhận môi trường. Nó không arm, đổi mode hay publish PX4
 trajectory setpoint, vì vậy không xung đột với `px4_offboard_baseline`.
 
+Hai môi trường được tách rõ:
+
+- `perception_sim.launch.py`: bridge Gazebo và chạy Depth Anything V2 PyTorch.
+- `perception_jetson.launch.py`: chỉ nhận depth metric từ pipeline TensorRT đã
+  có trên Jetson rồi tạo dữ liệu `left/center/right`. Launch này không cần
+  Gazebo, PyTorch, Nav2 hay SLAM.
+
 ## Topic
 
 | Topic | Type | Nội dung |
@@ -91,3 +98,35 @@ ros2 topic echo /uav/depth/status
 
 Không chạy đồng thời `gz_lidar_bridge` cũ vì cả hai bridge đều có thể publish
 `/clock`. Pipeline perception không cần launch của SLAM hoặc Nav2.
+
+## Chạy trên Jetson ROS 2 Foxy
+
+Build overlay riêng, không build các package Nav2/SLAM và không ghi đè workspace
+`~/ros2_ws` đang chứa pipeline TensorRT:
+
+```bash
+source /opt/ros/foxy/setup.bash
+source ~/ros2_ws/install/setup.bash
+cd ~/uavcup_ws
+colcon --log-base log_foxy build \
+  --build-base build_foxy \
+  --install-base install_foxy \
+  --symlink-install \
+  --packages-select \
+    px4_msgs \
+    px4_state_reader \
+    px4_offboard_baseline \
+    px4_uavcup_perception
+source ~/uavcup_ws/install_foxy/setup.bash
+```
+
+Sau khi pipeline TensorRT đã publish depth metric dạng `sensor_msgs/Image`, chạy:
+
+```bash
+ros2 launch px4_uavcup_perception perception_jetson.launch.py \
+  depth_topic:=/ten/topic/depth/thuc/te
+```
+
+Depth đầu vào phải có encoding `32FC1` và đơn vị mét. Nếu pipeline hiện chỉ
+publish `sensor_msgs/PointCloud2` hoặc depth `16UC1`, cần dùng adapter đúng với
+kiểu dữ liệu đó; không nối trực tiếp khi chưa kiểm tra type và encoding.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import List
 
 import numpy as np
 
@@ -17,7 +18,7 @@ class FreeSpaceSummary:
     nearest_m: float
     valid_fraction: float
 
-    def as_list(self) -> list[float]:
+    def as_list(self) -> List[float]:
         return [
             self.left_m,
             self.center_m,

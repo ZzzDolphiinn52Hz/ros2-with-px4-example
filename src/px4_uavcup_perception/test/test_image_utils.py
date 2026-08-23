@@ -3,10 +3,10 @@ from sensor_msgs.msg import Image
 
 from px4_uavcup_perception.image_utils import (
     array_to_image,
+    resize_image_nearest,
     ros_image_to_array,
     ros_image_to_bgr,
 )
-from px4_uavcup_perception.gz_image_bridge import GazeboImageBridge
 
 
 def test_rgb_image_converts_to_bgr():
@@ -34,7 +34,7 @@ def test_metric_depth_round_trip():
 def test_bridge_nearest_resize_reduces_rgb_image():
     source = np.arange(4 * 4 * 3, dtype=np.uint8).reshape(4, 4, 3)
 
-    resized_bytes = GazeboImageBridge._resize_nearest(
+    resized_bytes = resize_image_nearest(
         source.tobytes(),
         width=4,
         height=4,

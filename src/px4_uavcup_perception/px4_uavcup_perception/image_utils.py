@@ -7,6 +7,7 @@ bridge usable even before OpenCV and the neural-network environment are ready.
 from __future__ import annotations
 
 import sys
+from typing import Optional
 
 import numpy as np
 from sensor_msgs.msg import Image
@@ -74,7 +75,7 @@ def ros_image_to_bgr(message: Image) -> np.ndarray:
 def array_to_image(
         array: np.ndarray,
         encoding: str,
-        source: Image | None = None) -> Image:
+        source: Optional[Image] = None) -> Image:
     """Create a ROS Image and optionally copy a source image header."""
     output = Image()
     if source is not None:
@@ -101,3 +102,32 @@ def array_to_image(
     output.encoding = encoding
     output.data = contiguous.tobytes()
     return output
+
+
+def resize_image_nearest(
+        data: bytes,
+        width: int,
+        height: int,
+        step: int,
+        channels: int,
+        output_width: int,
+        output_height: int) -> bytes:
+    """Resize an interleaved 8-bit image without requiring OpenCV.
+
+    This function deliberately stays independent of the Gazebo Python
+    bindings so its unit tests can run on the Jetson deployment host.
+    """
+    if min(width, height, step, channels, output_width, output_height) <= 0:
+        raise ValueError('Image dimensions, step and channels must be positive')
+    row_bytes = width * channels
+    if step < row_bytes:
+        raise ValueError('Image step is smaller than the encoded row width')
+    if len(data) < height * step:
+        raise ValueError('Image data is shorter than height * step')
+
+    rows = np.frombuffer(data, dtype=np.uint8).reshape(height, step)
+    pixels = rows[:, :row_bytes].reshape(height, width, channels)
+    row_indices = np.linspace(0, height - 1, output_height, dtype=np.intp)
+    column_indices = np.linspace(0, width - 1, output_width, dtype=np.intp)
+    resized = pixels[row_indices][:, column_indices]
+    return np.ascontiguousarray(resized).tobytes()

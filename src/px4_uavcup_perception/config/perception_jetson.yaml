@@ -1,0 +1,15 @@
+free_space_node:
+  ros__parameters:
+    # Jetson uses wall time and receives depth from the existing TensorRT
+    # pipeline. The input must be sensor_msgs/Image with encoding 32FC1 and
+    # values expressed in metres.
+    use_sim_time: false
+    depth_topic: /uav/depth/image
+    output_topic: /uav/depth/free_space
+    status_topic: /uav/depth/free_space_status
+    minimum_depth_m: 0.15
+    maximum_depth_m: 20.0
+    near_percentile: 15.0
+    roi_top_fraction: 0.25
+    roi_bottom_fraction: 0.85
+    minimum_valid_fraction: 0.25

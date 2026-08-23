@@ -20,10 +20,11 @@ setup(
         (os.path.join('share', package_name, 'scripts'), glob('scripts/*.sh')),
     ],
     install_requires=['setuptools'],
+    extras_require={'test': ['pytest']},
     zip_safe=True,
     maintainer='dolphiinn',
     maintainer_email='anh.nguyenvantuan54@hcmut.edu.vn',
-    description='Gazebo RGB bridge and Depth Anything V2 perception nodes',
+    description='Simulation and hardware camera perception nodes',
     license='Apache-2.0',
     entry_points={
         'console_scripts': [

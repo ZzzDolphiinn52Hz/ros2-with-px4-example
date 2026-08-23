@@ -12,7 +12,6 @@ import math
 import threading
 from typing import Optional
 
-import numpy as np
 import rclpy
 from builtin_interfaces.msg import Time
 from gz.msgs10.clock_pb2 import Clock as GzClock
@@ -30,6 +29,8 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from rosgraph_msgs.msg import Clock as RosClock
 from sensor_msgs.msg import CameraInfo, Image
+
+from .image_utils import resize_image_nearest
 
 
 _GZ_ENCODINGS = {
@@ -183,7 +184,7 @@ class GazeboImageBridge(Node):
             output.width = self._output_width
             output.height = self._output_height
             output.step = self._output_width * channels
-            output.data = self._resize_nearest(
+            output.data = resize_image_nearest(
                 image.data,
                 width,
                 height,
@@ -201,25 +202,6 @@ class GazeboImageBridge(Node):
         self._info_publisher.publish(self._camera_info(output))
         with self._lock:
             self._published += 1
-
-    @staticmethod
-    def _resize_nearest(
-            data: bytes,
-            width: int,
-            height: int,
-            step: int,
-            channels: int,
-            output_width: int,
-            output_height: int) -> bytes:
-        rows = np.frombuffer(data, dtype=np.uint8).reshape(height, step)
-        pixels = rows[:, :width * channels]
-        pixels = pixels.reshape(height, width, channels)
-        row_indices = np.linspace(
-            0, height - 1, output_height, dtype=np.intp)
-        column_indices = np.linspace(
-            0, width - 1, output_width, dtype=np.intp)
-        resized = pixels[row_indices][:, column_indices]
-        return np.ascontiguousarray(resized).tobytes()
 
     def _camera_info(self, image: Image) -> CameraInfo:
         width = float(image.width)

@@ -4,7 +4,7 @@
   <name>px4_uavcup_perception</name>
   <version>0.1.0</version>
   <description>
-    Gazebo camera bridge and metric monocular depth perception for the PX4
+    Simulation and hardware-side camera perception utilities for the PX4
     Urban UAV Cup vehicle.
   </description>
   <maintainer email="anh.nguyenvantuan54@hcmut.edu.vn">dolphiinn</maintainer>
