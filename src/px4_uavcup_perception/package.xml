@@ -4,16 +4,13 @@
   <name>px4_uavcup_perception</name>
   <version>0.1.0</version>
   <description>
-    Simulation and hardware-side camera perception utilities for the PX4
-    Urban UAV Cup vehicle.
+    Jetson TensorRT camera perception for the PX4 Urban UAV Cup vehicle.
   </description>
   <maintainer email="anh.nguyenvantuan54@hcmut.edu.vn">dolphiinn</maintainer>
   <license>Apache-2.0</license>
 
   <depend>rclpy</depend>
-  <depend>builtin_interfaces</depend>
   <depend>diagnostic_msgs</depend>
-  <depend>rosgraph_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
 

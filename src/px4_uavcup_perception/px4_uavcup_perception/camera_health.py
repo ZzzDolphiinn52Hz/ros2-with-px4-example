@@ -29,7 +29,8 @@ def assess_camera_health(
         minimum_gradient_mean: float = 2.0,
         maximum_dark_fraction: float = 0.98,
         maximum_bright_fraction: float = 0.98) -> CameraHealth:
-    """Detect covered, saturated and textureless camera frames.
+    """
+    Detect covered, saturated and textureless camera frames.
 
     The check intentionally samples the image to keep its cost small compared
     with TensorRT inference. Low contrast and low gradient must occur together

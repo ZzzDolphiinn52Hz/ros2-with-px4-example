@@ -14,7 +14,8 @@ def depth_to_flu_points(
         stride: int = 4,
         minimum_depth_m: float = 0.3,
         maximum_depth_m: float = 8.0) -> np.ndarray:
-    """Convert an OpenCV depth image into Nx3 ROS FLU points.
+    """
+    Convert an OpenCV depth image into Nx3 ROS FLU points.
 
     OpenCV optical coordinates are X-right, Y-down, Z-forward. The returned
     coordinates are ROS FLU: X-forward, Y-left, Z-up.

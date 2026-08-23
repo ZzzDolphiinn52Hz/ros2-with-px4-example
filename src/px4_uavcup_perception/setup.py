@@ -17,23 +17,16 @@ setup(
         ('share/' + package_name, ['package.xml', 'README.md']),
         (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
-        (os.path.join('share', package_name, 'scripts'), glob('scripts/*.sh')),
     ],
     install_requires=['setuptools'],
     extras_require={'test': ['pytest']},
     zip_safe=True,
     maintainer='dolphiinn',
     maintainer_email='anh.nguyenvantuan54@hcmut.edu.vn',
-    description='Simulation and hardware camera perception nodes',
+    description='Jetson TensorRT camera perception for the Urban UAV Cup',
     license='Apache-2.0',
     entry_points={
         'console_scripts': [
-            'gz_image_bridge = '
-            'px4_uavcup_perception.gz_image_bridge:main',
-            'depth_anything_node = '
-            'px4_uavcup_perception.depth_anything_node:main',
-            'free_space_node = '
-            'px4_uavcup_perception.free_space_node:main',
             'camera_calibration_publisher = '
             'px4_uavcup_perception.camera_calibration_publisher:main',
             'jetson_depth_node = '

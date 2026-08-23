@@ -35,7 +35,8 @@ def summarize_free_space(
         near_percentile: float = 15.0,
         roi_top_fraction: float = 0.25,
         roi_bottom_fraction: float = 0.85) -> FreeSpaceSummary:
-    """Summarize valid depth using robust near percentiles.
+    """
+    Summarize valid depth using robust near percentiles.
 
     The vertical crop suppresses sky/roof pixels at the top and the floor close
     to the vehicle at the bottom. Horizontal sectors overlap slightly so an
