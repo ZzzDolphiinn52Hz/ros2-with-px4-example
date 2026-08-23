@@ -140,6 +140,11 @@ Chế độ bay chỉ chạy TensorRT và publish free-space/status:
 ros2 launch px4_uavcup_perception perception_jetson.launch.py
 ```
 
+Camera flight được center-crop `1280x720 -> 720x720` rồi resize về
+`364x364`, thay vì kéo méo ảnh 16:9 thành hình vuông. Depth publish và L/C/R
+đều áp dụng calibration tuyến tính cấu hình bằng
+`depth_calibration_scale * raw + depth_calibration_bias_m`.
+
 Kiểm tra output điều khiển và hiệu năng:
 
 ```bash

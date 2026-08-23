@@ -17,6 +17,12 @@ jetson_depth_node:
     processing_rate_hz: 30.0
     warmup_iterations: 3
 
+    # Provisional fit from measured centre-sector samples. The capture path
+    # centre-crops 1280x720 to 720x720 before resizing to 364x364 so geometry
+    # is preserved. Refit these values after collecting the new crop dataset.
+    depth_calibration_scale: 0.54856
+    depth_calibration_bias_m: 0.22176
+
     # Monocular depth always returns a value, even for a covered lens. Reject
     # dark, saturated or textureless frames before inference and require a
     # stable recovery before publishing usable distances again.

@@ -22,6 +22,8 @@ from .camera_health import (
     CameraHealthGate,
     assess_camera_health,
 )
+from .camera_geometry import center_crop_margins
+from .depth_calibration import apply_linear_depth_calibration
 from .free_space import FreeSpaceSummary, summarize_free_space
 from .image_utils import array_to_image
 from .jetson_tensorrt_backend import DepthAnythingTensorRT
@@ -84,6 +86,8 @@ class JetsonDepthNode(Node):
         self.declare_parameter('roi_top_fraction', 0.25)
         self.declare_parameter('roi_bottom_fraction', 0.78)
         self.declare_parameter('minimum_valid_fraction', 0.25)
+        self.declare_parameter('depth_calibration_scale', 0.54856)
+        self.declare_parameter('depth_calibration_bias_m', 0.22176)
 
         self.declare_parameter('free_space_topic', '/uav/depth/free_space')
         self.declare_parameter('status_topic', '/uav/depth/status')
@@ -113,6 +117,16 @@ class JetsonDepthNode(Node):
             self.get_parameter('roi_bottom_fraction').value)
         self._minimum_valid_fraction = float(
             self.get_parameter('minimum_valid_fraction').value)
+        self._depth_calibration_scale = float(
+            self.get_parameter('depth_calibration_scale').value)
+        self._depth_calibration_bias = float(
+            self.get_parameter('depth_calibration_bias_m').value)
+        # Validate calibration parameters before opening camera or TensorRT.
+        apply_linear_depth_calibration(
+            np.empty((0, 0), dtype=np.float32),
+            self._depth_calibration_scale,
+            self._depth_calibration_bias,
+        )
         self._frame_id = str(self.get_parameter('camera_frame_id').value)
         self._pointcloud_stride = int(
             self.get_parameter('pointcloud_stride').value)
@@ -204,7 +218,9 @@ class JetsonDepthNode(Node):
             f'depth={self._publish_depth}, visualization='
             f'{self._publish_visualization}, pointcloud='
             f'{self._publish_pointcloud}, camera_health='
-            f'{self._camera_health_enabled}')
+            f'{self._camera_health_enabled}, depth_calibration='
+            f'{self._depth_calibration_scale:.5f}*raw+'
+            f'{self._depth_calibration_bias:.5f}m')
 
     @staticmethod
     def _import_opencv():
@@ -229,10 +245,14 @@ class JetsonDepthNode(Node):
         height = int(self.get_parameter('capture_height').value)
         fps = int(self.get_parameter('capture_fps').value)
         model_size = int(self.get_parameter('model_input_size').value)
+        left, right, top, bottom = center_crop_margins(width, height)
         return (
             f'v4l2src device={device} ! '
             f'image/jpeg,width={width},height={height},framerate={fps}/1 ! '
-            'jpegdec ! videoscale ! '
+            'jpegdec ! '
+            f'videocrop left={left} right={right} '
+            f'top={top} bottom={bottom} ! '
+            'videoscale ! '
             f'video/x-raw,width={model_size},height={model_size} ! '
             'videoconvert ! video/x-raw,format=BGR ! '
             'appsink drop=1 max-buffers=1 sync=false'
@@ -307,6 +327,9 @@ class JetsonDepthNode(Node):
 
         model_size = int(self.get_parameter('model_input_size').value)
         if frame.shape[:2] != (model_size, model_size):
+            height, width = frame.shape[:2]
+            left, right, top, bottom = center_crop_margins(width, height)
+            frame = frame[top:height - bottom, left:width - right]
             frame = self._cv2.resize(frame, (model_size, model_size))
 
         camera_health = self._assess_camera_frame(frame)
@@ -340,11 +363,16 @@ class JetsonDepthNode(Node):
 
         inference_started = time.perf_counter()
         try:
-            depth = np.asarray(
+            raw_depth = np.asarray(
                 self._backend.infer(frame, self._cv2), dtype=np.float32)
-            if depth.ndim != 2 or depth.size == 0:
+            if raw_depth.ndim != 2 or raw_depth.size == 0:
                 raise ValueError(
-                    f'Unexpected TensorRT depth shape: {depth.shape}')
+                    f'Unexpected TensorRT depth shape: {raw_depth.shape}')
+            depth = apply_linear_depth_calibration(
+                raw_depth,
+                self._depth_calibration_scale,
+                self._depth_calibration_bias,
+            )
             summary = summarize_free_space(
                 depth,
                 minimum_depth_m=self._minimum_depth,
@@ -581,6 +609,12 @@ class JetsonDepthNode(Node):
             KeyValue(key='fps', value=f'{fps:.2f}'),
             KeyValue(
                 key='camera_failures', value=str(self._camera_failures)),
+            KeyValue(
+                key='depth_calibration_scale',
+                value=f'{self._depth_calibration_scale:.6f}'),
+            KeyValue(
+                key='depth_calibration_bias_m',
+                value=f'{self._depth_calibration_bias:.6f}'),
         ]
         if summary is not None:
             values.extend([
