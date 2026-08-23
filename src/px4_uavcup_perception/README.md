@@ -169,3 +169,20 @@ Point cloud debug dùng hệ FLU (`x` trước, `y` trái, `z` lên). Intrinsics
 định giữ giá trị thử nghiệm `fx=fy=300 px`; phải thay bằng calibration camera
 trước khi dùng point cloud để đo hình học chính xác. Depth metric cũng phải được
 đối chiếu với vài khoảng cách đo thật trước khi nối vào local controller.
+
+### Hiệu chuẩn intrinsic camera thật
+
+Luồng hiệu chuẩn dùng ảnh MJPEG gốc `1280x720`; không chạy đồng thời với
+`perception_jetson.launch.py` vì cả hai cùng mở `/dev/video0`:
+
+```bash
+ros2 launch px4_uavcup_perception camera_calibration.launch.py
+```
+
+Ảnh gốc được publish tại `/camera/image_raw` ở 10 Hz. Dùng bảng checkerboard
+9x6 góc trong, đo chính xác cạnh ô, và công cụ `camera_calibration` chuẩn của
+ROS 2. Không hiệu chuẩn trên ảnh `364x364`: đó là ảnh đã bị scale không đồng
+đều cho TensorRT.
+
+Bảng chuẩn nằm tại `calibration/checkerboard_9x6_30mm_a3.svg`: in A3 ngang ở
+100% / Actual size, tắt Fit to page, rồi đo lại một ô phải đúng `30.0 mm`.

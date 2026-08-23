@@ -1,0 +1,12 @@
+camera_calibration_publisher:
+  ros__parameters:
+    camera_device: /dev/video0
+    capture_width: 1280
+    capture_height: 720
+    capture_fps: 30
+    # Ten native frames per second are enough for the calibration GUI and
+    # avoid saturating DDS / Wi-Fi with uncompressed 1280x720 images.
+    publish_rate_hz: 10.0
+    frame_id: camera_link
+    image_topic: /camera/image_raw
+    gstreamer_pipeline: ''

@@ -34,6 +34,8 @@ setup(
             'px4_uavcup_perception.depth_anything_node:main',
             'free_space_node = '
             'px4_uavcup_perception.free_space_node:main',
+            'camera_calibration_publisher = '
+            'px4_uavcup_perception.camera_calibration_publisher:main',
             'jetson_depth_node = '
             'px4_uavcup_perception.jetson_depth_node:main',
         ],
