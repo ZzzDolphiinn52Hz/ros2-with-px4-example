@@ -30,6 +30,18 @@ Hai môi trường được tách rõ:
 | `/uav/depth/status` | `diagnostic_msgs/DiagnosticArray` | Model, device và latency |
 | `/camera/depth/points` | `sensor_msgs/PointCloud2` | Point cloud FLU tùy chọn để debug RViz |
 
+`valid_fraction` không chỉ phản ánh depth hữu hạn. Trên Jetson, camera health
+gate còn chặn ảnh quá tối, quá sáng hoặc thiếu texture. Khi camera bị che, node
+không tin giá trị monocular depth và publish:
+
+```text
+[NaN, NaN, NaN, NaN, 0.0]
+```
+
+Diagnostic `/uav/depth/status` chuyển sang `ERROR` và chứa brightness,
+contrast, gradient, dark/bright fraction cùng lý do fail-safe. Sau lỗi kéo dài,
+camera phải có 5 frame tốt liên tiếp trước khi depth được sử dụng lại.
+
 ## Cài Depth Anything V2
 
 Không cài model vào Python hệ thống của ROS. Script tạo virtual environment có
@@ -135,6 +147,10 @@ ros2 topic hz /uav/depth/free_space
 ros2 topic echo /uav/depth/free_space
 ros2 topic echo /uav/depth/status
 ```
+
+Thử camera health gate trên bàn bằng cách che rồi mở camera. Khi che, log phải
+có `Perception fail-safe`, L/C/R phải là `NaN` và `valid_fraction=0`; khi mở lại
+phải có `Camera health gate recovered` trước khi khoảng cách hợp lệ xuất hiện.
 
 Chế độ debug có thể bật từng output nặng khi cần:
 

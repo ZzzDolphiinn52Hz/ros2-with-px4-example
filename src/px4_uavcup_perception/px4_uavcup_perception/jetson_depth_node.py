@@ -17,6 +17,11 @@ from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image, PointCloud2, PointField
 from std_msgs.msg import Float32MultiArray, MultiArrayDimension
 
+from .camera_health import (
+    CameraHealth,
+    CameraHealthGate,
+    assess_camera_health,
+)
 from .free_space import FreeSpaceSummary, summarize_free_space
 from .image_utils import array_to_image
 from .jetson_tensorrt_backend import DepthAnythingTensorRT
@@ -60,6 +65,17 @@ class JetsonDepthNode(Node):
         self.declare_parameter('model_input_size', 364)
         self.declare_parameter('processing_rate_hz', 30.0)
         self.declare_parameter('warmup_iterations', 3)
+
+        self.declare_parameter('camera_health_enabled', True)
+        self.declare_parameter('health_sample_stride', 4)
+        self.declare_parameter('health_minimum_brightness', 8.0)
+        self.declare_parameter('health_maximum_brightness', 247.0)
+        self.declare_parameter('health_minimum_contrast_stddev', 6.0)
+        self.declare_parameter('health_minimum_gradient_mean', 1.0)
+        self.declare_parameter('health_maximum_dark_fraction', 0.98)
+        self.declare_parameter('health_maximum_bright_fraction', 0.98)
+        self.declare_parameter('health_failure_frames', 3)
+        self.declare_parameter('health_recovery_frames', 5)
 
         self.declare_parameter('camera_frame_id', 'camera_link')
         self.declare_parameter('minimum_depth_m', 0.3)
@@ -112,6 +128,28 @@ class JetsonDepthNode(Node):
             self.get_parameter('publish_visualization').value)
         self._publish_pointcloud = bool(
             self.get_parameter('publish_pointcloud').value)
+        self._camera_health_enabled = bool(
+            self.get_parameter('camera_health_enabled').value)
+        self._health_sample_stride = int(
+            self.get_parameter('health_sample_stride').value)
+        self._health_minimum_brightness = float(
+            self.get_parameter('health_minimum_brightness').value)
+        self._health_maximum_brightness = float(
+            self.get_parameter('health_maximum_brightness').value)
+        self._health_minimum_contrast = float(
+            self.get_parameter('health_minimum_contrast_stddev').value)
+        self._health_minimum_gradient = float(
+            self.get_parameter('health_minimum_gradient_mean').value)
+        self._health_maximum_dark_fraction = float(
+            self.get_parameter('health_maximum_dark_fraction').value)
+        self._health_maximum_bright_fraction = float(
+            self.get_parameter('health_maximum_bright_fraction').value)
+        self._health_gate = CameraHealthGate(
+            failure_frames=int(
+                self.get_parameter('health_failure_frames').value),
+            recovery_frames=int(
+                self.get_parameter('health_recovery_frames').value),
+        )
 
         processing_rate = float(
             self.get_parameter('processing_rate_hz').value)
@@ -165,7 +203,8 @@ class JetsonDepthNode(Node):
             'Jetson flight perception ready: direct free-space enabled, '
             f'depth={self._publish_depth}, visualization='
             f'{self._publish_visualization}, pointcloud='
-            f'{self._publish_pointcloud}')
+            f'{self._publish_pointcloud}, camera_health='
+            f'{self._camera_health_enabled}')
 
     @staticmethod
     def _import_opencv():
@@ -257,19 +296,47 @@ class JetsonDepthNode(Node):
         received, frame = self._capture.read()
         if not received or frame is None:
             self._camera_failures += 1
-            self.get_logger().error(
-                'Front camera frame unavailable', throttle_duration_sec=2.0)
-            self._publish_status(
-                DiagnosticStatus.ERROR,
+            self._health_gate.update(False)
+            model_size = int(self.get_parameter('model_input_size').value)
+            self._reject_frame(
                 'camera frame unavailable',
-                0.0,
-                0.0,
+                callback_started,
+                image_shape=(model_size, model_size),
             )
             return
 
         model_size = int(self.get_parameter('model_input_size').value)
         if frame.shape[:2] != (model_size, model_size):
             frame = self._cv2.resize(frame, (model_size, model_size))
+
+        camera_health = self._assess_camera_frame(frame)
+        gate_was_healthy = self._health_gate.healthy
+        gate_is_healthy = self._health_gate.update(camera_health.healthy)
+        if gate_was_healthy and not gate_is_healthy:
+            self.get_logger().error(
+                f'Camera health gate entered fail-safe: '
+                f'{camera_health.reason}')
+        elif not gate_was_healthy and gate_is_healthy:
+            self.get_logger().info('Camera health gate recovered')
+
+        if not camera_health.healthy:
+            self._reject_frame(
+                camera_health.reason,
+                callback_started,
+                camera_health=camera_health,
+                image_shape=frame.shape[:2],
+            )
+            return
+        if not gate_is_healthy:
+            self._reject_frame(
+                'camera recovering '
+                f'({self._health_gate.recovery_count}/'
+                f'{self._health_gate.recovery_frames})',
+                callback_started,
+                camera_health=camera_health,
+                image_shape=frame.shape[:2],
+            )
+            return
 
         inference_started = time.perf_counter()
         try:
@@ -287,11 +354,12 @@ class JetsonDepthNode(Node):
                 roi_bottom_fraction=self._roi_bottom,
             )
         except Exception as error:
-            self.get_logger().error(
-                f'Depth inference failed: {error}',
-                throttle_duration_sec=2.0)
-            self._publish_status(
-                DiagnosticStatus.ERROR, 'inference failed', 0.0, 0.0)
+            self._reject_frame(
+                f'depth inference failed: {error}',
+                callback_started,
+                camera_health=camera_health,
+                image_shape=frame.shape[:2],
+            )
             return
         inference_ms = (time.perf_counter() - inference_started) * 1000.0
         stamp = self.get_clock().now().to_msg()
@@ -333,6 +401,7 @@ class JetsonDepthNode(Node):
                 fps,
                 summary,
                 total_ms,
+                camera_health,
             )
             self.get_logger().info(
                 f'FPS={fps:.1f} inference={inference_ms:.1f} ms '
@@ -340,9 +409,99 @@ class JetsonDepthNode(Node):
                 f'L/C/R={summary.left_m:.2f}/'
                 f'{summary.center_m:.2f}/{summary.right_m:.2f} m '
                 f'nearest={summary.nearest_m:.2f} m valid='
-                f'{summary.valid_fraction:.2f}')
+                f'{summary.valid_fraction:.2f} '
+                f'camera=B{camera_health.brightness_mean:.1f}/'
+                f'C{camera_health.contrast_stddev:.1f}/'
+                f'G{camera_health.gradient_mean:.1f}')
             self._frames_since_report = 0
             self._report_started = now
+
+    def _assess_camera_frame(self, frame: np.ndarray) -> CameraHealth:
+        if not self._camera_health_enabled:
+            return CameraHealth(
+                healthy=True,
+                reason='disabled',
+                brightness_mean=float('nan'),
+                contrast_stddev=float('nan'),
+                gradient_mean=float('nan'),
+                dark_fraction=0.0,
+                bright_fraction=0.0,
+            )
+        return assess_camera_health(
+            frame,
+            sample_stride=self._health_sample_stride,
+            minimum_brightness=self._health_minimum_brightness,
+            maximum_brightness=self._health_maximum_brightness,
+            minimum_contrast_stddev=self._health_minimum_contrast,
+            minimum_gradient_mean=self._health_minimum_gradient,
+            maximum_dark_fraction=self._health_maximum_dark_fraction,
+            maximum_bright_fraction=self._health_maximum_bright_fraction,
+        )
+
+    @staticmethod
+    def _invalid_free_space() -> FreeSpaceSummary:
+        return FreeSpaceSummary(
+            left_m=float('nan'),
+            center_m=float('nan'),
+            right_m=float('nan'),
+            nearest_m=float('nan'),
+            valid_fraction=0.0,
+        )
+
+    def _reject_frame(
+            self,
+            reason: str,
+            callback_started: float,
+            camera_health: Optional[CameraHealth] = None,
+            image_shape=None) -> None:
+        summary = self._invalid_free_space()
+        stamp = self.get_clock().now().to_msg()
+        self._publish_free_space(summary)
+        if image_shape is not None:
+            self._publish_invalid_debug_outputs(image_shape, stamp)
+        total_ms = (time.perf_counter() - callback_started) * 1000.0
+        self._publish_status(
+            DiagnosticStatus.ERROR,
+            reason,
+            0.0,
+            0.0,
+            summary,
+            total_ms,
+            camera_health,
+        )
+        details = ''
+        if camera_health is not None:
+            details = (
+                f' B={camera_health.brightness_mean:.1f}'
+                f' C={camera_health.contrast_stddev:.1f}'
+                f' G={camera_health.gradient_mean:.1f}'
+                f' dark={camera_health.dark_fraction:.2f}'
+                f' bright={camera_health.bright_fraction:.2f}')
+        self.get_logger().error(
+            f'Perception fail-safe: {reason}.{details}',
+            throttle_duration_sec=1.0,
+        )
+        self._frames_since_report = 0
+        self._report_started = time.monotonic()
+
+    def _publish_invalid_debug_outputs(self, image_shape, stamp) -> None:
+        height, width = int(image_shape[0]), int(image_shape[1])
+        invalid_depth = np.full(
+            (height, width), np.nan, dtype=np.float32)
+        if self._depth_publisher is not None:
+            message = array_to_image(invalid_depth, '32FC1')
+            message.header.stamp = stamp
+            message.header.frame_id = self._frame_id
+            self._depth_publisher.publish(message)
+        if self._visualization_publisher is not None:
+            message = array_to_image(
+                np.zeros((height, width), dtype=np.uint8), 'mono8')
+            message.header.stamp = stamp
+            message.header.frame_id = self._frame_id
+            self._visualization_publisher.publish(message)
+        if self._pointcloud_publisher is not None:
+            self._pointcloud_publisher.publish(
+                self._make_pointcloud(invalid_depth, stamp))
 
     def _publish_free_space(self, summary: FreeSpaceSummary) -> None:
         output = Float32MultiArray()
@@ -402,7 +561,8 @@ class JetsonDepthNode(Node):
             inference_ms: float,
             fps: float,
             summary: Optional[FreeSpaceSummary] = None,
-            total_ms: float = 0.0) -> None:
+            total_ms: float = 0.0,
+            camera_health: Optional[CameraHealth] = None) -> None:
         now = time.monotonic()
         if level == DiagnosticStatus.ERROR:
             if now - self._last_error_status < 1.0:
@@ -432,6 +592,31 @@ class JetsonDepthNode(Node):
                 KeyValue(
                     key='valid_fraction',
                     value=f'{summary.valid_fraction:.3f}'),
+            ])
+        if camera_health is not None:
+            values.extend([
+                KeyValue(
+                    key='camera_health',
+                    value='valid' if camera_health.healthy else 'invalid'),
+                KeyValue(key='camera_reason', value=camera_health.reason),
+                KeyValue(
+                    key='camera_brightness',
+                    value=f'{camera_health.brightness_mean:.3f}'),
+                KeyValue(
+                    key='camera_contrast',
+                    value=f'{camera_health.contrast_stddev:.3f}'),
+                KeyValue(
+                    key='camera_gradient',
+                    value=f'{camera_health.gradient_mean:.3f}'),
+                KeyValue(
+                    key='camera_dark_fraction',
+                    value=f'{camera_health.dark_fraction:.3f}'),
+                KeyValue(
+                    key='camera_bright_fraction',
+                    value=f'{camera_health.bright_fraction:.3f}'),
+                KeyValue(
+                    key='camera_gate_healthy',
+                    value=str(self._health_gate.healthy)),
             ])
         status.values = values
         array.status = [status]

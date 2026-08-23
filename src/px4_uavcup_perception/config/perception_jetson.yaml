@@ -17,6 +17,20 @@ jetson_depth_node:
     processing_rate_hz: 30.0
     warmup_iterations: 3
 
+    # Monocular depth always returns a value, even for a covered lens. Reject
+    # dark, saturated or textureless frames before inference and require a
+    # stable recovery before publishing usable distances again.
+    camera_health_enabled: true
+    health_sample_stride: 4
+    health_minimum_brightness: 8.0
+    health_maximum_brightness: 247.0
+    health_minimum_contrast_stddev: 6.0
+    health_minimum_gradient_mean: 1.0
+    health_maximum_dark_fraction: 0.98
+    health_maximum_bright_fraction: 0.98
+    health_failure_frames: 3
+    health_recovery_frames: 5
+
     camera_frame_id: camera_link
     minimum_depth_m: 0.3
     maximum_depth_m: 8.0
