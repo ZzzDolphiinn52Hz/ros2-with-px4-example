@@ -6,7 +6,6 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 
 from .image_utils import array_to_image
@@ -35,7 +34,7 @@ class CameraCalibrationPublisher(Node):
         self._publisher = self.create_publisher(
             Image,
             str(self.get_parameter('image_topic').value),
-            qos_profile_sensor_data,
+            1,
         )
 
         publish_rate = float(self.get_parameter('publish_rate_hz').value)
