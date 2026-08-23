@@ -121,7 +121,7 @@ class JetsonDepthNode(Node):
         self._free_space_publisher = self.create_publisher(
             Float32MultiArray,
             str(self.get_parameter('free_space_topic').value),
-            qos_profile_sensor_data,
+            1,
         )
         self._status_publisher = self.create_publisher(
             DiagnosticArray,
