@@ -35,8 +35,8 @@ def _setup(context, *args, **kwargs):
         executable='jetson_depth_node',
         name='jetson_depth_node',
         output='screen',
-        # Foxy resolves the first matching parameter source with precedence,
-        # so put explicit launch overrides before the YAML defaults.
+        # Keep debug flags out of the exact-node YAML file. Foxy otherwise
+        # gives those YAML values precedence over these launch overrides.
         parameters=[debug_parameters, config],
     )]
 

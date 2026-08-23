@@ -32,10 +32,9 @@ jetson_depth_node:
     visualization_topic: /uav/depth/visualization
     pointcloud_topic: /camera/depth/points
 
-    # Flight defaults: avoid serialization and visualization overhead.
-    publish_depth_image: false
-    publish_visualization: false
-    publish_pointcloud: false
+    # Debug publishers are controlled only by launch arguments. Do not repeat
+    # them here: Foxy gives exact-node YAML values precedence over the launch
+    # override dictionary.
 
     # Point-cloud parameters are used only when debug publication is enabled.
     pointcloud_stride: 4
