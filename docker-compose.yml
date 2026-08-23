@@ -1,0 +1,17 @@
+services:
+  ros:
+    build:
+      context: .
+      network: host
+    network_mode: host
+    ipc: host
+    privileged: true
+    working_dir: /ros2_ws
+    environment:
+      - ROS_DOMAIN_ID=0
+    volumes:
+      - ./:/ros2_ws
+      - /dev:/dev
+    stdin_open: true
+    tty: true
+    command: bash

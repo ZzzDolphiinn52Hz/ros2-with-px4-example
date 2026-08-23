@@ -1,9 +1,12 @@
 # ROS 2 / colcon build outputs
 /build/
+/build_*/
 **/build/
 /install/
+/install_*/
 **/install/
 /log/
+/log_*/
 **/log/
 .devel/
 **/.devel/
@@ -33,6 +36,7 @@ __pycache__/
 *.py[cod]
 *.so
 .venv/
+.venv-depth/
 venv/
 env/
 .pytest_cache/
@@ -62,6 +66,11 @@ Thumbs.db
 .env
 .env.*
 *.local
+
+# Downloaded perception dependencies and neural-network weights
+/third_party/Depth-Anything-V2/
+/models/*.pth
+/models/*.engine
 
 # Optional: keep selected launch/config files tracked if needed
 !src/**/launch/*.launch

@@ -1,0 +1,9 @@
+.git
+build
+install
+log
+**/__pycache__
+**/*.pyc
+maps_backup
+.vscode
+.vscode-server

@@ -1,0 +1,14 @@
+camera_calibration_publisher:
+  ros__parameters:
+    camera_device: /dev/video0
+    capture_width: 1280
+    capture_height: 720
+    capture_fps: 30
+    # Preserve the 16:9 field of view but reduce ROS 2 Foxy serialization cost.
+    # K can later be scaled exactly from 640x360 to the 364x364 model image.
+    output_width: 640
+    output_height: 360
+    publish_rate_hz: 10.0
+    frame_id: camera_link
+    image_topic: /camera/image_raw
+    gstreamer_pipeline: ''

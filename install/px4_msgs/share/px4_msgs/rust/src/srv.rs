@@ -1,1 +1,0 @@
-/home/dolphiinn/ros2_ws/build/px4_msgs/rosidl_generator_rs/px4_msgs/rust/src/srv.rs
