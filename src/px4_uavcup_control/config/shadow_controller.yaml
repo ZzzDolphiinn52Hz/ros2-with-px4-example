@@ -1,0 +1,25 @@
+local_controller_shadow:
+  ros__parameters:
+    free_space_topic: /uav/depth/free_space
+    advisory_velocity_topic: /uav/local_controller/advisory_velocity
+    state_topic: /uav/local_controller/state
+    status_topic: /uav/local_controller/status
+    body_frame_id: base_link
+
+    watchdog_rate_hz: 20.0
+    input_timeout_sec: 0.3
+    recovery_frames: 3
+
+    emergency_distance_m: 0.7
+    avoid_enter_distance_m: 1.2
+    clear_exit_distance_m: 1.5
+    minimum_valid_fraction: 0.25
+
+    median_window: 5
+    ema_alpha: 0.35
+    minimum_direction_hold_sec: 0.5
+    side_switch_margin_m: 0.25
+
+    forward_speed_mps: 0.4
+    avoidance_forward_speed_mps: 0.1
+    lateral_speed_mps: 0.3
