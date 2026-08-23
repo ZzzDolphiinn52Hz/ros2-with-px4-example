@@ -172,14 +172,15 @@ trước khi dùng point cloud để đo hình học chính xác. Depth metric c
 
 ### Hiệu chuẩn intrinsic camera thật
 
-Luồng hiệu chuẩn dùng ảnh MJPEG gốc `1280x720`; không chạy đồng thời với
+Luồng hiệu chuẩn capture MJPEG gốc `1280x720`, giữ nguyên FOV 16:9 và scale về
+`640x360` để ROS 2 Foxy publish ổn định. Không chạy đồng thời với
 `perception_jetson.launch.py` vì cả hai cùng mở `/dev/video0`:
 
 ```bash
 ros2 launch px4_uavcup_perception camera_calibration.launch.py
 ```
 
-Ảnh gốc được publish tại `/camera/image_raw` ở 10 Hz. Dùng bảng checkerboard
+Ảnh được publish tại `/camera/image_raw` ở 10 Hz. Dùng bảng checkerboard
 9x6 góc trong, đo chính xác cạnh ô, và công cụ `camera_calibration` chuẩn của
 ROS 2. Không hiệu chuẩn trên ảnh `364x364`: đó là ảnh đã bị scale không đồng
 đều cho TensorRT.

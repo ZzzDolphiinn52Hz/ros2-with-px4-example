@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Publish native front-camera frames for one-time intrinsic calibration."""
+"""Publish front-camera frames for one-time intrinsic calibration."""
 
 import time
 
@@ -22,6 +22,8 @@ class CameraCalibrationPublisher(Node):
         self.declare_parameter('capture_width', 1280)
         self.declare_parameter('capture_height', 720)
         self.declare_parameter('capture_fps', 30)
+        self.declare_parameter('output_width', 640)
+        self.declare_parameter('output_height', 360)
         self.declare_parameter('publish_rate_hz', 10.0)
         self.declare_parameter('frame_id', 'camera_link')
         self.declare_parameter('image_topic', '/camera/image_raw')
@@ -43,8 +45,8 @@ class CameraCalibrationPublisher(Node):
         self._report_started = time.monotonic()
         self._published_since_report = 0
 
-        width = int(self.get_parameter('capture_width').value)
-        height = int(self.get_parameter('capture_height').value)
+        width = int(self.get_parameter('output_width').value)
+        height = int(self.get_parameter('output_height').value)
         topic = str(self.get_parameter('image_topic').value)
         self.get_logger().info(
             f'Calibration camera ready: {width}x{height} -> {topic}. '
@@ -63,10 +65,14 @@ class CameraCalibrationPublisher(Node):
         width = int(self.get_parameter('capture_width').value)
         height = int(self.get_parameter('capture_height').value)
         fps = int(self.get_parameter('capture_fps').value)
+        output_width = int(self.get_parameter('output_width').value)
+        output_height = int(self.get_parameter('output_height').value)
         return (
             f'v4l2src device={device} ! '
             f'image/jpeg,width={width},height={height},framerate={fps}/1 ! '
-            'jpegdec ! videoconvert ! video/x-raw,format=BGR ! '
+            'jpegdec ! videoscale ! '
+            f'video/x-raw,width={output_width},height={output_height} ! '
+            'videoconvert ! video/x-raw,format=BGR ! '
             'appsink drop=1 max-buffers=1 sync=false'
         )
 
@@ -121,7 +127,12 @@ def main(args=None) -> None:
         pass
     finally:
         if node is not None:
-            node.destroy_node()
+            try:
+                node.destroy_node()
+            except KeyboardInterrupt:
+                # ROS launch can deliver a second SIGINT while OpenCV releases
+                # the V4L2 pipeline. Process exit will release the descriptor.
+                pass
         if rclpy.ok():
             rclpy.shutdown()
 
