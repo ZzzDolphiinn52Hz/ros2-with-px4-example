@@ -31,6 +31,21 @@ def test_metric_depth_round_trip():
     np.testing.assert_allclose(restored, source)
 
 
+def test_bgr_image_round_trip():
+    source = np.array(
+        [[[10, 20, 30], [40, 50, 60]]],
+        dtype=np.uint8,
+    )
+
+    message = array_to_image(source, 'bgr8')
+    restored = ros_image_to_array(message)
+
+    assert message.width == 2
+    assert message.height == 1
+    assert message.step == 6
+    np.testing.assert_array_equal(restored, source)
+
+
 def test_bridge_nearest_resize_reduces_rgb_image():
     source = np.arange(4 * 4 * 3, dtype=np.uint8).reshape(4, 4, 3)
 

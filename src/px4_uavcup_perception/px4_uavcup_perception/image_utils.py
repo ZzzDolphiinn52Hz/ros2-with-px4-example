@@ -96,6 +96,15 @@ def array_to_image(
         output.height, output.width = contiguous.shape
         output.step = int(output.width)
         output.is_bigendian = False
+    elif encoding in _COLOR_CHANNELS:
+        channels = _COLOR_CHANNELS[encoding]
+        if contiguous.ndim != 3 or contiguous.shape[2] != channels:
+            raise ValueError(
+                f'{encoding} requires an HxWx{channels} array')
+        contiguous = contiguous.astype(np.uint8, copy=False)
+        output.height, output.width, _ = contiguous.shape
+        output.step = int(output.width * channels)
+        output.is_bigendian = False
     else:
         raise ValueError(f'Unsupported output encoding: {encoding}')
 
