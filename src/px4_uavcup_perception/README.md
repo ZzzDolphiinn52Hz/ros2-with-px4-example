@@ -124,7 +124,9 @@ docker compose run --rm ros bash -lc \
 
 `maximum_processing_rate_hz: 0.0` tắt giới hạn phần mềm, vì vậy node chạy
 liên tục theo tốc độ inference thực tế. Topic raw vẫn là `32FC1` kích thước
-512x384. Khi pipeline đang chạy, lưu một ảnh màu được tạo trực tiếp từ raw bằng:
+512x384. Front camera publish 6 Hz để không tốn CPU decode/copy các frame mà
+ZipDepth không thể xử lý. Khi pipeline đang chạy, lưu một ảnh màu được tạo trực
+tiếp từ raw bằng:
 
 ```bash
 docker compose run --rm ros bash -lc \

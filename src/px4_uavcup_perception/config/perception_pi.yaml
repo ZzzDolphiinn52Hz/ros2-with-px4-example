@@ -4,7 +4,9 @@ front_usb_camera:
     width: 640
     height: 480
     capture_fps: 30.0
-    publish_rate_hz: 10.0
+    # ZipDepth tops out near 6 FPS on Pi 5. Publishing decoded BGR at 10 Hz
+    # wastes one CPU core on frames the depth node cannot consume.
+    publish_rate_hz: 6.0
     pixel_format: MJPG
     frame_id: front_camera_optical_frame
     image_topic: /camera/front/image_raw
