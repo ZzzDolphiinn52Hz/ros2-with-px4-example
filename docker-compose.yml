@@ -9,10 +9,13 @@ services:
     working_dir: /ros2_ws
     environment:
       - ROS_DOMAIN_ID=0
+      - DISPLAY=${DISPLAY:-:0}
+      - QT_X11_NO_MITSHM=1
     volumes:
       - ./:/ros2_ws
       - /dev:/dev
       - /home/dolphiinn/models:/models:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
     stdin_open: true
     tty: true
     command: bash

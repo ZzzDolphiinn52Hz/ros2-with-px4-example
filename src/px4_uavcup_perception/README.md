@@ -99,6 +99,21 @@ góc trong và ô 0.03 m. Pi chỉ publish `/camera/front/image_raw`; GUI
 `cameracalibrator` chạy trên PC với `--no-service-check` vì publisher utility
 không ghi calibration trực tiếp vào driver.
 
+Trên Raspberry Pi có desktop, có thể chạy capture và GUI ngay trong cùng
+container để ảnh raw không phải đi qua DDS/Wi-Fi:
+
+```bash
+xhost +si:localuser:root
+docker compose run --rm ros bash -lc \
+  'source /opt/ros/humble/setup.bash && \
+   colcon build --symlink-install --packages-select px4_uavcup_perception && \
+   source install/setup.bash && \
+   ros2 launch px4_uavcup_perception camera_calibration_gui.launch.py'
+```
+
+Chỉ cấp quyền X11 cục bộ cho root trong container. Sau khi calibration xong,
+có thể thu hồi bằng `xhost -si:localuser:root`.
+
 ## Raspberry Pi 5: ZipDepth + ArUco
 
 Pipeline Pi dùng hai camera và hai namespace riêng:
