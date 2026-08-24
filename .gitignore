@@ -72,6 +72,11 @@ Thumbs.db
 /models/*.pth
 /models/*.engine
 
+# Local perception captures and calibration datasets
+/artifacts/
+/zipdepth_*.png
+/zipdepth_*.json
+
 # Optional: keep selected launch/config files tracked if needed
 !src/**/launch/*.launch
 !src/**/config/*.yaml

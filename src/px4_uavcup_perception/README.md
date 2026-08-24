@@ -168,6 +168,23 @@ Vì controller shadow dùng ngưỡng theo mét, khi calibration chưa bật th�
 khi đã fit calibration và camera intrinsic. Sau hiệu chuẩn, chuỗi L/C/R dùng
 lại trực tiếp `summarize_free_space` và `local_controller_shadow` của Jetson.
 
+Thu calibration bằng một mặt phẳng đặt vuông góc camera, chiếm toàn bộ ROI giữa.
+Khoảng cách được đo từ mặt kính/lens camera tới mặt phẳng. Khi launch đang bật
+`publish_raw_output:=true`, thêm từng mẫu vào cùng dataset bằng:
+
+```bash
+python3 src/px4_uavcup_perception/scripts/calibrate_zipdepth_metric.py collect \
+  --distance-m 1.0 --samples 20 \
+  --output /ros2_ws/artifacts/zipdepth_metric_samples.json
+```
+
+Sau ít nhất ba khoảng cách khác nhau, fit calibration bằng:
+
+```bash
+python3 src/px4_uavcup_perception/scripts/calibrate_zipdepth_metric.py fit \
+  --input /ros2_ws/artifacts/zipdepth_metric_samples.json
+```
+
 Gateway `/uav/aruco/target_pose -> /fmu/in/landing_target_pose` cũng mặc định
 `enabled: false`. Chỉ bật sau khi đã đo extrinsic camera-to-body, xác nhận đúng
 hệ optical -> FRD -> NED, và bench-test với FC không gắn cánh quạt. Nếu ArUco
