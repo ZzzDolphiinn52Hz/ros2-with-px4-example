@@ -14,6 +14,15 @@ Trên Jetson có thể chạy perception và shadow controller cùng một lện
 ros2 launch px4_uavcup_control jetson_perception_shadow.launch.py
 ```
 
+Trên Pi, ZipDepth chỉ cung cấp relative clearance. Launch dưới đây nối topic
+riêng vào shadow controller. Launch chỉ tạo `zipdepth_node` và
+`local_controller_shadow`; không khởi tạo ArUco, PX4 adapter hoặc topic lệnh
+`/fmu/in/*`:
+
+```bash
+ros2 launch px4_uavcup_control pi_zipdepth_shadow.launch.py
+```
+
 Không chạy thêm `perception_jetson.launch.py` riêng trong trường hợp này, vì
 hai tiến trình perception sẽ tranh `/dev/video0`.
 

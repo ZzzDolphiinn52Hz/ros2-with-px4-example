@@ -22,6 +22,7 @@ là runtime được hỗ trợ của package này.
 | --- | --- | --- |
 | `/uav/depth/free_space` | `std_msgs/Float32MultiArray` | `[left, center, right, nearest, valid_fraction]` |
 | `/uav/depth/status` | `diagnostic_msgs/DiagnosticArray` | Health, calibration và latency |
+| `/uav/depth/relative_free_space` | `std_msgs/Float32MultiArray` | Relative clearance `[L,C,R,nearest,valid]`, chỉ dùng shadow |
 | `/camera/depth/image` | `sensor_msgs/Image` | Depth `32FC1`, chỉ bật khi debug |
 | `/uav/depth/visualization` | `sensor_msgs/Image` | Depth `mono8`, chỉ bật khi debug |
 | `/camera/depth/points` | `sensor_msgs/PointCloud2` | PointCloud FLU, chỉ bật khi debug |
@@ -168,6 +169,12 @@ Vì controller shadow dùng ngưỡng theo mét, khi calibration chưa bật th�
 khi đã fit calibration và camera intrinsic. Sau hiệu chuẩn, chuỗi L/C/R dùng
 lại trực tiếp `summarize_free_space` và `local_controller_shadow` của Jetson.
 
+Thử nghiệm thực tế `0.5 m` và `1.0 m` xác nhận output ZipDepth không hỗ trợ
+một global scale/shift cố định. Utility dưới đây chỉ dùng để thu dữ liệu và
+kiểm tra giả thuyết calibration; không được lấy kết quả của một scene để bật
+metric khi bay. Muốn metric cần một metric anchor ở từng frame hoặc đổi sang
+model/sensor metric.
+
 Thu calibration bằng một mặt phẳng đặt vuông góc camera, chiếm toàn bộ ROI giữa.
 Khoảng cách được đo từ mặt kính/lens camera tới mặt phẳng. Khi launch đang bật
 `publish_raw_output:=true`, thêm từng mẫu vào cùng dataset bằng:
@@ -184,6 +191,12 @@ Sau ít nhất ba khoảng cách khác nhau, fit calibration bằng:
 python3 src/px4_uavcup_perception/scripts/calibrate_zipdepth_metric.py fit \
   --input /ros2_ws/artifacts/zipdepth_metric_samples.json
 ```
+
+Khi chưa có metric anchor, node publish thêm
+`/uav/depth/relative_free_space`. Giá trị 0..1 chỉ biểu diễn khoảng trống tương
+đối trong cùng frame, không phải mét và không thể phát hiện an toàn một bức
+tường phẳng chiếm toàn ảnh. Scene thiếu contrast tạo NaN để shadow controller
+vào FAILSAFE.
 
 Gateway `/uav/aruco/target_pose -> /fmu/in/landing_target_pose` cũng mặc định
 `enabled: false`. Chỉ bật sau khi đã đo extrinsic camera-to-body, xác nhận đúng

@@ -25,6 +25,7 @@ from .camera_health import assess_camera_health
 from .free_space import summarize_free_space
 from .image_utils import array_to_image, image_to_bgr
 from .pointcloud_utils import depth_to_flu_points
+from .relative_free_space import summarize_relative_free_space
 from .zipdepth_onnx_backend import (
     ZipDepthOnnx,
     inverse_depth_to_metric,
@@ -64,6 +65,11 @@ class ZipDepthNode(Node):
         self.declare_parameter('pointcloud_topic', '/camera/depth/points')
         self.declare_parameter('free_space_topic', '/uav/depth/free_space')
         self.declare_parameter('status_topic', '/uav/depth/status')
+        self.declare_parameter(
+            'relative_free_space_topic',
+            '/uav/depth/relative_free_space')
+        self.declare_parameter('relative_near_percentile', 85.0)
+        self.declare_parameter('relative_minimum_contrast_span', 0.001)
         self.declare_parameter('publish_raw_output', False)
         self.declare_parameter('publish_metric_depth', False)
         self.declare_parameter('publish_visualization', False)
@@ -160,6 +166,9 @@ class ZipDepthNode(Node):
         self._status_publisher = self.create_publisher(
             DiagnosticArray,
             str(self.get_parameter('status_topic').value), 10)
+        self._relative_free_space_publisher = self.create_publisher(
+            Float32MultiArray,
+            str(self.get_parameter('relative_free_space_topic').value), 1)
         self._input_publisher = None
         if self._camera_device:
             self._start_direct_camera(rate)
@@ -262,6 +271,18 @@ class ZipDepthNode(Node):
             raw = self._backend.infer(bgr, self._cv2)
             inference_ms = (
                 time.perf_counter() - inference_started) * 1000.0
+            relative_summary = summarize_relative_free_space(
+                raw,
+                roi_top_fraction=float(
+                    self.get_parameter('roi_top_fraction').value),
+                roi_bottom_fraction=float(
+                    self.get_parameter('roi_bottom_fraction').value),
+                near_percentile=float(
+                    self.get_parameter('relative_near_percentile').value),
+                minimum_contrast_span=float(self.get_parameter(
+                    'relative_minimum_contrast_span').value),
+            )
+            self._publish_relative_free_space(relative_summary.as_list())
             if self._raw_publisher is not None:
                 raw_message = array_to_image(raw, '32FC1')
                 raw_message.header = header
@@ -332,6 +353,18 @@ class ZipDepthNode(Node):
         message.layout.dim = [dimension]
         message.data = list(values)
         self._free_space_publisher.publish(message)
+
+    def _publish_relative_free_space(self, values) -> None:
+        message = Float32MultiArray()
+        dimension = MultiArrayDimension()
+        dimension.label = (
+            'left,center,right,nearest,valid_fraction;'
+            'units=relative_clearance_0_to_1')
+        dimension.size = 5
+        dimension.stride = 5
+        message.layout.dim = [dimension]
+        message.data = list(values)
+        self._relative_free_space_publisher.publish(message)
 
     def _make_pointcloud(self, depth: np.ndarray, stamp) -> PointCloud2:
         principal_x = self._principal_x

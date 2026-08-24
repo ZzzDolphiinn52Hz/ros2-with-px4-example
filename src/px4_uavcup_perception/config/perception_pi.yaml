@@ -46,7 +46,10 @@ zipdepth_node:
     visualization_topic: /uav/depth/visualization
     pointcloud_topic: /camera/depth/points
     free_space_topic: /uav/depth/free_space
+    relative_free_space_topic: /uav/depth/relative_free_space
     status_topic: /uav/depth/status
+    relative_near_percentile: 85.0
+    relative_minimum_contrast_span: 0.001
 
     # Debug publishers are selected through launch arguments, like the Jetson
     # pipeline. PointCloud and metric depth remain blocked until calibration.

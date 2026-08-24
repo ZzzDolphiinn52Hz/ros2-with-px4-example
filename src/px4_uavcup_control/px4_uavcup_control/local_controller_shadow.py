@@ -35,6 +35,7 @@ class LocalControllerShadowNode(Node):
         self.declare_parameter(
             'status_topic', '/uav/local_controller/status')
         self.declare_parameter('body_frame_id', 'base_link')
+        self.declare_parameter('input_units', 'metres')
         self.declare_parameter('watchdog_rate_hz', 20.0)
         self.declare_parameter('input_timeout_sec', 0.3)
 
@@ -83,6 +84,8 @@ class LocalControllerShadowNode(Node):
             raise ValueError('Watchdog rate and timeout must be positive')
 
         self._frame_id = str(self.get_parameter('body_frame_id').value)
+        self._input_units = str(
+            self.get_parameter('input_units').value)
         self._last_input_monotonic: Optional[float] = None
         self._last_decision: Optional[ControllerDecision] = None
         self._last_logged_state: Optional[AvoidanceState] = None
@@ -180,6 +183,7 @@ class LocalControllerShadowNode(Node):
         status.message = decision.reason
         status.values = [
             KeyValue(key='shadow_mode', value='true'),
+            KeyValue(key='input_units', value=self._input_units),
             KeyValue(key='state', value=decision.state.value),
             KeyValue(
                 key='forward_advisory_mps',

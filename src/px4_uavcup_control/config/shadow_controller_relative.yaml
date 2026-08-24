@@ -1,0 +1,27 @@
+local_controller_shadow:
+  ros__parameters:
+    free_space_topic: /uav/depth/relative_free_space
+    advisory_velocity_topic: /uav/local_controller/advisory_velocity
+    state_topic: /uav/local_controller/state
+    status_topic: /uav/local_controller/status
+    body_frame_id: base_link
+    input_units: relative_clearance_0_to_1
+
+    watchdog_rate_hz: 20.0
+    input_timeout_sec: 0.4
+    recovery_frames: 3
+
+    # Experimental shadow-only thresholds. Higher means more relative space.
+    emergency_distance_m: 0.10
+    avoid_enter_distance_m: 0.25
+    clear_exit_distance_m: 0.40
+    minimum_valid_fraction: 0.90
+
+    median_window: 3
+    ema_alpha: 0.5
+    minimum_direction_hold_sec: 0.5
+    side_switch_margin_m: 0.15
+
+    forward_speed_mps: 0.3
+    avoidance_forward_speed_mps: 0.05
+    lateral_speed_mps: 0.2
