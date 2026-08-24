@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ROS 2 subscriber pipeline for ZipDepth on Raspberry Pi 5."""
+"""ROS 2 ZipDepth pipeline with direct or topic-based camera input."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from rclpy.qos import (
     qos_profile_sensor_data,
 )
 from sensor_msgs.msg import Image
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray, Header
 
 from .camera_health import assess_camera_health
 from .free_space import summarize_free_space
@@ -33,6 +33,13 @@ class ZipDepthNode(Node):
     def __init__(self) -> None:
         super().__init__('zipdepth_node')
         self.declare_parameter('image_topic', '/camera/image_raw')
+        self.declare_parameter('camera_device', '')
+        self.declare_parameter('camera_width', 640)
+        self.declare_parameter('camera_height', 480)
+        self.declare_parameter('camera_capture_fps', 30.0)
+        self.declare_parameter('camera_pixel_format', 'MJPG')
+        self.declare_parameter('camera_frame_id', 'front_camera_optical_frame')
+        self.declare_parameter('publish_input_image', False)
         self.declare_parameter(
             'model_path', '~/models/zipdepth_base_npu_512x384.onnx')
         self.declare_parameter('onnx_threads', 3)
@@ -74,6 +81,9 @@ class ZipDepthNode(Node):
             raise RuntimeError('OpenCV is required for ZipDepth') from error
         self._cv2 = cv2
         self._backend = ZipDepthOnnx(model_path, threads)
+        self._camera = None
+        self._camera_device = str(
+            self.get_parameter('camera_device').value).strip()
         self._raw_publisher = self.create_publisher(
             Image, '/uav/depth/zipdepth_raw', qos_profile_sensor_data) \
             if bool(self.get_parameter('publish_raw_output').value) else None
@@ -83,20 +93,76 @@ class ZipDepthNode(Node):
             Float32MultiArray, '/uav/depth/free_space', 1)
         self._status_publisher = self.create_publisher(
             DiagnosticArray, '/uav/depth/status', 10)
-        latest_frame_qos = QoSProfile(
-            history=HistoryPolicy.KEEP_LAST,
-            depth=1,
-            reliability=ReliabilityPolicy.BEST_EFFORT,
-            durability=DurabilityPolicy.VOLATILE,
-        )
-        self.create_subscription(
-            Image, str(self.get_parameter('image_topic').value),
-            self._on_image, latest_frame_qos)
+        self._input_publisher = None
+        if self._camera_device:
+            self._start_direct_camera(rate)
+            input_source = f'direct:{self._camera_device}'
+        else:
+            latest_frame_qos = QoSProfile(
+                history=HistoryPolicy.KEEP_LAST,
+                depth=1,
+                reliability=ReliabilityPolicy.BEST_EFFORT,
+                durability=DurabilityPolicy.VOLATILE,
+            )
+            self.create_subscription(
+                Image, str(self.get_parameter('image_topic').value),
+                self._on_image, latest_frame_qos)
+            input_source = str(self.get_parameter('image_topic').value)
+        self._input_source = input_source
         self.get_logger().info(
             f'ZipDepth ONNX ready: {model_path}, '
             f'{self._backend.width}x{self._backend.height}, '
             f'metric_calibration={self._metric_enabled}, '
-            f'rate_limit={rate if rate > 0.0 else "unlimited"}')
+            f'rate_limit={rate if rate > 0.0 else "unlimited"}, '
+            f'input={input_source}')
+
+    def _start_direct_camera(self, rate: float) -> None:
+        width = int(self.get_parameter('camera_width').value)
+        height = int(self.get_parameter('camera_height').value)
+        capture_fps = float(
+            self.get_parameter('camera_capture_fps').value)
+        pixel_format = str(
+            self.get_parameter('camera_pixel_format').value)
+        self._camera_frame_id = str(
+            self.get_parameter('camera_frame_id').value)
+        self._camera = self._cv2.VideoCapture(
+            self._camera_device, self._cv2.CAP_V4L2)
+        self._camera.set(self._cv2.CAP_PROP_FRAME_WIDTH, width)
+        self._camera.set(self._cv2.CAP_PROP_FRAME_HEIGHT, height)
+        self._camera.set(self._cv2.CAP_PROP_FPS, capture_fps)
+        if len(pixel_format) == 4:
+            self._camera.set(
+                self._cv2.CAP_PROP_FOURCC,
+                self._cv2.VideoWriter_fourcc(*pixel_format))
+        self._camera.set(self._cv2.CAP_PROP_BUFFERSIZE, 1)
+        if not self._camera.isOpened():
+            self._camera.release()
+            self._camera = None
+            raise RuntimeError(
+                f'Cannot open V4L2 camera: {self._camera_device}')
+        if bool(self.get_parameter('publish_input_image').value):
+            self._input_publisher = self.create_publisher(
+                Image, str(self.get_parameter('image_topic').value),
+                qos_profile_sensor_data)
+        timer_period = 0.001 if rate == 0.0 else 1.0 / rate
+        self._camera_timer = self.create_timer(
+            timer_period, self._capture_and_process)
+
+    def _capture_and_process(self) -> None:
+        received, bgr = self._camera.read()
+        if not received or bgr is None:
+            self._publish_invalid_free_space()
+            self._publish_status(
+                DiagnosticStatus.ERROR, 'USB camera frame unavailable', 0.0)
+            return
+        header = Header()
+        header.stamp = self.get_clock().now().to_msg()
+        header.frame_id = self._camera_frame_id
+        if self._input_publisher is not None:
+            input_message = array_to_image(bgr, 'bgr8')
+            input_message.header = header
+            self._input_publisher.publish(input_message)
+        self._process_bgr(bgr, header)
 
     def _on_image(self, message: Image) -> None:
         now = time.monotonic()
@@ -106,23 +172,37 @@ class ZipDepthNode(Node):
         started = time.perf_counter()
         try:
             bgr = image_to_bgr(message)
+        except Exception as error:
+            self._publish_invalid_free_space()
+            self._publish_status(
+                DiagnosticStatus.ERROR, str(error),
+                (time.perf_counter() - started) * 1000.0)
+            return
+        self._process_bgr(bgr, message.header, started)
+
+    def _process_bgr(
+            self, bgr: np.ndarray, header: Header,
+            started: float | None = None) -> None:
+        if started is None:
+            started = time.perf_counter()
+        try:
             health = assess_camera_health(bgr)
             if not health.healthy:
                 raise RuntimeError(health.reason)
             raw = self._backend.infer(bgr, self._cv2)
             if self._raw_publisher is not None:
                 raw_message = array_to_image(raw, '32FC1')
-                raw_message.header = message.header
+                raw_message.header = header
                 self._raw_publisher.publish(raw_message)
             if self._metric_enabled:
                 metric = inverse_depth_to_metric(
                     raw, self._inverse_depth_scale,
                     self._inverse_depth_shift)
                 metric = self._cv2.resize(
-                    metric, (int(message.width), int(message.height)),
+                    metric, (int(bgr.shape[1]), int(bgr.shape[0])),
                     interpolation=self._cv2.INTER_LINEAR)
                 metric_message = array_to_image(metric, '32FC1')
-                metric_message.header = message.header
+                metric_message.header = header
                 self._metric_publisher.publish(metric_message)
                 summary = summarize_free_space(
                     metric,
@@ -176,9 +256,16 @@ class ZipDepthNode(Node):
                 key='processing_fps', value=f'{self._processing_fps:.2f}'),
             KeyValue(key='output_width', value=str(self._backend.width)),
             KeyValue(key='output_height', value=str(self._backend.height)),
+            KeyValue(key='input_source', value=self._input_source),
         ]
         diagnostic.status = [status]
         self._status_publisher.publish(diagnostic)
+
+    def destroy_node(self):
+        if self._camera is not None:
+            self._camera.release()
+            self._camera = None
+        return super().destroy_node()
 
 
 def main(args=None) -> None:

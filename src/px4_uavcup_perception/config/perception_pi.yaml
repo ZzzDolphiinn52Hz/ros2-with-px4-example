@@ -14,6 +14,15 @@ front_usb_camera:
 zipdepth_node:
   ros__parameters:
     image_topic: /camera/front/image_raw
+    # Direct capture avoids serializing every 640x480 BGR frame through DDS.
+    # Set this to an empty string to restore ROS image subscriber mode.
+    camera_device: /dev/video0
+    camera_width: 640
+    camera_height: 480
+    camera_capture_fps: 30.0
+    camera_pixel_format: MJPG
+    camera_frame_id: front_camera_optical_frame
+    publish_input_image: false
     model_path: /models/zipdepth_base_npu_512x384.onnx
     onnx_threads: 3
     # 0.0 disables software throttling. The Pi runs as fast as inference allows

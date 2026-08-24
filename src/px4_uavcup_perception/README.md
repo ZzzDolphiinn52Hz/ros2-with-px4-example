@@ -97,9 +97,9 @@ Nó không được chạy đồng thời với perception. Bảng A3 tùy chọ
 Pipeline Pi dùng hai camera và hai namespace riêng:
 
 ```text
-USB camera -> /camera/front/image_raw
-  └─ zipdepth_node -> /uav/depth/zipdepth_raw
-                     -> /camera/depth/image (sau hiệu chuẩn metric)
+USB camera -> zipdepth_node (direct V4L2, không copy ảnh BGR qua DDS)
+  └─ /uav/depth/zipdepth_raw
+     └─ /camera/depth/image (sau hiệu chuẩn metric)
 
 Pi Camera nhìn xuống -> /camera/down/image_raw + /camera/down/camera_info
   └─ aruco_detector_node -> /uav/aruco/ids + /uav/aruco/target_pose
@@ -124,9 +124,11 @@ docker compose run --rm ros bash -lc \
 
 `maximum_processing_rate_hz: 0.0` tắt giới hạn phần mềm, vì vậy node chạy
 liên tục theo tốc độ inference thực tế. Topic raw vẫn là `32FC1` kích thước
-512x384. Front camera publish 6 Hz để không tốn CPU decode/copy các frame mà
-ZipDepth không thể xử lý. Khi pipeline đang chạy, lưu một ảnh màu được tạo trực
-tiếp từ raw bằng:
+512x384. Mặc định `zipdepth_node` mở `/dev/video0` trực tiếp để đường runtime
+giống benchmark và tránh serialize ảnh BGR 640x480 qua DDS. Camera publisher
+riêng trong launch được tắt; đặt `camera_device` rỗng và launch với
+`front_usb_camera:=true` nếu cần quay lại subscriber mode. Khi pipeline đang
+chạy, lưu một ảnh màu được tạo trực tiếp từ raw bằng:
 
 ```bash
 docker compose run --rm ros bash -lc \

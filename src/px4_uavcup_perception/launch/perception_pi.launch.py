@@ -18,7 +18,9 @@ def generate_launch_description():
     config = LaunchConfiguration('config')
     return LaunchDescription([
         DeclareLaunchArgument('config', default_value=default_config),
-        DeclareLaunchArgument('front_usb_camera', default_value='true'),
+        # ZipDepth opens /dev/video0 directly by default. Enable this only when
+        # camera_device is empty in the YAML and a ROS image topic is desired.
+        DeclareLaunchArgument('front_usb_camera', default_value='false'),
         Node(
             package='px4_uavcup_perception',
             executable='v4l2_camera_node',
