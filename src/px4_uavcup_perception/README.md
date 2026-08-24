@@ -91,11 +91,13 @@ Node utility dưới đây chỉ publish ảnh camera; không thuộc đường 
 ros2 launch px4_uavcup_perception camera_calibration.launch.py
 ```
 
-Nó không được chạy đồng thời với perception. Bảng A3 tùy chọn nằm tại
-`calibration/checkerboard_9x6_30mm_a3.svg`.
+Nó không được chạy đồng thời với perception. Bộ file in A4 nằm trong
+`calibration/`: checkerboard 9x6 ô 25 mm và năm ArUco `DICT_5X5_50` ID 0-4.
+Bảng A3 ô 30 mm cũ vẫn được giữ lại.
 
-USB camera Pi được calibrate đúng mode runtime 640x480. Checkerboard có 9x6
-góc trong và ô 0.03 m. Pi chỉ publish `/camera/front/image_raw`; GUI
+USB camera Pi được calibrate đúng mode runtime 640x480. Checkerboard A4 mặc
+định có 9x6 góc trong và ô 0.025 m. Pi chỉ publish
+`/camera/front/image_raw`; GUI
 `cameracalibrator` chạy trên PC với `--no-service-check` vì publisher utility
 không ghi calibration trực tiếp vào driver.
 
@@ -110,6 +112,8 @@ docker compose run --rm ros bash -lc \
    source install/setup.bash && \
    ros2 launch px4_uavcup_perception camera_calibration_gui.launch.py'
 ```
+
+Nếu dùng lại bảng A3 ô 30 mm, thêm `square_size_m:=0.03` vào lệnh launch.
 
 Chỉ cấp quyền X11 cục bộ cho root trong container. Sau khi calibration xong,
 có thể thu hồi bằng `xhost -si:localuser:root`.

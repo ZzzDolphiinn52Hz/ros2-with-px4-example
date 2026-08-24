@@ -17,8 +17,12 @@ def generate_launch_description() -> LaunchDescription:
         package_share, 'config', 'camera_calibration.yaml')
 
     config = LaunchConfiguration('config')
+    board_size = LaunchConfiguration('board_size')
+    square_size_m = LaunchConfiguration('square_size_m')
     return LaunchDescription([
         DeclareLaunchArgument('config', default_value=default_config),
+        DeclareLaunchArgument('board_size', default_value='9x6'),
+        DeclareLaunchArgument('square_size_m', default_value='0.025'),
         Node(
             package='px4_uavcup_perception',
             executable='camera_calibration_publisher',
@@ -32,8 +36,8 @@ def generate_launch_description() -> LaunchDescription:
             name='front_camera_calibrator',
             output='screen',
             arguments=[
-                '--size', '9x6',
-                '--square', '0.03',
+                '--size', board_size,
+                '--square', square_size_m,
                 '--no-service-check',
             ],
             remappings=[
