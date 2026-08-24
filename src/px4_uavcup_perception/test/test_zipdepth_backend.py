@@ -4,6 +4,7 @@ import pytest
 from px4_uavcup_perception.zipdepth_onnx_backend import (
     ZipDepthOnnx,
     inverse_depth_to_metric,
+    normalize_inverse_depth_for_display,
 )
 
 
@@ -39,3 +40,22 @@ def test_inverse_depth_conversion_rejects_nonfinite_calibration():
     raw = np.array([[1.0]], dtype=np.float32)
     with pytest.raises(ValueError):
         inverse_depth_to_metric(raw, scale=float('nan'), shift_inverse_m=0.0)
+
+
+def test_inverse_depth_display_normalization_uses_robust_range():
+    raw = np.arange(100, dtype=np.float32).reshape(10, 10)
+
+    display, low, high = normalize_inverse_depth_for_display(raw)
+
+    assert display.shape == raw.shape
+    assert display.dtype == np.uint8
+    assert low == pytest.approx(1.98)
+    assert high == pytest.approx(97.02)
+    assert display[0, 0] == 0
+    assert display[-1, -1] == 255
+
+
+def test_inverse_depth_display_normalization_rejects_all_nonfinite():
+    with pytest.raises(ValueError):
+        normalize_inverse_depth_for_display(
+            np.array([[np.nan, np.inf]], dtype=np.float32))

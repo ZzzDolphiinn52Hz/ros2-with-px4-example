@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 import time
 
+import cv2
 import numpy as np
 import rclpy
 from rclpy.node import Node
@@ -14,12 +16,18 @@ from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 
 from px4_uavcup_perception.image_utils import image_to_array
+from px4_uavcup_perception.zipdepth_onnx_backend import (
+    normalize_inverse_depth_for_display,
+)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--topic', default='/uav/depth/zipdepth_raw')
     parser.add_argument('--timeout', type=float, default=20.0)
+    parser.add_argument(
+        '--save-color', type=Path,
+        help='save a Turbo colormap made directly from the received raw image')
     args = parser.parse_args()
     rclpy.init()
     node = Node('check_ros_depth_topic')
@@ -47,6 +55,20 @@ def main() -> None:
         'median': float(np.median(values[finite])),
         'maximum': float(np.max(values[finite])),
     }
+    if args.save_color is not None:
+        depth_u8, display_low, display_high = \
+            normalize_inverse_depth_for_display(values)
+        color = cv2.applyColorMap(depth_u8, cv2.COLORMAP_TURBO)
+        cv2.putText(
+            color, 'ZipDepth inverse depth: red=near, blue=far',
+            (8, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.42,
+            (255, 255, 255), 1, cv2.LINE_AA)
+        args.save_color.parent.mkdir(parents=True, exist_ok=True)
+        if not cv2.imwrite(str(args.save_color), color):
+            raise RuntimeError(f'failed to save {args.save_color}')
+        report['display_low_percentile_2'] = display_low
+        report['display_high_percentile_98'] = display_high
+        report['color_preview'] = str(args.save_color)
     print(json.dumps(report, indent=2))
     node.destroy_node()
     rclpy.shutdown()

@@ -14,7 +14,9 @@ zipdepth_node:
     image_topic: /camera/front/image_raw
     model_path: /models/zipdepth_base_npu_512x384.onnx
     onnx_threads: 3
-    maximum_processing_rate_hz: 5.0
+    # 0.0 disables software throttling. The Pi runs as fast as inference allows
+    # (about 5.94 FPS in the current USB-camera benchmark).
+    maximum_processing_rate_hz: 0.0
 
     # ZipDepth outputs affine-invariant inverse depth. Keep metric outputs
     # invalid until scale/shift have been fitted in disparity space (1/metre)

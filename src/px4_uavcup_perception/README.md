@@ -122,6 +122,22 @@ docker compose run --rm ros bash -lc \
    ros2 launch px4_uavcup_perception perception_pi.launch.py'
 ```
 
+`maximum_processing_rate_hz: 0.0` tắt giới hạn phần mềm, vì vậy node chạy
+liên tục theo tốc độ inference thực tế. Topic raw vẫn là `32FC1` kích thước
+512x384. Khi pipeline đang chạy, lưu một ảnh màu được tạo trực tiếp từ raw bằng:
+
+```bash
+docker compose run --rm ros bash -lc \
+  'source /opt/ros/humble/setup.bash && source install/setup.bash && \
+   PYTHONPATH=/ros2_ws/src/px4_uavcup_perception:$PYTHONPATH \
+   python3 src/px4_uavcup_perception/scripts/check_ros_depth_topic.py \
+   --timeout 30 --save-color /ros2_ws/zipdepth_raw_color.png'
+```
+
+Ảnh `zipdepth_raw_color.png` chỉ là bản hiển thị percentile 2..98; đỏ là gần,
+xanh là xa. Dữ liệu raw không bị sửa và vẫn không mang đơn vị mét trước hiệu
+chuẩn metric.
+
 `ZipDepth` cho inverse depth affine-invariant. Mặc định
 `metric_calibration_enabled: false`, nên free-space được publish ở trạng thái
 không hợp lệ cho tới khi fit `inverse_depth_scale` và

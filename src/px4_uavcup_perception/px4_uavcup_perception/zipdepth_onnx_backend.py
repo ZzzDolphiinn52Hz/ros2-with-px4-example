@@ -7,6 +7,28 @@ from pathlib import Path
 import numpy as np
 
 
+def normalize_inverse_depth_for_display(
+        raw_inverse_depth: np.ndarray,
+        low_percentile: float = 2.0,
+        high_percentile: float = 98.0) -> tuple[np.ndarray, float, float]:
+    """Normalize relative inverse depth to uint8 without changing raw data."""
+    raw = np.asarray(raw_inverse_depth, dtype=np.float32)
+    finite = np.isfinite(raw)
+    if not np.any(finite):
+        raise ValueError('inverse depth contains no finite values')
+    if not 0.0 <= low_percentile < high_percentile <= 100.0:
+        raise ValueError(
+            'display percentiles must satisfy 0 <= low < high <= 100')
+    low, high = np.percentile(
+        raw[finite], [low_percentile, high_percentile])
+    span = max(float(high - low), 1e-6)
+    normalized = np.zeros(raw.shape, dtype=np.float32)
+    normalized[finite] = np.clip(
+        (raw[finite] - float(low)) / span, 0.0, 1.0)
+    display = np.round(normalized * 255.0).astype(np.uint8)
+    return display, float(low), float(high)
+
+
 def inverse_depth_to_metric(
         raw_inverse_depth: np.ndarray,
         scale: float,
@@ -28,13 +50,15 @@ class ZipDepthOnnx:
 
     def __init__(self, model_path: Path, threads: int = 3) -> None:
         if not model_path.is_file():
-            raise FileNotFoundError(f'ZipDepth ONNX model not found: {model_path}')
+            raise FileNotFoundError(
+                f'ZipDepth ONNX model not found: {model_path}')
         if threads <= 0:
             raise ValueError('ONNX Runtime thread count must be positive')
         try:
             import onnxruntime as ort
         except ImportError as error:
-            raise RuntimeError('onnxruntime is required for ZipDepth on Pi') from error
+            raise RuntimeError(
+                'onnxruntime is required for ZipDepth on Pi') from error
         options = ort.SessionOptions()
         options.intra_op_num_threads = int(threads)
         options.inter_op_num_threads = 1
@@ -45,12 +69,16 @@ class ZipDepthOnnx:
         inputs = self._session.get_inputs()
         outputs = self._session.get_outputs()
         if len(inputs) != 1 or len(outputs) != 1:
-            raise RuntimeError('ZipDepth ONNX must have one input and one output')
+            raise RuntimeError(
+                'ZipDepth ONNX must have one input and one output')
         self._input_name = inputs[0].name
         self._output_name = outputs[0].name
         shape = inputs[0].shape
-        if len(shape) != 4 or not isinstance(shape[2], int) or not isinstance(shape[3], int):
-            raise RuntimeError(f'ZipDepth ONNX input must be static NCHW, got {shape}')
+        if (len(shape) != 4
+                or not isinstance(shape[2], int)
+                or not isinstance(shape[3], int)):
+            raise RuntimeError(
+                f'ZipDepth ONNX input must be static NCHW, got {shape}')
         self.height = int(shape[2])
         self.width = int(shape[3])
 
@@ -68,5 +96,6 @@ class ZipDepthOnnx:
             [self._output_name], {self._input_name: input_tensor})[0]
         result = np.squeeze(np.asarray(result, dtype=np.float32))
         if result.ndim != 2:
-            raise RuntimeError(f'Expected 2D ZipDepth output, got {result.shape}')
+            raise RuntimeError(
+                f'Expected 2D ZipDepth output, got {result.shape}')
         return result

@@ -11,7 +11,13 @@ import numpy as np
 import rclpy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import (
+    DurabilityPolicy,
+    HistoryPolicy,
+    QoSProfile,
+    ReliabilityPolicy,
+    qos_profile_sensor_data,
+)
 from sensor_msgs.msg import Image
 from std_msgs.msg import Float32MultiArray
 
@@ -28,9 +34,9 @@ class ZipDepthNode(Node):
         super().__init__('zipdepth_node')
         self.declare_parameter('image_topic', '/camera/image_raw')
         self.declare_parameter(
-            'model_path', '~/models/zipdepth_base_npu_384x384.onnx')
+            'model_path', '~/models/zipdepth_base_npu_512x384.onnx')
         self.declare_parameter('onnx_threads', 3)
-        self.declare_parameter('maximum_processing_rate_hz', 5.0)
+        self.declare_parameter('maximum_processing_rate_hz', 0.0)
         self.declare_parameter('metric_calibration_enabled', False)
         self.declare_parameter('inverse_depth_scale', 1.0)
         self.declare_parameter('inverse_depth_shift_per_m', 0.0)
@@ -42,10 +48,15 @@ class ZipDepthNode(Node):
             str(self.get_parameter('model_path').value)))).resolve()
         threads = int(self.get_parameter('onnx_threads').value)
         rate = float(self.get_parameter('maximum_processing_rate_hz').value)
-        if rate <= 0.0:
-            raise ValueError('maximum_processing_rate_hz must be positive')
-        self._minimum_period = 1.0 / rate
+        if not np.isfinite(rate) or rate < 0.0:
+            raise ValueError(
+                'maximum_processing_rate_hz must be finite and non-negative')
+        # Zero disables throttling. In that mode inference itself determines
+        # throughput and sensor-data QoS drops stale camera frames.
+        self._minimum_period = 0.0 if rate == 0.0 else 1.0 / rate
         self._last_processed = float('-inf')
+        self._last_completed = None
+        self._processing_fps = 0.0
         self._metric_enabled = bool(
             self.get_parameter('metric_calibration_enabled').value)
         self._inverse_depth_scale = float(
@@ -72,13 +83,20 @@ class ZipDepthNode(Node):
             Float32MultiArray, '/uav/depth/free_space', 1)
         self._status_publisher = self.create_publisher(
             DiagnosticArray, '/uav/depth/status', 10)
+        latest_frame_qos = QoSProfile(
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=DurabilityPolicy.VOLATILE,
+        )
         self.create_subscription(
             Image, str(self.get_parameter('image_topic').value),
-            self._on_image, qos_profile_sensor_data)
+            self._on_image, latest_frame_qos)
         self.get_logger().info(
             f'ZipDepth ONNX ready: {model_path}, '
             f'{self._backend.width}x{self._backend.height}, '
-            f'metric_calibration={self._metric_enabled}')
+            f'metric_calibration={self._metric_enabled}, '
+            f'rate_limit={rate if rate > 0.0 else "unlimited"}')
 
     def _on_image(self, message: Image) -> None:
         now = time.monotonic()
@@ -118,10 +136,18 @@ class ZipDepthNode(Node):
                 self._free_space_publisher.publish(free_space)
             else:
                 self._publish_invalid_free_space()
+            completed = time.perf_counter()
+            if self._last_completed is not None:
+                elapsed = completed - self._last_completed
+                if elapsed > 0.0:
+                    self._processing_fps = 1.0 / elapsed
+            self._last_completed = completed
             self._publish_status(
-                DiagnosticStatus.OK if self._metric_enabled else DiagnosticStatus.WARN,
-                'running_metric' if self._metric_enabled else 'running_relative_only',
-                (time.perf_counter() - started) * 1000.0)
+                DiagnosticStatus.OK
+                if self._metric_enabled else DiagnosticStatus.WARN,
+                'running_metric'
+                if self._metric_enabled else 'running_relative_only',
+                (completed - started) * 1000.0)
         except Exception as error:
             self._publish_invalid_free_space()
             self._publish_status(
@@ -133,7 +159,8 @@ class ZipDepthNode(Node):
         message.data = [float('nan')] * 4 + [0.0]
         self._free_space_publisher.publish(message)
 
-    def _publish_status(self, level: int, text: str, latency_ms: float) -> None:
+    def _publish_status(
+            self, level: int, text: str, latency_ms: float) -> None:
         diagnostic = DiagnosticArray()
         diagnostic.header.stamp = self.get_clock().now().to_msg()
         status = DiagnosticStatus()
@@ -145,6 +172,10 @@ class ZipDepthNode(Node):
             KeyValue(key='latency_ms', value=f'{latency_ms:.2f}'),
             KeyValue(key='metric_calibration_enabled',
                      value=str(self._metric_enabled).lower()),
+            KeyValue(
+                key='processing_fps', value=f'{self._processing_fps:.2f}'),
+            KeyValue(key='output_width', value=str(self._backend.width)),
+            KeyValue(key='output_height', value=str(self._backend.height)),
         ]
         diagnostic.status = [status]
         self._status_publisher.publish(diagnostic)

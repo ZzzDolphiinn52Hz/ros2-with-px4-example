@@ -11,7 +11,10 @@ import time
 import cv2
 import numpy as np
 
-from px4_uavcup_perception.zipdepth_onnx_backend import ZipDepthOnnx
+from px4_uavcup_perception.zipdepth_onnx_backend import (
+    ZipDepthOnnx,
+    normalize_inverse_depth_for_display,
+)
 
 
 def parse_args():
@@ -34,13 +37,6 @@ def open_camera(device: str):
     if not camera.isOpened():
         raise RuntimeError(f'cannot open {device}')
     return camera
-
-
-def normalized_depth(raw: np.ndarray):
-    low, high = np.percentile(raw, [2.0, 98.0])
-    span = max(float(high - low), 1e-6)
-    normalized = np.clip((raw - low) / span, 0.0, 1.0)
-    return normalized.astype(np.float32), float(low), float(high)
 
 
 def main() -> None:
@@ -88,7 +84,8 @@ def main() -> None:
         finite_ratios.append(float(np.mean(finite)))
         values = raw[finite]
         percentiles.append(np.percentile(values, [2, 50, 98]).tolist())
-        normalized, _, _ = normalized_depth(raw)
+        depth_u8, _, _ = normalize_inverse_depth_for_display(raw)
+        normalized = depth_u8.astype(np.float32) / 255.0
         if previous_normalized is not None:
             temporal_differences.append(float(np.mean(
                 np.abs(normalized - previous_normalized))))
@@ -102,8 +99,8 @@ def main() -> None:
     if last_frame is None or last_raw is None or not latencies:
         raise RuntimeError('no valid camera/depth pair was produced')
 
-    normalized, display_low, display_high = normalized_depth(last_raw)
-    depth_u8 = np.round(normalized * 255.0).astype(np.uint8)
+    depth_u8, display_low, display_high = \
+        normalize_inverse_depth_for_display(last_raw)
     depth_color = cv2.applyColorMap(depth_u8, cv2.COLORMAP_TURBO)
     rgb_model = cv2.resize(last_frame, (backend.width, backend.height))
     cv2.putText(depth_color, 'inverse depth: red=near, blue=far',
