@@ -21,6 +21,7 @@ class CameraCalibrationPublisher(Node):
         self.declare_parameter('capture_width', 1280)
         self.declare_parameter('capture_height', 720)
         self.declare_parameter('capture_fps', 30)
+        self.declare_parameter('pixel_format', 'MJPG')
         self.declare_parameter('output_width', 640)
         self.declare_parameter('output_height', 360)
         self.declare_parameter('publish_rate_hz', 10.0)
@@ -80,10 +81,35 @@ class CameraCalibrationPublisher(Node):
         if not pipeline:
             pipeline = self._default_pipeline()
         capture = self._cv2.VideoCapture(pipeline, self._cv2.CAP_GSTREAMER)
+        if capture.isOpened():
+            self.get_logger().info('Calibration camera opened with GStreamer')
+            return capture
+        capture.release()
+        self.get_logger().warning(
+            'GStreamer camera open failed; trying direct V4L2')
+
+        device = str(self.get_parameter('camera_device').value)
+        capture = self._cv2.VideoCapture(device, self._cv2.CAP_V4L2)
+        capture.set(
+            self._cv2.CAP_PROP_FRAME_WIDTH,
+            int(self.get_parameter('capture_width').value))
+        capture.set(
+            self._cv2.CAP_PROP_FRAME_HEIGHT,
+            int(self.get_parameter('capture_height').value))
+        capture.set(
+            self._cv2.CAP_PROP_FPS,
+            float(self.get_parameter('capture_fps').value))
+        pixel_format = str(self.get_parameter('pixel_format').value)
+        if len(pixel_format) == 4:
+            capture.set(
+                self._cv2.CAP_PROP_FOURCC,
+                self._cv2.VideoWriter_fourcc(*pixel_format))
+        capture.set(self._cv2.CAP_PROP_BUFFERSIZE, 1)
         if not capture.isOpened():
             capture.release()
-            device = str(self.get_parameter('camera_device').value)
             raise RuntimeError(f'Cannot open calibration camera: {device}')
+        self.get_logger().info(
+            f'Calibration camera opened with V4L2: {device}')
         return capture
 
     def _publish(self) -> None:

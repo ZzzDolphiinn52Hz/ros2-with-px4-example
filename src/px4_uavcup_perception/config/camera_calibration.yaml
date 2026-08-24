@@ -7,6 +7,7 @@ camera_calibration_publisher:
     capture_width: 640
     capture_height: 480
     capture_fps: 30
+    pixel_format: MJPG
     output_width: 640
     output_height: 480
     publish_rate_hz: 10.0
