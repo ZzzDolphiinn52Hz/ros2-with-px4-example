@@ -14,9 +14,9 @@ local_controller_shadow:
     # Experimental shadow-only thresholds. Higher means more relative space.
     # Relative depth cannot determine an absolute emergency distance. Reserve
     # BRAKE for a nearly saturated clearance score; invalid scenes use FAILSAFE.
-    emergency_distance_m: 0.01
-    avoid_enter_distance_m: 0.25
-    clear_exit_distance_m: 0.40
+    emergency_distance_m: 0.001
+    avoid_enter_distance_m: 0.05
+    clear_exit_distance_m: 0.10
     minimum_valid_fraction: 0.90
 
     median_window: 3

@@ -181,6 +181,7 @@ class LocalControllerShadowNode(Node):
             if decision.state == AvoidanceState.BRAKE
             else DiagnosticStatus.OK)
         status.message = decision.reason
+        value_suffix = '_m' if self._input_units == 'metres' else ''
         status.values = [
             KeyValue(key='shadow_mode', value='true'),
             KeyValue(key='input_units', value=self._input_units),
@@ -194,13 +195,13 @@ class LocalControllerShadowNode(Node):
             KeyValue(
                 key='input_age_sec', value=f'{input_age_sec:.3f}'),
             KeyValue(
-                key='filtered_left_m',
+                key=f'filtered_left{value_suffix}',
                 value=f'{decision.filtered_left_m:.3f}'),
             KeyValue(
-                key='filtered_center_m',
+                key=f'filtered_center{value_suffix}',
                 value=f'{decision.filtered_center_m:.3f}'),
             KeyValue(
-                key='filtered_right_m',
+                key=f'filtered_right{value_suffix}',
                 value=f'{decision.filtered_right_m:.3f}'),
         ]
         status_array.status = [status]

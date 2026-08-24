@@ -216,7 +216,7 @@ class ShadowController:
             if selected is None:
                 return self._transition(
                     AvoidanceState.BRAKE,
-                    'waiting for 0.5 m clear distance',
+                    'waiting for clear-path threshold',
                     filtered,
                     now_sec,
                 )

@@ -117,6 +117,25 @@ def test_filter_rejects_one_frame_distance_spike():
     np.testing.assert_allclose(filtered, (2.0, 2.0, 2.0))
 
 
+def test_relative_thresholds_match_measured_clear_and_obstacle_scenes():
+    relative = config(
+        emergency_distance_m=0.001,
+        avoid_enter_distance_m=0.05,
+        clear_exit_distance_m=0.10,
+    )
+
+    clear = ShadowController(relative).update(
+        0.175, 0.118, 0.064, 1.0, 0.0)
+    center_obstacle = ShadowController(relative).update(
+        0.772, 0.015, 0.082, 1.0, 0.0)
+    left_obstacle = ShadowController(relative).update(
+        0.035, 0.340, 0.558, 1.0, 0.0)
+
+    assert clear.state == AvoidanceState.CLEAR
+    assert center_obstacle.state == AvoidanceState.AVOID_LEFT
+    assert left_obstacle.state == AvoidanceState.AVOID_RIGHT
+
+
 class ShadowControllerTestConfig:
     @staticmethod
     def recovery_three():
