@@ -94,6 +94,11 @@ ros2 launch px4_uavcup_perception camera_calibration.launch.py
 Nó không được chạy đồng thời với perception. Bảng A3 tùy chọn nằm tại
 `calibration/checkerboard_9x6_30mm_a3.svg`.
 
+USB camera Pi được calibrate đúng mode runtime 640x480. Checkerboard có 9x6
+góc trong và ô 0.03 m. Pi chỉ publish `/camera/front/image_raw`; GUI
+`cameracalibrator` chạy trên PC với `--no-service-check` vì publisher utility
+không ghi calibration trực tiếp vào driver.
+
 ## Raspberry Pi 5: ZipDepth + ArUco
 
 Pipeline Pi dùng hai camera và hai namespace riêng:

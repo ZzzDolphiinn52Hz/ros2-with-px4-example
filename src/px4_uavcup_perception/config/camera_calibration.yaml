@@ -1,14 +1,15 @@
 camera_calibration_publisher:
   ros__parameters:
     camera_device: /dev/video0
-    capture_width: 1280
-    capture_height: 720
+    # Calibrate exactly the 4:3 mode used by ZipDepth at runtime. Intrinsics
+    # are resolution/crop dependent and cannot be reused from the Jetson 16:9
+    # calibration stream.
+    capture_width: 640
+    capture_height: 480
     capture_fps: 30
-    # Preserve the 16:9 field of view but reduce ROS 2 Foxy serialization cost.
-    # K can later be scaled exactly from 640x360 to the 364x364 model image.
     output_width: 640
-    output_height: 360
+    output_height: 480
     publish_rate_hz: 10.0
-    frame_id: camera_link
-    image_topic: /camera/image_raw
+    frame_id: front_camera_optical_frame
+    image_topic: /camera/front/image_raw
     gstreamer_pipeline: ''
