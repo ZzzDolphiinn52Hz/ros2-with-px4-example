@@ -31,6 +31,16 @@ setup(
             'px4_uavcup_perception.camera_calibration_publisher:main',
             'jetson_depth_node = '
             'px4_uavcup_perception.jetson_depth_node:main',
+            'zipdepth_node = '
+            'px4_uavcup_perception.zipdepth_node:main',
+            'aruco_detector_node = '
+            'px4_uavcup_perception.aruco_detector_node:main',
+            'aruco_to_px4_landing_target = '
+            'px4_uavcup_perception.aruco_to_px4_landing_target:main',
+            'v4l2_camera_node = '
+            'px4_uavcup_perception.v4l2_camera_node:main',
+            'aruco_landing_pid_node = '
+            'px4_uavcup_perception.aruco_landing_pid_node:main',
         ],
     },
 )

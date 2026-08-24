@@ -91,3 +91,67 @@ ros2 launch px4_uavcup_perception camera_calibration.launch.py
 
 Nó không được chạy đồng thời với perception. Bảng A3 tùy chọn nằm tại
 `calibration/checkerboard_9x6_30mm_a3.svg`.
+
+## Raspberry Pi 5: ZipDepth + ArUco
+
+Pipeline Pi dùng hai camera và hai namespace riêng:
+
+```text
+USB camera -> /camera/front/image_raw
+  └─ zipdepth_node -> /uav/depth/zipdepth_raw
+                     -> /camera/depth/image (sau hiệu chuẩn metric)
+
+Pi Camera nhìn xuống -> /camera/down/image_raw + /camera/down/camera_info
+  └─ aruco_detector_node -> /uav/aruco/ids + /uav/aruco/target_pose
+     └─ aruco_landing_pid -> /aruco_land/cmd_vel
+        └─ cmd_vel_to_px4 -> OffboardControlMode + TrajectorySetpoint
+```
+
+ZipDepth dùng checkpoint NPU được export ONNX 512x384 để giữ tỷ lệ 4:3
+của USB camera. Đặt hai file ONNX
+(graph và external weights) vào `/home/dolphiinn/models`; Docker mount thư mục
+này read-only tại `/models`.
+
+```bash
+docker compose build ros
+docker compose run --rm ros bash -lc \
+  'source /opt/ros/humble/setup.bash && \
+   colcon build --symlink-install --packages-select px4_msgs px4_uavcup_perception'
+docker compose run --rm ros bash -lc \
+  'source /opt/ros/humble/setup.bash && source install/setup.bash && \
+   ros2 launch px4_uavcup_perception perception_pi.launch.py'
+```
+
+`ZipDepth` cho inverse depth affine-invariant. Mặc định
+`metric_calibration_enabled: false`, nên free-space được publish ở trạng thái
+không hợp lệ cho tới khi fit `inverse_depth_scale` và
+`inverse_depth_shift_per_m` trong không gian disparity bằng dữ liệu đo thật,
+sau đó nghịch đảo kết quả sang mét.
+
+Gateway `/uav/aruco/target_pose -> /fmu/in/landing_target_pose` cũng mặc định
+`enabled: false`. Chỉ bật sau khi đã đo extrinsic camera-to-body, xác nhận đúng
+hệ optical -> FRD -> NED, và bench-test với FC không gắn cánh quạt. Nếu ArUco
+được dùng để external vision hoặc chỉ đọc ID nhiệm vụ thay vì precision landing,
+phải dùng gateway khác; không tái sử dụng `LandingTargetPose` sai ngữ nghĩa.
+Firmware PX4 v1.17 stock không liệt kê `LandingTargetPose` trong
+`dds_topics.yaml`; precision landing qua topic này cần firmware tùy biến expose nó,
+hoặc phải chọn bridge ROS/MAVLink khác.
+
+Pipeline Offboard hiện tại không dùng `LandingTargetPose`. PID chỉ publish
+`cmd_vel` body-FLU có giới hạn; adapter chuyển XY sang NED và tích phân lệnh Z
+thành altitude setpoint có chặn `0.20..3.0 m`. Cả PID lẫn adapter đều tắt
+mặc định, không tự arm/disarm. Mất marker quá `0.35 s` sẽ ra lệnh
+zero và giữ độ cao.
+
+PX4 v1.17 qua TELEM2 cần Micro XRCE-DDS Agent. Image agent được pin ở
+v2.4.3 và chạy 921600 baud:
+
+```bash
+docker compose build xrce-agent
+docker compose up -d xrce-agent
+docker compose logs -f xrce-agent
+```
+
+Trước đó Pi phải enable UART hardware, disable Linux serial console và
+reboot. Trên PX4: tắt MAVLink ở TELEM2, đặt `UXRCE_DDS_CFG=TELEM2` và
+`SER_TEL2_BAUD=921600`.

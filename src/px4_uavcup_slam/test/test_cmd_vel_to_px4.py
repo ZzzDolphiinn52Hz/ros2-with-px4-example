@@ -5,6 +5,7 @@ import pytest
 from px4_uavcup_slam.cmd_vel_to_px4 import (
     body_flu_to_ned_velocity,
     clamp_xy,
+    integrate_altitude_target,
     px4_quaternion_to_heading_ned,
     ros_yaw_rate_to_ned,
     slew_xy,
@@ -67,3 +68,13 @@ def test_slew_xy_limits_vector_delta():
 
 def test_slew_xy_reaches_near_target_without_overshoot():
     assert slew_xy(0.0, 0.0, 0.03, 0.04, 0.1) == pytest.approx((0.03, 0.04))
+
+
+def test_negative_ros_up_velocity_descends_in_ned():
+    target = integrate_altitude_target(-0.7, -0.2, 0.5, 0.2, 3.0)
+    assert target == pytest.approx(-0.6)
+
+
+def test_altitude_target_stops_at_minimum_height():
+    target = integrate_altitude_target(-0.21, -0.2, 1.0, 0.2, 3.0)
+    assert target == pytest.approx(-0.2)

@@ -1,0 +1,29 @@
+FROM ubuntu:22.04 AS builder
+
+ARG XRCE_AGENT_VERSION=v2.4.3
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        cmake \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 --branch "${XRCE_AGENT_VERSION}" \
+        https://github.com/eProsima/Micro-XRCE-DDS-Agent.git /src/agent \
+    && cmake -S /src/agent -B /src/agent/build \
+        -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build /src/agent/build --parallel 4 \
+    && cmake --install /src/agent/build
+
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libstdc++6 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local/ /usr/local/
+RUN ldconfig
+
+ENTRYPOINT ["MicroXRCEAgent"]

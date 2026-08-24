@@ -88,6 +88,26 @@ def ros_yaw_rate_to_ned(yaw_rate_enu: float) -> float:
     return -yaw_rate_enu
 
 
+def integrate_altitude_target(
+    target_z_ned: float,
+    velocity_up: float,
+    dt: float,
+    minimum_altitude: float,
+    maximum_altitude: float,
+) -> float:
+    """Integrate ROS up velocity into a bounded PX4 NED Z target."""
+    if dt <= 0.0 or minimum_altitude <= 0.0:
+        raise ValueError('dt and minimum altitude must be positive')
+    if maximum_altitude <= minimum_altitude:
+        raise ValueError('maximum altitude must exceed minimum altitude')
+    values = (target_z_ned, velocity_up, dt,
+              minimum_altitude, maximum_altitude)
+    if not all(math.isfinite(value) for value in values):
+        raise ValueError('altitude integration inputs must be finite')
+    updated = target_z_ned - velocity_up * dt
+    return max(-maximum_altitude, min(-minimum_altitude, updated))
+
+
 def px4_quaternion_to_heading_ned(q_wxyz) -> float:
     """Extract PX4 NED heading from a FRD-body-to-NED quaternion."""
     w, x, y, z = (float(value) for value in q_wxyz)
@@ -133,6 +153,11 @@ class CmdVelToPx4(Node):
         self.declare_parameter('max_yaw_rate_rad_s', 0.3)
         self.declare_parameter('max_xy_accel_m_s2', 0.3)
         self.declare_parameter('max_yaw_accel_rad_s2', 0.5)
+        self.declare_parameter('allow_vertical_cmd_vel', False)
+        self.declare_parameter('minimum_target_altitude_m', 0.20)
+        self.declare_parameter('maximum_target_altitude_m', 3.0)
+        self.declare_parameter('max_vertical_speed_m_s', 0.20)
+        self.declare_parameter('max_vertical_accel_m_s2', 0.25)
         self.declare_parameter('cmd_timeout_s', 0.5)
         self.declare_parameter('publish_rate_hz', 20.0)
 
@@ -146,6 +171,16 @@ class CmdVelToPx4(Node):
             self.get_parameter('max_xy_accel_m_s2').value)
         self._max_yaw_accel = float(
             self.get_parameter('max_yaw_accel_rad_s2').value)
+        self._allow_vertical = bool(
+            self.get_parameter('allow_vertical_cmd_vel').value)
+        self._minimum_altitude = float(
+            self.get_parameter('minimum_target_altitude_m').value)
+        self._maximum_altitude = float(
+            self.get_parameter('maximum_target_altitude_m').value)
+        self._max_vertical_speed = float(
+            self.get_parameter('max_vertical_speed_m_s').value)
+        self._max_vertical_accel = float(
+            self.get_parameter('max_vertical_accel_m_s2').value)
         self._cmd_timeout_s = float(
             self.get_parameter('cmd_timeout_s').value)
         self._publish_rate_hz = float(
@@ -169,9 +204,11 @@ class CmdVelToPx4(Node):
         self._target_forward = 0.0
         self._target_left = 0.0
         self._target_yaw_rate = 0.0
+        self._target_up = 0.0
         self._active_forward = 0.0
         self._active_left = 0.0
         self._active_yaw_rate = 0.0
+        self._active_up = 0.0
         self._timeout_logged = False
 
         self.create_subscription(
@@ -240,18 +277,27 @@ class CmdVelToPx4(Node):
             'max_yaw_rate_rad_s': self._max_yaw_rate,
             'max_xy_accel_m_s2': self._max_xy_accel,
             'max_yaw_accel_rad_s2': self._max_yaw_accel,
+            'minimum_target_altitude_m': self._minimum_altitude,
+            'maximum_target_altitude_m': self._maximum_altitude,
+            'max_vertical_speed_m_s': self._max_vertical_speed,
+            'max_vertical_accel_m_s2': self._max_vertical_accel,
             'cmd_timeout_s': self._cmd_timeout_s,
             'publish_rate_hz': self._publish_rate_hz,
         }
         for name, value in positive_values.items():
             if not math.isfinite(value) or value <= 0.0:
                 raise ValueError(f'{name} must be finite and greater than zero')
+        if self._minimum_altitude >= self._maximum_altitude:
+            raise ValueError(
+                'minimum_target_altitude_m must be below maximum_target_altitude_m')
+        if not self._minimum_altitude <= self._target_altitude_m <= self._maximum_altitude:
+            raise ValueError('target_altitude_m must be inside altitude limits')
 
     def _now_us(self) -> int:
         return int(self.get_clock().now().nanoseconds / 1000)
 
     def _on_cmd_vel(self, msg: Twist) -> None:
-        values = (msg.linear.x, msg.linear.y, msg.angular.z)
+        values = (msg.linear.x, msg.linear.y, msg.linear.z, msg.angular.z)
         if not all(math.isfinite(value) for value in values):
             self.get_logger().error('Rejected non-finite /cmd_vel command')
             return
@@ -267,6 +313,10 @@ class CmdVelToPx4(Node):
             -self._max_yaw_rate,
             min(self._max_yaw_rate, float(msg.angular.z)),
         )
+        self._target_up = (
+            max(-self._max_vertical_speed,
+                min(self._max_vertical_speed, float(msg.linear.z)))
+            if self._allow_vertical else 0.0)
         self._last_cmd_time_ns = self.get_clock().now().nanoseconds
         self._timeout_logged = False
 
@@ -407,9 +457,11 @@ class CmdVelToPx4(Node):
         self._target_forward = 0.0
         self._target_left = 0.0
         self._target_yaw_rate = 0.0
+        self._target_up = 0.0
         self._active_forward = 0.0
         self._active_left = 0.0
         self._active_yaw_rate = 0.0
+        self._active_up = 0.0
         self._last_cmd_time_ns = None
         self._timeout_logged = False
 
@@ -427,6 +479,7 @@ class CmdVelToPx4(Node):
         self._target_forward = 0.0
         self._target_left = 0.0
         self._target_yaw_rate = 0.0
+        self._target_up = 0.0
         if self._last_cmd_time_ns is not None and not self._timeout_logged:
             self.get_logger().warning(
                 '/cmd_vel timeout: braking XY/yaw command to zero; holding altitude')
@@ -457,6 +510,16 @@ class CmdVelToPx4(Node):
         yaw_delta = self._max_yaw_accel * dt
         yaw_error = self._target_yaw_rate - self._active_yaw_rate
         self._active_yaw_rate += max(-yaw_delta, min(yaw_delta, yaw_error))
+        vertical_delta = self._max_vertical_accel * dt
+        vertical_error = self._target_up - self._active_up
+        self._active_up += max(
+            -vertical_delta, min(vertical_delta, vertical_error))
+        if self._allow_vertical:
+            # ROS cmd_vel Z is positive up. Integrate it into a bounded NED Z
+            # position target so a lost command naturally becomes altitude hold.
+            self._target_z_ned = integrate_altitude_target(
+                self._target_z_ned, self._active_up, dt,
+                self._minimum_altitude, self._maximum_altitude)
 
         velocity_north, velocity_east = body_flu_to_ned_velocity(
             self._active_forward,
@@ -503,6 +566,7 @@ class CmdVelToPx4(Node):
             f'target={self._target_altitude_m:.2f}m nav_state={nav_state} '
             f'active_cmd=[{self._active_forward:.2f} forward, '
             f'{self._active_left:.2f} left, '
+            f'{self._active_up:.2f} up, '
             f'{self._active_yaw_rate:.2f} yaw]')
 
 

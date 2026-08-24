@@ -1,0 +1,99 @@
+front_usb_camera:
+  ros__parameters:
+    device: /dev/video0
+    width: 640
+    height: 480
+    capture_fps: 30.0
+    publish_rate_hz: 10.0
+    pixel_format: MJPG
+    frame_id: front_camera_optical_frame
+    image_topic: /camera/front/image_raw
+
+zipdepth_node:
+  ros__parameters:
+    image_topic: /camera/front/image_raw
+    model_path: /models/zipdepth_base_npu_512x384.onnx
+    onnx_threads: 3
+    maximum_processing_rate_hz: 5.0
+
+    # ZipDepth outputs affine-invariant inverse depth. Keep metric outputs
+    # invalid until scale/shift have been fitted in disparity space (1/metre)
+    # against known distances from the real camera.
+    metric_calibration_enabled: false
+    inverse_depth_scale: 1.0
+    inverse_depth_shift_per_m: 0.0
+    minimum_depth_m: 0.3
+    maximum_depth_m: 8.0
+    publish_raw_output: true
+
+aruco_detector_node:
+  ros__parameters:
+    image_topic: /camera/down/image_raw
+    camera_info_topic: /camera/down/camera_info
+    dictionary: DICT_4X4_50
+    marker_size_m: 0.16
+    target_marker_id: 0
+    maximum_processing_rate_hz: 15.0
+    publish_debug_image: false
+
+aruco_landing_pid:
+  ros__parameters:
+    enabled: false
+    target_pose_topic: /uav/aruco/target_pose
+    cmd_vel_topic: /aruco_land/cmd_vel
+    publish_rate_hz: 20.0
+    marker_timeout_s: 0.35
+    horizontal_kp: 0.55
+    horizontal_ki: 0.02
+    horizontal_kd: 0.08
+    horizontal_integral_limit_m_s: 0.3
+    maximum_horizontal_speed_m_s: 0.35
+    horizontal_deadband_m: 0.025
+    descent_alignment_radius_m: 0.15
+    vertical_kp: 0.35
+    maximum_descent_speed_m_s: 0.20
+    final_marker_distance_m: 0.35
+
+    # Down-facing camera, image top points vehicle-forward and image right
+    # points vehicle-right. Must be measured again after final mounting.
+    camera_to_body_flu_rotation: [0.0, -1.0, 0.0,
+                                  -1.0, 0.0, 0.0,
+                                  0.0, 0.0, -1.0]
+
+aruco_to_px4_landing_target:
+  ros__parameters:
+    # Safety gate: only enable after camera extrinsics and bench tests pass.
+    # PX4 v1.17 does not expose LandingTargetPose in its stock dds_topics.yaml;
+    # this also requires compatible custom firmware (or a different gateway).
+    enabled: false
+    target_pose_topic: /uav/aruco/target_pose
+    vehicle_attitude_topic: /fmu/out/vehicle_attitude
+    px4_output_topic: /fmu/in/landing_target_pose
+    maximum_attitude_age_s: 0.25
+    maximum_target_distance_m: 12.0
+
+    # Default for a forward-facing camera whose optical axes are x-right,
+    # y-down, z-forward and whose origin coincides with the vehicle origin.
+    camera_to_body_frd_rotation: [0.0, 0.0, 1.0,
+                                  1.0, 0.0, 0.0,
+                                  0.0, 1.0, 0.0]
+    camera_position_body_frd_m: [0.0, 0.0, 0.0]
+
+cmd_vel_to_px4:
+  ros__parameters:
+    cmd_vel_topic: /aruco_land/cmd_vel
+    local_position_topic: /fmu/out/vehicle_local_position_v1
+    attitude_topic: /fmu/out/vehicle_attitude
+    vehicle_status_topic: /fmu/out/vehicle_status_v1
+    target_altitude_m: 0.70
+    max_xy_speed_m_s: 0.35
+    max_yaw_rate_rad_s: 0.25
+    max_xy_accel_m_s2: 0.30
+    max_yaw_accel_rad_s2: 0.40
+    allow_vertical_cmd_vel: true
+    minimum_target_altitude_m: 0.20
+    maximum_target_altitude_m: 3.0
+    max_vertical_speed_m_s: 0.20
+    max_vertical_accel_m_s2: 0.20
+    cmd_timeout_s: 0.40
+    publish_rate_hz: 20.0

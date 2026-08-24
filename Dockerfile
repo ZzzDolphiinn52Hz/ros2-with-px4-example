@@ -20,7 +20,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-colcon-common-extensions \
         python3-pip \
         python3-numpy \
+        python3-opencv \
     && rm -rf /var/lib/apt/lists/*
+
+# ZipDepth CPU backend. Keep the inference runtime outside the ROS dependency
+# graph so the same ONNX model can be profiled independently on ARM64.
+RUN python3 -m pip install --no-cache-dir \
+        numpy==1.26.4 \
+        onnxruntime==1.19.2
 
 # Separate layer: if this times out, rebuild only retries this step.
 RUN apt-get update && apt-get install -y --no-install-recommends \

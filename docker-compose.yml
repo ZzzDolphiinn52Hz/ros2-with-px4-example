@@ -12,6 +12,19 @@ services:
     volumes:
       - ./:/ros2_ws
       - /dev:/dev
+      - /home/dolphiinn/models:/models:ro
     stdin_open: true
     tty: true
     command: bash
+
+  xrce-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.xrce-agent
+      network: host
+    network_mode: host
+    privileged: true
+    volumes:
+      - /dev:/dev
+    command: ["serial", "--dev", "/dev/serial0", "-b", "921600"]
+    restart: unless-stopped
