@@ -18,13 +18,18 @@ from rclpy.qos import (
     ReliabilityPolicy,
     qos_profile_sensor_data,
 )
-from sensor_msgs.msg import Image
-from std_msgs.msg import Float32MultiArray, Header
+from sensor_msgs.msg import Image, PointCloud2, PointField
+from std_msgs.msg import Float32MultiArray, Header, MultiArrayDimension
 
 from .camera_health import assess_camera_health
 from .free_space import summarize_free_space
 from .image_utils import array_to_image, image_to_bgr
-from .zipdepth_onnx_backend import ZipDepthOnnx, inverse_depth_to_metric
+from .pointcloud_utils import depth_to_flu_points
+from .zipdepth_onnx_backend import (
+    ZipDepthOnnx,
+    inverse_depth_to_metric,
+    normalize_inverse_depth_for_display,
+)
 
 
 class ZipDepthNode(Node):
@@ -49,7 +54,26 @@ class ZipDepthNode(Node):
         self.declare_parameter('inverse_depth_shift_per_m', 0.0)
         self.declare_parameter('minimum_depth_m', 0.3)
         self.declare_parameter('maximum_depth_m', 8.0)
-        self.declare_parameter('publish_raw_output', True)
+        self.declare_parameter('near_percentile', 15.0)
+        self.declare_parameter('roi_top_fraction', 0.25)
+        self.declare_parameter('roi_bottom_fraction', 0.78)
+        self.declare_parameter('raw_topic', '/uav/depth/zipdepth_raw')
+        self.declare_parameter('metric_depth_topic', '/camera/depth/image')
+        self.declare_parameter(
+            'visualization_topic', '/uav/depth/visualization')
+        self.declare_parameter('pointcloud_topic', '/camera/depth/points')
+        self.declare_parameter('free_space_topic', '/uav/depth/free_space')
+        self.declare_parameter('status_topic', '/uav/depth/status')
+        self.declare_parameter('publish_raw_output', False)
+        self.declare_parameter('publish_metric_depth', False)
+        self.declare_parameter('publish_visualization', False)
+        self.declare_parameter('publish_pointcloud', False)
+        self.declare_parameter('pointcloud_stride', 4)
+        self.declare_parameter('pointcloud_frame_id', 'front_camera_link')
+        self.declare_parameter('focal_x_px', 430.0)
+        self.declare_parameter('focal_y_px', 430.0)
+        self.declare_parameter('principal_x_px', -1.0)
+        self.declare_parameter('principal_y_px', -1.0)
 
         model_path = Path(os.path.expanduser(os.path.expandvars(
             str(self.get_parameter('model_path').value)))).resolve()
@@ -84,15 +108,58 @@ class ZipDepthNode(Node):
         self._camera = None
         self._camera_device = str(
             self.get_parameter('camera_device').value).strip()
-        self._raw_publisher = self.create_publisher(
-            Image, '/uav/depth/zipdepth_raw', qos_profile_sensor_data) \
-            if bool(self.get_parameter('publish_raw_output').value) else None
-        self._metric_publisher = self.create_publisher(
-            Image, '/camera/depth/image', qos_profile_sensor_data)
+        self._publish_raw = bool(
+            self.get_parameter('publish_raw_output').value)
+        self._publish_metric = bool(
+            self.get_parameter('publish_metric_depth').value)
+        self._publish_visualization = bool(
+            self.get_parameter('publish_visualization').value)
+        self._publish_pointcloud = bool(
+            self.get_parameter('publish_pointcloud').value)
+        if self._publish_pointcloud and not self._metric_enabled:
+            raise ValueError(
+                'publish_pointcloud requires metric_calibration_enabled=true')
+        if self._publish_metric and not self._metric_enabled:
+            raise ValueError(
+                'publish_metric_depth requires '
+                'metric_calibration_enabled=true')
+        self._pointcloud_stride = int(
+            self.get_parameter('pointcloud_stride').value)
+        self._pointcloud_frame_id = str(
+            self.get_parameter('pointcloud_frame_id').value)
+        self._focal_x = float(self.get_parameter('focal_x_px').value)
+        self._focal_y = float(self.get_parameter('focal_y_px').value)
+        self._principal_x = float(
+            self.get_parameter('principal_x_px').value)
+        self._principal_y = float(
+            self.get_parameter('principal_y_px').value)
+        self._raw_publisher = None
+        self._metric_publisher = None
+        self._visualization_publisher = None
+        self._pointcloud_publisher = None
+        if self._publish_raw:
+            self._raw_publisher = self.create_publisher(
+                Image, str(self.get_parameter('raw_topic').value),
+                qos_profile_sensor_data)
+        if self._publish_metric:
+            self._metric_publisher = self.create_publisher(
+                Image, str(self.get_parameter('metric_depth_topic').value),
+                qos_profile_sensor_data)
+        if self._publish_visualization:
+            self._visualization_publisher = self.create_publisher(
+                Image, str(self.get_parameter('visualization_topic').value),
+                qos_profile_sensor_data)
+        if self._publish_pointcloud:
+            self._pointcloud_publisher = self.create_publisher(
+                PointCloud2,
+                str(self.get_parameter('pointcloud_topic').value),
+                qos_profile_sensor_data)
         self._free_space_publisher = self.create_publisher(
-            Float32MultiArray, '/uav/depth/free_space', 1)
+            Float32MultiArray,
+            str(self.get_parameter('free_space_topic').value), 1)
         self._status_publisher = self.create_publisher(
-            DiagnosticArray, '/uav/depth/status', 10)
+            DiagnosticArray,
+            str(self.get_parameter('status_topic').value), 10)
         self._input_publisher = None
         if self._camera_device:
             self._start_direct_camera(rate)
@@ -114,7 +181,9 @@ class ZipDepthNode(Node):
             f'{self._backend.width}x{self._backend.height}, '
             f'metric_calibration={self._metric_enabled}, '
             f'rate_limit={rate if rate > 0.0 else "unlimited"}, '
-            f'input={input_source}')
+            f'input={input_source}, raw={self._publish_raw}, '
+            f'visualization={self._publish_visualization}, '
+            f'pointcloud={self._publish_pointcloud}')
 
     def _start_direct_camera(self, rate: float) -> None:
         width = int(self.get_parameter('camera_width').value)
@@ -189,31 +258,47 @@ class ZipDepthNode(Node):
             health = assess_camera_health(bgr)
             if not health.healthy:
                 raise RuntimeError(health.reason)
+            inference_started = time.perf_counter()
             raw = self._backend.infer(bgr, self._cv2)
+            inference_ms = (
+                time.perf_counter() - inference_started) * 1000.0
             if self._raw_publisher is not None:
                 raw_message = array_to_image(raw, '32FC1')
                 raw_message.header = header
                 self._raw_publisher.publish(raw_message)
+            if self._visualization_publisher is not None:
+                visualization, _, _ = \
+                    normalize_inverse_depth_for_display(raw)
+                visualization_message = array_to_image(
+                    visualization, 'mono8')
+                visualization_message.header = header
+                self._visualization_publisher.publish(
+                    visualization_message)
             if self._metric_enabled:
                 metric = inverse_depth_to_metric(
                     raw, self._inverse_depth_scale,
                     self._inverse_depth_shift)
-                metric = self._cv2.resize(
-                    metric, (int(bgr.shape[1]), int(bgr.shape[0])),
-                    interpolation=self._cv2.INTER_LINEAR)
-                metric_message = array_to_image(metric, '32FC1')
-                metric_message.header = header
-                self._metric_publisher.publish(metric_message)
+                if self._metric_publisher is not None:
+                    metric_message = array_to_image(metric, '32FC1')
+                    metric_message.header = header
+                    self._metric_publisher.publish(metric_message)
+                if self._pointcloud_publisher is not None:
+                    self._pointcloud_publisher.publish(
+                        self._make_pointcloud(metric, header.stamp))
                 summary = summarize_free_space(
                     metric,
                     minimum_depth_m=float(
                         self.get_parameter('minimum_depth_m').value),
                     maximum_depth_m=float(
                         self.get_parameter('maximum_depth_m').value),
+                    near_percentile=float(
+                        self.get_parameter('near_percentile').value),
+                    roi_top_fraction=float(
+                        self.get_parameter('roi_top_fraction').value),
+                    roi_bottom_fraction=float(
+                        self.get_parameter('roi_bottom_fraction').value),
                 )
-                free_space = Float32MultiArray()
-                free_space.data = summary.as_list()
-                self._free_space_publisher.publish(free_space)
+                self._publish_free_space(summary.as_list())
             else:
                 self._publish_invalid_free_space()
             completed = time.perf_counter()
@@ -227,7 +312,8 @@ class ZipDepthNode(Node):
                 if self._metric_enabled else DiagnosticStatus.WARN,
                 'running_metric'
                 if self._metric_enabled else 'running_relative_only',
-                (completed - started) * 1000.0)
+                (completed - started) * 1000.0,
+                inference_ms)
         except Exception as error:
             self._publish_invalid_free_space()
             self._publish_status(
@@ -235,12 +321,63 @@ class ZipDepthNode(Node):
                 (time.perf_counter() - started) * 1000.0)
 
     def _publish_invalid_free_space(self) -> None:
+        self._publish_free_space([float('nan')] * 4 + [0.0])
+
+    def _publish_free_space(self, values) -> None:
         message = Float32MultiArray()
-        message.data = [float('nan')] * 4 + [0.0]
+        dimension = MultiArrayDimension()
+        dimension.label = 'left,center,right,nearest,valid_fraction'
+        dimension.size = 5
+        dimension.stride = 5
+        message.layout.dim = [dimension]
+        message.data = list(values)
         self._free_space_publisher.publish(message)
 
+    def _make_pointcloud(self, depth: np.ndarray, stamp) -> PointCloud2:
+        principal_x = self._principal_x
+        principal_y = self._principal_y
+        if principal_x < 0.0:
+            principal_x = depth.shape[1] / 2.0
+        if principal_y < 0.0:
+            principal_y = depth.shape[0] / 2.0
+        points = depth_to_flu_points(
+            depth,
+            focal_x_px=self._focal_x,
+            focal_y_px=self._focal_y,
+            principal_x_px=principal_x,
+            principal_y_px=principal_y,
+            stride=self._pointcloud_stride,
+            minimum_depth_m=float(
+                self.get_parameter('minimum_depth_m').value),
+            maximum_depth_m=float(
+                self.get_parameter('maximum_depth_m').value),
+        )
+        message = PointCloud2()
+        message.header.stamp = stamp
+        message.header.frame_id = self._pointcloud_frame_id
+        message.height = 1
+        message.width = int(points.shape[0])
+        message.fields = [
+            PointField(
+                name='x', offset=0,
+                datatype=PointField.FLOAT32, count=1),
+            PointField(
+                name='y', offset=4,
+                datatype=PointField.FLOAT32, count=1),
+            PointField(
+                name='z', offset=8,
+                datatype=PointField.FLOAT32, count=1),
+        ]
+        message.is_bigendian = False
+        message.point_step = 12
+        message.row_step = 12 * message.width
+        message.data = points.tobytes()
+        message.is_dense = True
+        return message
+
     def _publish_status(
-            self, level: int, text: str, latency_ms: float) -> None:
+            self, level: int, text: str, total_ms: float,
+            inference_ms: float = float('nan')) -> None:
         diagnostic = DiagnosticArray()
         diagnostic.header.stamp = self.get_clock().now().to_msg()
         status = DiagnosticStatus()
@@ -249,7 +386,8 @@ class ZipDepthNode(Node):
         status.level = level
         status.message = text
         status.values = [
-            KeyValue(key='latency_ms', value=f'{latency_ms:.2f}'),
+            KeyValue(key='inference_ms', value=f'{inference_ms:.2f}'),
+            KeyValue(key='total_ms', value=f'{total_ms:.2f}'),
             KeyValue(key='metric_calibration_enabled',
                      value=str(self._metric_enabled).lower()),
             KeyValue(
@@ -257,6 +395,13 @@ class ZipDepthNode(Node):
             KeyValue(key='output_width', value=str(self._backend.width)),
             KeyValue(key='output_height', value=str(self._backend.height)),
             KeyValue(key='input_source', value=self._input_source),
+            KeyValue(key='raw_enabled', value=str(self._publish_raw).lower()),
+            KeyValue(
+                key='visualization_enabled',
+                value=str(self._publish_visualization).lower()),
+            KeyValue(
+                key='pointcloud_enabled',
+                value=str(self._publish_pointcloud).lower()),
         ]
         diagnostic.status = [status]
         self._status_publisher.publish(diagnostic)

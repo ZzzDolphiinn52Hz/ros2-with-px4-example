@@ -1,6 +1,7 @@
-# PX4 UAV Cup Jetson perception
+# PX4 UAV Cup perception
 
-Package này chỉ giữ pipeline bay thật trên Jetson Xavier NX:
+Package này giữ pipeline perception cho Jetson Xavier NX và Raspberry Pi 5.
+Đường Jetson dùng Depth Anything TensorRT; đường Pi dùng ZipDepth ONNX.
 
 ```text
 /dev/video0 -> center crop / resize -> camera health -> TensorRT
@@ -98,8 +99,11 @@ Pipeline Pi dùng hai camera và hai namespace riêng:
 
 ```text
 USB camera -> zipdepth_node (direct V4L2, không copy ảnh BGR qua DDS)
-  └─ /uav/depth/zipdepth_raw
-     └─ /camera/depth/image (sau hiệu chuẩn metric)
+  ├─ /uav/depth/free_space -> local_controller_shadow
+  ├─ /uav/depth/zipdepth_raw (debug tùy chọn)
+  ├─ /uav/depth/visualization (debug tùy chọn)
+  ├─ /camera/depth/image (debug, sau hiệu chuẩn metric)
+  └─ /camera/depth/points (debug, sau hiệu chuẩn metric)
 
 Pi Camera nhìn xuống -> /camera/down/image_raw + /camera/down/camera_info
   └─ aruco_detector_node -> /uav/aruco/ids + /uav/aruco/target_pose
@@ -123,12 +127,22 @@ docker compose run --rm ros bash -lc \
 ```
 
 `maximum_processing_rate_hz: 0.0` tắt giới hạn phần mềm, vì vậy node chạy
-liên tục theo tốc độ inference thực tế. Topic raw vẫn là `32FC1` kích thước
-512x384. Mặc định `zipdepth_node` mở `/dev/video0` trực tiếp để đường runtime
-giống benchmark và tránh serialize ảnh BGR 640x480 qua DDS. Camera publisher
-riêng trong launch được tắt; đặt `camera_device` rỗng và launch với
-`front_usb_camera:=true` nếu cần quay lại subscriber mode. Khi pipeline đang
-chạy, lưu một ảnh màu được tạo trực tiếp từ raw bằng:
+liên tục theo tốc độ inference thực tế. Mặc định `zipdepth_node` mở
+`/dev/video0` trực tiếp và chỉ publish free-space/status nhỏ, giống pipeline
+Jetson. Raw `32FC1` 512x384, visualization, metric depth và pointcloud đều là
+debug output tùy chọn để không làm giảm FPS khi bay.
+
+Để bật raw và visualization trong lúc kiểm tra:
+
+```bash
+ros2 launch px4_uavcup_perception perception_pi.launch.py \
+  publish_raw_output:=true \
+  publish_visualization:=true
+```
+
+Camera publisher riêng trong launch được tắt; đặt `camera_device` rỗng và
+launch với `front_usb_camera:=true` nếu cần quay lại subscriber mode. Khi raw
+đang bật, lưu một ảnh màu bằng:
 
 ```bash
 docker compose run --rm ros bash -lc \
@@ -147,6 +161,12 @@ chuẩn metric.
 không hợp lệ cho tới khi fit `inverse_depth_scale` và
 `inverse_depth_shift_per_m` trong không gian disparity bằng dữ liệu đo thật,
 sau đó nghịch đảo kết quả sang mét.
+
+Vì controller shadow dùng ngưỡng theo mét, khi calibration chưa bật thì
+`/uav/depth/free_space` cố ý là `[NaN, NaN, NaN, NaN, 0.0]` và controller ở
+`FAILSAFE`. Không bật `publish_metric_depth` hoặc `publish_pointcloud` trước
+khi đã fit calibration và camera intrinsic. Sau hiệu chuẩn, chuỗi L/C/R dùng
+lại trực tiếp `summarize_free_space` và `local_controller_shadow` của Jetson.
 
 Gateway `/uav/aruco/target_pose -> /fmu/in/landing_target_pose` cũng mặc định
 `enabled: false`. Chỉ bật sau khi đã đo extrinsic camera-to-body, xác nhận đúng

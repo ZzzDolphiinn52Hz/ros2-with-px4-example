@@ -9,6 +9,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -18,6 +19,10 @@ def generate_launch_description():
     config = LaunchConfiguration('config')
     return LaunchDescription([
         DeclareLaunchArgument('config', default_value=default_config),
+        DeclareLaunchArgument('publish_raw_output', default_value='false'),
+        DeclareLaunchArgument('publish_metric_depth', default_value='false'),
+        DeclareLaunchArgument('publish_visualization', default_value='false'),
+        DeclareLaunchArgument('publish_pointcloud', default_value='false'),
         # ZipDepth opens /dev/video0 directly by default. Enable this only when
         # camera_device is empty in the YAML and a ROS image topic is desired.
         DeclareLaunchArgument('front_usb_camera', default_value='false'),
@@ -34,7 +39,20 @@ def generate_launch_description():
             executable='zipdepth_node',
             name='zipdepth_node',
             output='screen',
-            parameters=[config],
+            parameters=[config, {
+                'publish_raw_output': ParameterValue(
+                    LaunchConfiguration('publish_raw_output'),
+                    value_type=bool),
+                'publish_metric_depth': ParameterValue(
+                    LaunchConfiguration('publish_metric_depth'),
+                    value_type=bool),
+                'publish_visualization': ParameterValue(
+                    LaunchConfiguration('publish_visualization'),
+                    value_type=bool),
+                'publish_pointcloud': ParameterValue(
+                    LaunchConfiguration('publish_pointcloud'),
+                    value_type=bool),
+            }],
         ),
         Node(
             package='px4_uavcup_perception',
