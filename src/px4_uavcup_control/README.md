@@ -23,6 +23,10 @@ riêng vào shadow controller. Launch chỉ tạo `zipdepth_node` và
 ros2 launch px4_uavcup_control pi_zipdepth_shadow.launch.py
 ```
 
+Relative mode không suy ra được khoảng cách phanh tuyệt đối. Ngưỡng emergency
+chỉ bắt score gần bão hòa; ảnh invalid hoặc scene thiếu contrast luôn chuyển
+sang `FAILSAFE`. Vì vậy output này chỉ là advisory để bench-test.
+
 Không chạy thêm `perception_jetson.launch.py` riêng trong trường hợp này, vì
 hai tiến trình perception sẽ tranh `/dev/video0`.
 
