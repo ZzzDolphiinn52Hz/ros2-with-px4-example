@@ -8,7 +8,6 @@ import json
 from pathlib import Path
 import time
 
-import cv2
 import numpy as np
 import rclpy
 from rclpy.node import Node
@@ -56,6 +55,11 @@ def main() -> None:
         'maximum': float(np.max(values[finite])),
     }
     if args.save_color is not None:
+        # OpenCV is only needed when writing the optional color preview.  Keep
+        # the normal ROS topic check usable on hosts whose apt OpenCV was built
+        # against NumPy 1.x but which currently have NumPy 2.x installed.
+        import cv2
+
         depth_u8, display_low, display_high = \
             normalize_inverse_depth_for_display(values)
         color = cv2.applyColorMap(depth_u8, cv2.COLORMAP_TURBO)
