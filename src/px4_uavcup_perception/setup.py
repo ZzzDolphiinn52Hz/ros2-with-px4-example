@@ -43,6 +43,8 @@ setup(
             'px4_uavcup_perception.aruco_to_px4_landing_target:main',
             'v4l2_camera_node = '
             'px4_uavcup_perception.v4l2_camera_node:main',
+            'picamera2_socket_camera_node = '
+            'px4_uavcup_perception.picamera2_socket_camera_node:main',
             'aruco_landing_pid_node = '
             'px4_uavcup_perception.aruco_landing_pid_node:main',
         ],

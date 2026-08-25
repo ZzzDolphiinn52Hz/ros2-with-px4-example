@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detect ArUco markers and publish metric poses in the camera optical frame."""
+"""Detect ArUco markers and publish poses in the camera optical frame."""
 
 from __future__ import annotations
 
@@ -12,7 +12,11 @@ from geometry_msgs.msg import Pose, PoseArray, PoseStamped
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import CameraInfo, Image
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import (
+    Float64MultiArray,
+    Int32MultiArray,
+    MultiArrayDimension,
+)
 
 from .aruco_geometry import camera_matrix, rotation_matrix_to_quaternion
 from .image_utils import array_to_image, image_to_bgr
@@ -30,6 +34,13 @@ class ArucoDetectorNode(Node):
         self.declare_parameter('target_marker_id', 0)
         self.declare_parameter('publish_debug_image', False)
         self.declare_parameter('maximum_processing_rate_hz', 15.0)
+        self.declare_parameter('poses_topic', '/uav/aruco/poses')
+        self.declare_parameter('ids_topic', '/uav/aruco/ids')
+        self.declare_parameter('rvecs_topic', '/uav/aruco/rvecs')
+        self.declare_parameter('tvecs_topic', '/uav/aruco/tvecs')
+        self.declare_parameter('target_pose_topic', '/uav/aruco/target_pose')
+        self.declare_parameter('status_topic', '/uav/aruco/status')
+        self.declare_parameter('debug_image_topic', '/uav/aruco/debug_image')
 
         marker_size = float(self.get_parameter('marker_size_m').value)
         if marker_size <= 0.0:
@@ -48,7 +59,8 @@ class ArucoDetectorNode(Node):
         try:
             import cv2
         except ImportError as error:
-            raise RuntimeError('OpenCV with the aruco module is required') from error
+            raise RuntimeError(
+                'OpenCV with the aruco module is required') from error
         if not hasattr(cv2, 'aruco'):
             raise RuntimeError('OpenCV was built without the aruco module')
         self._cv2 = cv2
@@ -68,14 +80,26 @@ class ArucoDetectorNode(Node):
 
         self._camera_matrix = None
         self._distortion = None
-        self._poses = self.create_publisher(PoseArray, '/uav/aruco/poses', 10)
-        self._ids = self.create_publisher(Int32MultiArray, '/uav/aruco/ids', 10)
+        self._poses = self.create_publisher(
+            PoseArray, str(self.get_parameter('poses_topic').value), 10)
+        self._ids = self.create_publisher(
+            Int32MultiArray, str(self.get_parameter('ids_topic').value), 10)
+        self._rvecs = self.create_publisher(
+            Float64MultiArray,
+            str(self.get_parameter('rvecs_topic').value), 10)
+        self._tvecs = self.create_publisher(
+            Float64MultiArray,
+            str(self.get_parameter('tvecs_topic').value), 10)
         self._target = self.create_publisher(
-            PoseStamped, '/uav/aruco/target_pose', 10)
+            PoseStamped,
+            str(self.get_parameter('target_pose_topic').value), 10)
         self._status = self.create_publisher(
-            DiagnosticArray, '/uav/aruco/status', 10)
+            DiagnosticArray,
+            str(self.get_parameter('status_topic').value), 10)
         self._debug = self.create_publisher(
-            Image, '/uav/aruco/debug_image', qos_profile_sensor_data) \
+            Image,
+            str(self.get_parameter('debug_image_topic').value),
+            qos_profile_sensor_data) \
             if self._publish_debug else None
         self.create_subscription(
             CameraInfo,
@@ -131,6 +155,8 @@ class ArucoDetectorNode(Node):
         id_message = Int32MultiArray()
         flat_ids = [] if ids is None else [int(value) for value in ids.flat]
         id_message.data = flat_ids
+        rvecs = np.empty((0, 3), dtype=np.float64)
+        tvecs = np.empty((0, 3), dtype=np.float64)
 
         if flat_ids:
             rvecs, tvecs, _ = self._cv2.aruco.estimatePoseSingleMarkers(
@@ -153,12 +179,33 @@ class ArucoDetectorNode(Node):
 
         self._poses.publish(pose_array)
         self._ids.publish(id_message)
+        self._rvecs.publish(self._vectors_message(rvecs, 'rx,ry,rz'))
+        self._tvecs.publish(self._vectors_message(tvecs, 'x,y,z;units=m'))
         if self._debug is not None:
             debug = array_to_image(bgr, 'bgr8')
             debug.header = message.header
             self._debug.publish(debug)
         self._publish_status(message, DiagnosticStatus.OK, 'ok',
                              len(flat_ids), started)
+
+    @staticmethod
+    def _vectors_message(values, component_label: str) -> Float64MultiArray:
+        vectors = np.asarray(values, dtype=np.float64).reshape(-1, 3)
+        message = Float64MultiArray()
+        message.layout.dim = [
+            MultiArrayDimension(
+                label='markers;order_matches=/uav/aruco/ids',
+                size=vectors.shape[0],
+                stride=vectors.shape[0] * 3,
+            ),
+            MultiArrayDimension(
+                label=component_label,
+                size=3,
+                stride=3,
+            ),
+        ]
+        message.data = vectors.reshape(-1).tolist()
+        return message
 
     def _pose(self, rvec, tvec) -> Pose:
         rotation, _ = self._cv2.Rodrigues(np.asarray(rvec).reshape(3))

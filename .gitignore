@@ -74,6 +74,7 @@ Thumbs.db
 
 # Local perception captures and calibration datasets
 /artifacts/
+/run/
 /zipdepth_*.png
 /zipdepth_*.json
 

@@ -130,11 +130,42 @@ USB camera -> zipdepth_node (direct V4L2, không copy ảnh BGR qua DDS)
   ├─ /camera/depth/image (debug, sau hiệu chuẩn metric)
   └─ /camera/depth/points (debug, sau hiệu chuẩn metric)
 
-Pi Camera nhìn xuống -> /camera/down/image_raw + /camera/down/camera_info
-  └─ aruco_detector_node -> /uav/aruco/ids + /uav/aruco/target_pose
+Pi Camera nhìn xuống -> Picamera2 host -> Unix socket -> ROS camera node
+  ├─ /camera/down/image_raw + /camera/down/camera_info
+  └─ aruco_detector_node
+     ├─ /uav/aruco/ids + /uav/aruco/rvecs + /uav/aruco/tvecs
+     └─ /uav/aruco/target_pose
      └─ aruco_landing_pid -> /aruco_land/cmd_vel
         └─ cmd_vel_to_px4 -> OffboardControlMode + TrajectorySetpoint
 ```
+
+IMX500 dùng Picamera2 trên Raspberry Pi OS, còn ROS Humble chạy trong
+container Ubuntu. Host bridge chuyển raw RGB qua Unix socket cục bộ; ảnh không
+đi qua Wi-Fi và USB camera `/dev/video0` vẫn dành riêng cho ZipDepth. Chạy host
+bridge từ terminal trên Pi bằng:
+
+```bash
+cd ~/ros2_ws
+PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \
+python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
+  --width 640 --height 480 --fps 15
+```
+
+Calibration IMX500 640x480 trong `perception_pi.yaml` được nhập từ
+`~/Aruco/live_calib`. Nó chỉ áp dụng cho Pi camera ở đúng mode này; calibration
+USB camera là bộ intrinsic riêng. Test camera bridge an toàn, không khởi tạo
+ArUco/PID/PX4:
+
+```bash
+ros2 launch px4_uavcup_perception pi_down_camera_test.launch.py
+```
+
+Detector dùng `DICT_5X5_100`. Năm marker ID 0-4 đã in từ `DICT_5X5_50` vẫn có
+cùng mã trong tập 100 và đã được kiểm tra nhận đúng ID. Kích thước marker pose
+là cạnh vuông đen ngoài cùng `0.16 m`. Test detector riêng bằng
+`aruco_pi_test.launch.py`; launch này không tạo PID, Offboard hoặc PX4 command.
+Các phần tử trong `/uav/aruco/rvecs` và `/uav/aruco/tvecs` đi theo đúng thứ tự
+ID của `/uav/aruco/ids`; `tvecs` dùng mét trong optical frame camera.
 
 ZipDepth dùng checkpoint NPU được export ONNX 512x384 để giữ tỷ lệ 4:3
 của USB camera. Đặt hai file ONNX
