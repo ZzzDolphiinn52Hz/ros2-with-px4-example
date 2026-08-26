@@ -11,7 +11,7 @@ import socket
 import numpy as np
 from picamera2 import Picamera2
 
-from px4_uavcup_perception.picamera2_socket_protocol import pack_header
+from px4_uavcup_perception.cameras.picamera2_protocol import pack_header
 
 
 def main() -> None:

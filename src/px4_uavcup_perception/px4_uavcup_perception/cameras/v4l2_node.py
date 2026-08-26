@@ -11,7 +11,7 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 
-from .image_utils import array_to_image
+from ..common.image import array_to_image
 
 
 class V4l2CameraNode(Node):

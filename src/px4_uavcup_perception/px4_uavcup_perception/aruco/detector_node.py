@@ -18,8 +18,8 @@ from std_msgs.msg import (
     MultiArrayDimension,
 )
 
-from .aruco_geometry import camera_matrix, rotation_matrix_to_quaternion
-from .image_utils import array_to_image, image_to_bgr
+from ..common.image import array_to_image, image_to_bgr
+from .geometry import camera_matrix, rotation_matrix_to_quaternion
 
 
 class ArucoDetectorNode(Node):

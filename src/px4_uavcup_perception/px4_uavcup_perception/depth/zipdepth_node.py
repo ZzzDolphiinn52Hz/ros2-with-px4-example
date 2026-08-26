@@ -21,12 +21,12 @@ from rclpy.qos import (
 from sensor_msgs.msg import Image, PointCloud2, PointField
 from std_msgs.msg import Float32MultiArray, Header, MultiArrayDimension
 
-from .camera_health import assess_camera_health
+from ..common.camera_health import assess_camera_health
+from ..common.image import array_to_image, image_to_bgr
 from .free_space import summarize_free_space
-from .image_utils import array_to_image, image_to_bgr
-from .pointcloud_utils import depth_to_flu_points
+from .pointcloud import depth_to_flu_points
 from .relative_free_space import summarize_relative_free_space
-from .zipdepth_onnx_backend import (
+from .zipdepth_backend import (
     ZipDepthOnnx,
     inverse_depth_to_metric,
     normalize_inverse_depth_for_display,

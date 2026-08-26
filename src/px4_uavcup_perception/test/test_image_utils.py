@@ -1,6 +1,6 @@
 import numpy as np
 
-from px4_uavcup_perception.image_utils import array_to_image
+from px4_uavcup_perception.common.image import array_to_image
 
 
 def test_metric_depth_message_layout():

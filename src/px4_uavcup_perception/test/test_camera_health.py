@@ -1,6 +1,6 @@
 import numpy as np
 
-from px4_uavcup_perception.camera_health import (
+from px4_uavcup_perception.common.camera_health import (
     CameraHealthGate,
     assess_camera_health,
 )

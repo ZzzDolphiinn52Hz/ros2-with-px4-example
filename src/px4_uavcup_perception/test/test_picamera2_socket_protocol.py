@@ -2,7 +2,7 @@ import socket
 
 import pytest
 
-from px4_uavcup_perception.picamera2_socket_protocol import (
+from px4_uavcup_perception.cameras.picamera2_protocol import (
     HEADER,
     pack_header,
     receive_exact,

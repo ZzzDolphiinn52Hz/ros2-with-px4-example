@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from px4_uavcup_perception.zipdepth_calibration import (
+from px4_uavcup_perception.depth.zipdepth_calibration import (
     central_roi_median,
     fit_metric_inverse_depth,
 )

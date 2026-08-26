@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from px4_uavcup_perception.relative_free_space import (
+from px4_uavcup_perception.depth.relative_free_space import (
     summarize_relative_free_space,
 )
 

@@ -11,7 +11,7 @@ import time
 import cv2
 import numpy as np
 
-from px4_uavcup_perception.zipdepth_onnx_backend import (
+from px4_uavcup_perception.depth.zipdepth_backend import (
     ZipDepthOnnx,
     normalize_inverse_depth_for_display,
 )

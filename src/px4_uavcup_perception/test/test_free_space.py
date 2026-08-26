@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from px4_uavcup_perception.free_space import summarize_free_space
+from px4_uavcup_perception.depth.free_space import summarize_free_space
 
 
 def test_three_sectors_report_robust_near_depth():

@@ -1,6 +1,6 @@
 import numpy as np
 
-from px4_uavcup_perception.pointcloud_utils import depth_to_flu_points
+from px4_uavcup_perception.depth.pointcloud import depth_to_flu_points
 
 
 def test_depth_converts_from_optical_image_to_flu_points():

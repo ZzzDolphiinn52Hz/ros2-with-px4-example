@@ -1,4 +1,4 @@
-from px4_uavcup_perception.camera_geometry import center_crop_margins
+from px4_uavcup_perception.common.camera_geometry import center_crop_margins
 
 
 def test_landscape_frame_is_cropped_equally_from_left_and_right():

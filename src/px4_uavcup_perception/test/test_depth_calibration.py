@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from px4_uavcup_perception.depth_calibration import (
+from px4_uavcup_perception.depth.calibration import (
     apply_linear_depth_calibration,
 )
 

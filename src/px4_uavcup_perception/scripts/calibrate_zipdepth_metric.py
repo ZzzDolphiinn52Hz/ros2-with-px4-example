@@ -15,8 +15,8 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 
-from px4_uavcup_perception.image_utils import image_to_array
-from px4_uavcup_perception.zipdepth_calibration import (
+from px4_uavcup_perception.common.image import image_to_array
+from px4_uavcup_perception.depth.zipdepth_calibration import (
     central_roi_median,
     fit_metric_inverse_depth,
 )

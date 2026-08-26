@@ -13,8 +13,8 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import CameraInfo, Image
 
-from .aruco_geometry import camera_matrix
-from .picamera2_socket_protocol import HEADER, receive_exact, unpack_header
+from ..aruco.geometry import camera_matrix
+from .picamera2_protocol import HEADER, receive_exact, unpack_header
 
 
 class Picamera2SocketCameraNode(Node):

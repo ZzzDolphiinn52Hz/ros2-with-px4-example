@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from px4_uavcup_perception.zipdepth_onnx_backend import (
+from px4_uavcup_perception.depth.zipdepth_backend import (
     ZipDepthOnnx,
     inverse_depth_to_metric,
     normalize_inverse_depth_for_display,

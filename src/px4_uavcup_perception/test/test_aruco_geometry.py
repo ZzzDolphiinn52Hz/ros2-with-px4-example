@@ -3,7 +3,7 @@ import math
 import numpy as np
 import pytest
 
-from px4_uavcup_perception.aruco_geometry import (
+from px4_uavcup_perception.aruco.geometry import (
     camera_matrix,
     rotation_matrix_to_quaternion,
 )
