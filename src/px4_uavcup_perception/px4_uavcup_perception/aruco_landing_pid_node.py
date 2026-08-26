@@ -11,7 +11,6 @@ import rclpy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from geometry_msgs.msg import PoseStamped, Twist
 from rclpy.node import Node
-from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
 
 from .landing_pid import (
@@ -83,8 +82,6 @@ class ArucoLandingPidNode(Node):
 
         self._commands = self.create_publisher(
             Twist, str(self.get_parameter('cmd_vel_topic').value), 10)
-        self._ready = self.create_publisher(
-            Bool, '/uav/aruco/landing_ready', 10)
         self._status = self.create_publisher(
             DiagnosticArray, '/uav/aruco/landing_status', 10)
         self.create_subscription(
@@ -184,9 +181,6 @@ class ArucoLandingPidNode(Node):
             self._state = 'marker_lost'
             self._reset_controller()
         self._commands.publish(self._command)
-        ready = Bool()
-        ready.data = self._state == 'ready_for_final_land'
-        self._ready.publish(ready)
 
     def _publish_status(self) -> None:
         status = DiagnosticStatus()

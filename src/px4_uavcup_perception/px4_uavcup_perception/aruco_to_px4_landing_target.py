@@ -12,7 +12,10 @@ from px4_msgs.msg import LandingTargetPose, VehicleAttitude
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 
-from .px4_bridge_geometry import OPTICAL_TO_BODY_FRD, target_camera_to_ned
+from .px4_bridge_geometry import (
+    DOWN_CAMERA_OPTICAL_TO_BODY_FRD,
+    target_camera_to_ned,
+)
 
 
 class ArucoToPx4LandingTarget(Node):
@@ -30,7 +33,7 @@ class ArucoToPx4LandingTarget(Node):
         self.declare_parameter('maximum_target_distance_m', 12.0)
         self.declare_parameter(
             'camera_to_body_frd_rotation',
-            OPTICAL_TO_BODY_FRD.reshape(-1).tolist())
+            DOWN_CAMERA_OPTICAL_TO_BODY_FRD.reshape(-1).tolist())
         self.declare_parameter(
             'camera_position_body_frd_m', [0.0, 0.0, 0.0])
 

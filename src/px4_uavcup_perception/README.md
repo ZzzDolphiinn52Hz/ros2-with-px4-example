@@ -133,10 +133,12 @@ USB camera -> zipdepth_node (direct V4L2, không copy ảnh BGR qua DDS)
 Pi Camera nhìn xuống -> Picamera2 host -> Unix socket -> ROS camera node
   ├─ /camera/down/image_raw + /camera/down/camera_info
   └─ aruco_detector_node
-     ├─ /uav/aruco/ids + /uav/aruco/rvecs + /uav/aruco/tvecs
-     └─ /uav/aruco/target_pose
-     └─ aruco_landing_pid -> /aruco_land/cmd_vel
-        └─ cmd_vel_to_px4 -> OffboardControlMode + TrajectorySetpoint
+     ├─ /uav/aruco/target_pose + /uav/aruco/status (flight)
+     ├─ /uav/aruco/ids + rvecs + tvecs (test tùy chọn)
+     ├─ /uav/aruco/debug_image (test tùy chọn)
+     └─ /uav/aruco/target_pose -> aruco_landing_pid
+        └─ /aruco_land/cmd_vel -> cmd_vel_to_px4
+           └─ OffboardControlMode + TrajectorySetpoint
 ```
 
 IMX500 dùng Picamera2 trên Raspberry Pi OS, còn ROS Humble chạy trong
@@ -166,6 +168,8 @@ là cạnh vuông đen ngoài cùng `0.16 m`. Test detector riêng bằng
 `aruco_pi_test.launch.py`; launch này không tạo PID, Offboard hoặc PX4 command.
 Các phần tử trong `/uav/aruco/rvecs` và `/uav/aruco/tvecs` đi theo đúng thứ tự
 ID của `/uav/aruco/ids`; `tvecs` dùng mét trong optical frame camera.
+Ba topic raw này và debug image chỉ được tạo trong profile test; profile
+flight mặc định chỉ giữ `target_pose` và diagnostic status.
 
 ZipDepth dùng checkpoint NPU được export ONNX 512x384 để giữ tỷ lệ 4:3
 của USB camera. Đặt hai file ONNX

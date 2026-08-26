@@ -18,6 +18,7 @@ def generate_launch_description() -> LaunchDescription:
     config = LaunchConfiguration('config')
     return LaunchDescription([
         DeclareLaunchArgument('config', default_value=default_config),
+        DeclareLaunchArgument('publish_debug_topics', default_value='true'),
         DeclareLaunchArgument('publish_debug_image', default_value='true'),
         Node(
             package='px4_uavcup_perception',
@@ -32,6 +33,9 @@ def generate_launch_description() -> LaunchDescription:
             name='aruco_detector_node',
             output='screen',
             parameters=[config, {
+                'publish_debug_topics': ParameterValue(
+                    LaunchConfiguration('publish_debug_topics'),
+                    value_type=bool),
                 'publish_debug_image': ParameterValue(
                     LaunchConfiguration('publish_debug_image'),
                     value_type=bool),

@@ -11,6 +11,12 @@ OPTICAL_TO_BODY_FRD = np.array([
     [0.0, 1.0, 0.0],
 ], dtype=np.float64)
 
+DOWN_CAMERA_OPTICAL_TO_BODY_FRD = np.array([
+    [0.0, -1.0, 0.0],
+    [1.0, 0.0, 0.0],
+    [0.0, 0.0, 1.0],
+], dtype=np.float64)
+
 
 def quaternion_wxyz_to_matrix(values) -> np.ndarray:
     """Convert a Hamilton quaternion [w, x, y, z] to a rotation matrix."""

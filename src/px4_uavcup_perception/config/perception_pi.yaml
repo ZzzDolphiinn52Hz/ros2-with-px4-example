@@ -89,11 +89,13 @@ aruco_detector_node:
     marker_size_m: 0.16
     target_marker_id: 0
     maximum_processing_rate_hz: 15.0
+    # Flight profile publishes only target_pose + status. Test launch
+    # overrides this to expose ids/rvecs/tvecs.
+    publish_debug_topics: false
     publish_debug_image: false
     ids_topic: /uav/aruco/ids
     rvecs_topic: /uav/aruco/rvecs
     tvecs_topic: /uav/aruco/tvecs
-    poses_topic: /uav/aruco/poses
     target_pose_topic: /uav/aruco/target_pose
     status_topic: /uav/aruco/status
     debug_image_topic: /uav/aruco/debug_image
@@ -116,8 +118,8 @@ aruco_landing_pid:
     maximum_descent_speed_m_s: 0.20
     final_marker_distance_m: 0.35
 
-    # Down-facing camera, image top points vehicle-forward and image right
-    # points vehicle-right. Must be measured again after final mounting.
+    # Confirmed on the installed down camera (2026-08-26): image top points
+    # vehicle-forward and image right points vehicle-right.
     camera_to_body_flu_rotation: [0.0, -1.0, 0.0,
                                   -1.0, 0.0, 0.0,
                                   0.0, 0.0, -1.0]
@@ -134,11 +136,12 @@ aruco_to_px4_landing_target:
     maximum_attitude_age_s: 0.25
     maximum_target_distance_m: 12.0
 
-    # Default for a forward-facing camera whose optical axes are x-right,
-    # y-down, z-forward and whose origin coincides with the vehicle origin.
-    camera_to_body_frd_rotation: [0.0, 0.0, 1.0,
+    # Confirmed down-camera orientation: image top is vehicle-forward,
+    # image right is vehicle-right, and optical +Z is vehicle-down.
+    camera_to_body_frd_rotation: [0.0, -1.0, 0.0,
                                   1.0, 0.0, 0.0,
-                                  0.0, 1.0, 0.0]
+                                  0.0, 0.0, 1.0]
+    # Measure this lever arm after the final camera mount is fixed.
     camera_position_body_frd_m: [0.0, 0.0, 0.0]
 
 cmd_vel_to_px4:

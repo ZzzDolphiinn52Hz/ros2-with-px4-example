@@ -23,6 +23,10 @@ def generate_launch_description():
         DeclareLaunchArgument('publish_metric_depth', default_value='false'),
         DeclareLaunchArgument('publish_visualization', default_value='false'),
         DeclareLaunchArgument('publish_pointcloud', default_value='false'),
+        DeclareLaunchArgument(
+            'publish_aruco_debug_topics', default_value='false'),
+        DeclareLaunchArgument(
+            'publish_aruco_debug_image', default_value='false'),
         # ZipDepth opens /dev/video0 directly by default. Enable this only when
         # camera_device is empty in the YAML and a ROS image topic is desired.
         DeclareLaunchArgument('front_usb_camera', default_value='false'),
@@ -68,7 +72,14 @@ def generate_launch_description():
             executable='aruco_detector_node',
             name='aruco_detector_node',
             output='screen',
-            parameters=[config],
+            parameters=[config, {
+                'publish_debug_topics': ParameterValue(
+                    LaunchConfiguration('publish_aruco_debug_topics'),
+                    value_type=bool),
+                'publish_debug_image': ParameterValue(
+                    LaunchConfiguration('publish_aruco_debug_image'),
+                    value_type=bool),
+            }],
         ),
         Node(
             package='px4_uavcup_perception',
