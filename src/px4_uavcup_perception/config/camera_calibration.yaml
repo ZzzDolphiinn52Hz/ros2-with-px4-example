@@ -1,6 +1,6 @@
 camera_calibration_publisher:
   ros__parameters:
-    camera_device: /dev/video0
+    camera_device: /dev/v4l/by-id/usb-XC-TECH_Web_Camera_20250519.1011-video-index0
     # Calibrate exactly the 4:3 mode used by ZipDepth at runtime. Intrinsics
     # are resolution/crop dependent and cannot be reused from the Jetson 16:9
     # calibration stream.

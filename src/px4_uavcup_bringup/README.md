@@ -12,7 +12,12 @@ Test riêng:
 ```bash
 ros2 launch px4_uavcup_bringup aruco_test.launch.py
 ros2 launch px4_uavcup_bringup zipdepth_test.launch.py
+ros2 launch px4_uavcup_bringup pi_perception_test.launch.py
 ```
+
+`pi_perception_test.launch.py` chạy đồng thời USB ZipDepth và Pi Camera
+ArUco để kiểm tra perception; launch này không tạo PID, controller hoặc
+PX4 bridge node.
 
 | File | Node |
 | --- | --- |

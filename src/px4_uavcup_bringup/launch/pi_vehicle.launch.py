@@ -28,8 +28,9 @@ def generate_launch_description():
             'publish_aruco_debug_topics', default_value='false'),
         DeclareLaunchArgument(
             'publish_aruco_debug_image', default_value='false'),
-        # ZipDepth opens /dev/video0 directly by default. Enable this only when
-        # camera_device is empty in the YAML and a ROS image topic is desired.
+        # ZipDepth opens the persistent USB by-id device directly by default.
+        # Enable this only when camera_device is empty in the YAML and a ROS
+        # image topic is desired.
         DeclareLaunchArgument('front_usb_camera', default_value='false'),
         DeclareLaunchArgument('down_picamera', default_value='true'),
         Node(

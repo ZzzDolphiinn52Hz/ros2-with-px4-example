@@ -3,7 +3,9 @@ zipdepth_node:
     image_topic: /camera/front/image_raw
     # Direct capture avoids serializing every 640x480 BGR frame through DDS.
     # Set this to an empty string to restore ROS image subscriber mode.
-    camera_device: /dev/video0
+    # Use the persistent USB identity because enabling the Pi CSI camera
+    # changes the numeric /dev/videoN assignments.
+    camera_device: /dev/v4l/by-id/usb-XC-TECH_Web_Camera_20250519.1011-video-index0
     camera_width: 640
     camera_height: 480
     camera_capture_fps: 30.0

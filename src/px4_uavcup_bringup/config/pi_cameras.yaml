@@ -1,6 +1,6 @@
 front_usb_camera:
   ros__parameters:
-    device: /dev/video0
+    device: /dev/v4l/by-id/usb-XC-TECH_Web_Camera_20250519.1011-video-index0
     width: 640
     height: 480
     capture_fps: 30.0
