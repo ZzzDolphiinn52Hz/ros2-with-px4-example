@@ -12,7 +12,7 @@ from px4_msgs.msg import LandingTargetPose, VehicleAttitude
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 
-from .px4_bridge_geometry import (
+from .geometry import (
     DOWN_CAMERA_OPTICAL_TO_BODY_FRD,
     target_camera_to_ned,
 )

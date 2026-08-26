@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from px4_uavcup_control.shadow_controller import (
+from px4_uavcup_control.obstacle.shadow_controller import (
     AvoidanceState,
     ControllerConfig,
     ShadowController,

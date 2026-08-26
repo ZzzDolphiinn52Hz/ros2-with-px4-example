@@ -13,7 +13,7 @@ from geometry_msgs.msg import PoseStamped, Twist
 from rclpy.node import Node
 from std_srvs.srv import SetBool
 
-from .landing_pid import (
+from .pid import (
     DOWN_CAMERA_OPTICAL_TO_BODY_FLU,
     PidAxis,
     camera_target_to_body_flu,

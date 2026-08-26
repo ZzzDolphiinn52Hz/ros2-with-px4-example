@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 """ about version compatibility
 Gazebo Harmonic (gz-transport13 / gz-msgs10) → ROS 2 LaserScan + Clock.
 
@@ -17,7 +19,6 @@ This node is the one brigde between Gazebo and ROS2.
 - pub to ROS2 sensor_msgs/LaserScan (/scan) & rosgraph_msgs/Clock (/clock)
 - filter LaserScan by tilt and altitude from PX4 for SLAM 2D
 """
-from __future__ import annotations
 
 import math
 import threading

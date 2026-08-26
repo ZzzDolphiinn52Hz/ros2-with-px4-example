@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from px4_uavcup_perception.landing_pid import (
+from px4_uavcup_control.landing.pid import (
     DOWN_CAMERA_OPTICAL_TO_BODY_FLU,
     PidAxis,
     camera_target_to_body_flu,

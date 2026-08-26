@@ -39,14 +39,10 @@ setup(
             'px4_uavcup_perception.depth.zipdepth_node:main',
             'aruco_detector_node = '
             'px4_uavcup_perception.aruco.detector_node:main',
-            'aruco_to_px4_landing_target = '
-            'px4_uavcup_perception.aruco_to_px4_landing_target:main',
             'v4l2_camera_node = '
             'px4_uavcup_perception.cameras.v4l2_node:main',
             'picamera2_socket_camera_node = '
             'px4_uavcup_perception.cameras.picamera2_socket_node:main',
-            'aruco_landing_pid_node = '
-            'px4_uavcup_perception.aruco_landing_pid_node:main',
         ],
     },
 )

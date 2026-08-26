@@ -3,7 +3,9 @@
 <package format="3">
   <name>px4_uavcup_control</name>
   <version>0.1.0</version>
-  <description>Shadow-mode local obstacle controller for the Urban UAV Cup.</description>
+  <description>
+    Local obstacle avoidance and ArUco landing PID for the Urban UAV Cup.
+  </description>
   <maintainer email="anh.nguyenvantuan54@hcmut.edu.vn">dolphiinn</maintainer>
   <license>Apache-2.0</license>
 
@@ -11,6 +13,7 @@
   <depend>diagnostic_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
 
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>launch</exec_depend>

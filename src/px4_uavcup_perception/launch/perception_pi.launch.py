@@ -82,14 +82,14 @@ def generate_launch_description():
             }],
         ),
         Node(
-            package='px4_uavcup_perception',
+            package='px4_uavcup_control',
             executable='aruco_landing_pid_node',
             name='aruco_landing_pid',
             output='screen',
             parameters=[config],
         ),
         Node(
-            package='px4_uavcup_slam',
+            package='px4_uavcup_px4_bridge',
             executable='cmd_vel_to_px4',
             name='cmd_vel_to_px4',
             output='screen',

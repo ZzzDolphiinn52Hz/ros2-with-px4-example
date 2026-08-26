@@ -151,7 +151,7 @@ Sau khi Gazebo, PX4 và Micro XRCE-DDS Agent đã chạy:
 source /opt/ros/humble/setup.bash
 source ~/ros2_ws/install/setup.bash
 
-ros2 run px4_uavcup_slam cmd_vel_to_px4 \
+ros2 run px4_uavcup_px4_bridge cmd_vel_to_px4 \
   --ros-args -p use_sim_time:=true
 ```
 

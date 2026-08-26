@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from px4_uavcup_slam.cmd_vel_to_px4 import (
+from px4_uavcup_px4_bridge.cmd_vel_to_px4 import (
     body_flu_to_ned_velocity,
     clamp_xy,
     integrate_altitude_target,

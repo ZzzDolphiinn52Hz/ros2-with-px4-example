@@ -1,6 +1,8 @@
 # PX4 UAV Cup local control
 
-Package này chứa local controller không phụ thuộc Nav2/SLAM. Phiên đầu chạy
+Package này chứa local controller không phụ thuộc Nav2/SLAM, cùng PID hạ
+cánh ArUco. PID chỉ publish `/aruco_land/cmd_vel`; nó không tạo publisher
+PX4 `/fmu/in/*`. Phiên đầu chạy
 hoàn toàn ở **shadow mode**: đọc `/uav/depth/free_space`, nhưng chỉ publish vận
 tốc đề xuất và không tạo publisher PX4 `/fmu/in/*`.
 

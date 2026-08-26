@@ -71,7 +71,7 @@ def _launch_setup(context, *args, **kwargs):
     )
 
     cmd_vel_adapter = Node(
-        package='px4_uavcup_slam',
+        package='px4_uavcup_px4_bridge',
         executable='cmd_vel_to_px4',
         name='cmd_vel_to_px4',
         output='screen',
