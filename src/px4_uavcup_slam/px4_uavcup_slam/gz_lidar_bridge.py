@@ -38,9 +38,17 @@ from rclpy.qos import (
     QoSReliabilityPolicy,
 )
 
-from gz.transport13 import Node as GzNode
-from gz.msgs10.laserscan_pb2 import LaserScan as GzLaserScan
-from gz.msgs10.clock_pb2 import Clock as GzClock
+def _load_gz():
+    """Import Gazebo Harmonic bindings only when the bridge node starts."""
+    try:
+        from gz.transport13 import Node as GzNode
+        from gz.msgs10.laserscan_pb2 import LaserScan as GzLaserScan
+        from gz.msgs10.clock_pb2 import Clock as GzClock
+    except ImportError as error:
+        raise RuntimeError(
+            'Gazebo Harmonic Python bindings are required for gz_lidar_bridge'
+        ) from error
+    return GzNode, GzLaserScan, GzClock
 
 
 # calc body tilt from earth vertical, independent of yaw
@@ -131,6 +139,7 @@ class GzLidarBridge(Node):
         )
 
         # sub Gazebo topics
+        GzNode, GzLaserScan, GzClock = _load_gz()
         self._gz = GzNode()
         # Python binding may return None even when subscription succeeds.
         self._gz.subscribe(GzLaserScan, self._gz_scan_topic, self._on_gz_scan)
