@@ -13,7 +13,7 @@ from launch_ros.actions import Node
 def generate_launch_description() -> LaunchDescription:
     package_share = get_package_share_directory('px4_uavcup_perception')
     default_config = os.path.join(
-        package_share, 'config', 'perception_pi.yaml')
+        package_share, 'config', 'pi_cameras.yaml')
     config = LaunchConfiguration('config')
     return LaunchDescription([
         DeclareLaunchArgument('config', default_value=default_config),

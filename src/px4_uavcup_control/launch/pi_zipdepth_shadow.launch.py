@@ -16,7 +16,7 @@ def generate_launch_description() -> LaunchDescription:
     perception_launch = os.path.join(
         perception_share, 'launch', 'zipdepth_pi.launch.py')
     perception_config_default = os.path.join(
-        perception_share, 'config', 'perception_pi.yaml')
+        perception_share, 'config', 'zipdepth.yaml')
     control_config_default = os.path.join(
         control_share, 'config', 'shadow_controller_relative.yaml')
     perception_config = LaunchConfiguration('perception_config')

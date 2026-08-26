@@ -4,7 +4,7 @@ import os
 from setuptools import find_packages, setup
 
 
-package_name = 'px4_uavcup_px4_bridge'
+package_name = 'px4_uavcup_bringup'
 
 
 setup(
@@ -16,19 +16,12 @@ setup(
          ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml', 'README.md']),
         (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
     ],
     install_requires=['setuptools'],
-    extras_require={'test': ['pytest']},
     zip_safe=True,
     maintainer='dolphiinn',
     maintainer_email='anh.nguyenvantuan54@hcmut.edu.vn',
-    description='PX4 Offboard and landing-target bridges',
+    description='Full-vehicle launch files for the Urban UAV Cup Pi stack',
     license='Apache-2.0',
-    entry_points={
-        'console_scripts': [
-            'cmd_vel_to_px4 = px4_uavcup_px4_bridge.cmd_vel_to_px4:main',
-            'aruco_to_px4_landing_target = '
-            'px4_uavcup_px4_bridge.aruco_landing_target:main',
-        ],
-    },
 )

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch the two-camera ZipDepth and ArUco landing pipeline on Pi 5."""
+"""Launch the Pi vehicle stack: cameras, ZipDepth, ArUco, PID and PX4 adapter."""
 
 import os
 
@@ -13,12 +13,13 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
-    package_share = get_package_share_directory('px4_uavcup_perception')
-    default_config = os.path.join(
-        package_share, 'config', 'perception_pi.yaml')
-    config = LaunchConfiguration('config')
+    bringup_share = get_package_share_directory('px4_uavcup_bringup')
+    cameras_config = os.path.join(bringup_share, 'config', 'pi_cameras.yaml')
+    zipdepth_config = os.path.join(bringup_share, 'config', 'zipdepth.yaml')
+    aruco_config = os.path.join(bringup_share, 'config', 'aruco.yaml')
+    landing_config = os.path.join(bringup_share, 'config', 'landing.yaml')
+    bridge_config = os.path.join(bringup_share, 'config', 'px4_bridge.yaml')
     return LaunchDescription([
-        DeclareLaunchArgument('config', default_value=default_config),
         DeclareLaunchArgument('publish_raw_output', default_value='false'),
         DeclareLaunchArgument('publish_metric_depth', default_value='false'),
         DeclareLaunchArgument('publish_visualization', default_value='false'),
@@ -36,7 +37,7 @@ def generate_launch_description():
             executable='v4l2_camera_node',
             name='front_usb_camera',
             output='screen',
-            parameters=[config],
+            parameters=[cameras_config],
             condition=IfCondition(LaunchConfiguration('front_usb_camera')),
         ),
         Node(
@@ -44,7 +45,7 @@ def generate_launch_description():
             executable='picamera2_socket_camera_node',
             name='down_picamera',
             output='screen',
-            parameters=[config],
+            parameters=[cameras_config],
             condition=IfCondition(LaunchConfiguration('down_picamera')),
         ),
         Node(
@@ -52,7 +53,7 @@ def generate_launch_description():
             executable='zipdepth_node',
             name='zipdepth_node',
             output='screen',
-            parameters=[config, {
+            parameters=[zipdepth_config, {
                 'publish_raw_output': ParameterValue(
                     LaunchConfiguration('publish_raw_output'),
                     value_type=bool),
@@ -72,7 +73,7 @@ def generate_launch_description():
             executable='aruco_detector_node',
             name='aruco_detector_node',
             output='screen',
-            parameters=[config, {
+            parameters=[aruco_config, {
                 'publish_debug_topics': ParameterValue(
                     LaunchConfiguration('publish_aruco_debug_topics'),
                     value_type=bool),
@@ -86,13 +87,13 @@ def generate_launch_description():
             executable='aruco_landing_pid_node',
             name='aruco_landing_pid',
             output='screen',
-            parameters=[config],
+            parameters=[landing_config],
         ),
         Node(
             package='px4_uavcup_px4_bridge',
             executable='cmd_vel_to_px4',
             name='cmd_vel_to_px4',
             output='screen',
-            parameters=[config],
+            parameters=[bridge_config],
         ),
     ])

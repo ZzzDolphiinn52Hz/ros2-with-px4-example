@@ -1,0 +1,38 @@
+aruco_to_px4_landing_target:
+  ros__parameters:
+    # Safety gate: only enable after camera extrinsics and bench tests pass.
+    # PX4 v1.17 does not expose LandingTargetPose in its stock dds_topics.yaml;
+    # this also requires compatible custom firmware (or a different gateway).
+    enabled: false
+    target_pose_topic: /uav/aruco/target_pose
+    vehicle_attitude_topic: /fmu/out/vehicle_attitude
+    px4_output_topic: /fmu/in/landing_target_pose
+    maximum_attitude_age_s: 0.25
+    maximum_target_distance_m: 12.0
+
+    # Confirmed down-camera orientation: image top is vehicle-forward,
+    # image right is vehicle-right, and optical +Z is vehicle-down.
+    camera_to_body_frd_rotation: [0.0, -1.0, 0.0,
+                                  1.0, 0.0, 0.0,
+                                  0.0, 0.0, 1.0]
+    # Measure this lever arm after the final camera mount is fixed.
+    camera_position_body_frd_m: [0.0, 0.0, 0.0]
+
+cmd_vel_to_px4:
+  ros__parameters:
+    cmd_vel_topic: /aruco_land/cmd_vel
+    local_position_topic: /fmu/out/vehicle_local_position_v1
+    attitude_topic: /fmu/out/vehicle_attitude
+    vehicle_status_topic: /fmu/out/vehicle_status_v1
+    target_altitude_m: 0.70
+    max_xy_speed_m_s: 0.35
+    max_yaw_rate_rad_s: 0.25
+    max_xy_accel_m_s2: 0.30
+    max_yaw_accel_rad_s2: 0.40
+    allow_vertical_cmd_vel: true
+    minimum_target_altitude_m: 0.20
+    maximum_target_altitude_m: 3.0
+    max_vertical_speed_m_s: 0.20
+    max_vertical_accel_m_s2: 0.20
+    cmd_timeout_s: 0.40
+    publish_rate_hz: 20.0

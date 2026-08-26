@@ -1,0 +1,48 @@
+zipdepth_node:
+  ros__parameters:
+    image_topic: /camera/front/image_raw
+    # Direct capture avoids serializing every 640x480 BGR frame through DDS.
+    # Set this to an empty string to restore ROS image subscriber mode.
+    camera_device: /dev/video0
+    camera_width: 640
+    camera_height: 480
+    camera_capture_fps: 30.0
+    camera_pixel_format: MJPG
+    camera_frame_id: front_camera_optical_frame
+    publish_input_image: false
+    model_path: /models/zipdepth_base_npu_512x384.onnx
+    onnx_threads: 3
+    # 0.0 disables software throttling. The Pi runs as fast as inference allows
+    # (about 5.94 FPS in the current USB-camera benchmark).
+    maximum_processing_rate_hz: 0.0
+
+    # ZipDepth outputs affine-invariant inverse depth. Keep metric outputs
+    # invalid until scale/shift have been fitted in disparity space (1/metre)
+    # against known distances from the real camera.
+    metric_calibration_enabled: false
+    inverse_depth_scale: 1.0
+    inverse_depth_shift_per_m: 0.0
+    minimum_depth_m: 0.3
+    maximum_depth_m: 8.0
+    near_percentile: 15.0
+    roi_top_fraction: 0.25
+    roi_bottom_fraction: 0.78
+
+    raw_topic: /uav/depth/zipdepth_raw
+    metric_depth_topic: /camera/depth/image
+    visualization_topic: /uav/depth/visualization
+    pointcloud_topic: /camera/depth/points
+    free_space_topic: /uav/depth/free_space
+    relative_free_space_topic: /uav/depth/relative_free_space
+    status_topic: /uav/depth/status
+    relative_near_percentile: 85.0
+    relative_minimum_contrast_span: 0.001
+
+    # Debug publishers are selected through launch arguments, like the Jetson
+    # pipeline. PointCloud and metric depth remain blocked until calibration.
+    pointcloud_stride: 4
+    pointcloud_frame_id: front_camera_link
+    focal_x_px: 430.0
+    focal_y_px: 430.0
+    principal_x_px: -1.0
+    principal_y_px: -1.0

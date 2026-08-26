@@ -1,0 +1,33 @@
+front_usb_camera:
+  ros__parameters:
+    device: /dev/video0
+    width: 640
+    height: 480
+    capture_fps: 30.0
+    # ZipDepth tops out near 6 FPS on Pi 5. Publishing decoded BGR at 10 Hz
+    # wastes one CPU core on frames the depth node cannot consume.
+    publish_rate_hz: 6.0
+    pixel_format: MJPG
+    frame_id: front_camera_optical_frame
+    image_topic: /camera/front/image_raw
+
+down_picamera:
+  ros__parameters:
+    # Frames are captured by Picamera2 on Raspberry Pi OS and transferred
+    # locally into the ROS container. These intrinsics came from
+    # ~/Aruco/live_calib at the same 640x480 IMX500 preview mode.
+    socket_path: /ros2_ws/run/down_camera.sock
+    width: 640
+    height: 480
+    frame_id: down_camera_optical_frame
+    image_topic: /camera/down/image_raw
+    camera_info_topic: /camera/down/camera_info
+    distortion_model: plumb_bob
+    camera_matrix: [487.76491400626776, 0.0, 317.8826078015716,
+                    0.0, 485.24249180352854, 236.19716196114075,
+                    0.0, 0.0, 1.0]
+    distortion_coefficients: [0.008339856410228082,
+                              0.3759390919362346,
+                              -0.000904355208686214,
+                              0.0025204350383155627,
+                              -0.7787931736237144]

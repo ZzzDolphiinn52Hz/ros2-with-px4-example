@@ -13,8 +13,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description() -> LaunchDescription:
     package_share = get_package_share_directory('px4_uavcup_perception')
-    default_config = os.path.join(
-        package_share, 'config', 'perception_pi.yaml')
+    default_config = os.path.join(package_share, 'config', 'zipdepth.yaml')
     config = LaunchConfiguration('config')
     debug_parameters = {
         'publish_raw_output': ParameterValue(

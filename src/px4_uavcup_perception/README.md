@@ -153,7 +153,7 @@ python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
   --width 640 --height 480 --fps 15
 ```
 
-Calibration IMX500 640x480 trong `perception_pi.yaml` được nhập từ
+Calibration IMX500 640x480 trong `config/pi_cameras.yaml` được nhập từ
 `~/Aruco/live_calib`. Nó chỉ áp dụng cho Pi camera ở đúng mode này; calibration
 USB camera là bộ intrinsic riêng. Test camera bridge an toàn, không khởi tạo
 ArUco/PID/PX4:
@@ -180,10 +180,12 @@ này read-only tại `/models`.
 docker compose build ros
 docker compose run --rm ros bash -lc \
   'source /opt/ros/humble/setup.bash && \
-   colcon build --symlink-install --packages-select px4_msgs px4_uavcup_perception'
+   colcon build --symlink-install --packages-select \
+     px4_msgs px4_uavcup_perception px4_uavcup_control \
+     px4_uavcup_px4_bridge px4_uavcup_bringup'
 docker compose run --rm ros bash -lc \
   'source /opt/ros/humble/setup.bash && source install/setup.bash && \
-   ros2 launch px4_uavcup_perception perception_pi.launch.py'
+   ros2 launch px4_uavcup_bringup pi_vehicle.launch.py'
 ```
 
 `maximum_processing_rate_hz: 0.0` tắt giới hạn phần mềm, vì vậy node chạy
@@ -195,7 +197,7 @@ debug output tùy chọn để không làm giảm FPS khi bay.
 Để bật raw và visualization trong lúc kiểm tra:
 
 ```bash
-ros2 launch px4_uavcup_perception perception_pi.launch.py \
+ros2 launch px4_uavcup_bringup pi_vehicle.launch.py \
   publish_raw_output:=true \
   publish_visualization:=true
 ```

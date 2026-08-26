@@ -1,0 +1,23 @@
+aruco_landing_pid:
+  ros__parameters:
+    enabled: false
+    target_pose_topic: /uav/aruco/target_pose
+    cmd_vel_topic: /aruco_land/cmd_vel
+    publish_rate_hz: 20.0
+    marker_timeout_s: 0.35
+    horizontal_kp: 0.55
+    horizontal_ki: 0.02
+    horizontal_kd: 0.08
+    horizontal_integral_limit_m_s: 0.3
+    maximum_horizontal_speed_m_s: 0.35
+    horizontal_deadband_m: 0.025
+    descent_alignment_radius_m: 0.15
+    vertical_kp: 0.35
+    maximum_descent_speed_m_s: 0.20
+    final_marker_distance_m: 0.35
+
+    # Confirmed on the installed down camera (2026-08-26): image top points
+    # vehicle-forward and image right points vehicle-right.
+    camera_to_body_flu_rotation: [0.0, -1.0, 0.0,
+                                  -1.0, 0.0, 0.0,
+                                  0.0, 0.0, -1.0]

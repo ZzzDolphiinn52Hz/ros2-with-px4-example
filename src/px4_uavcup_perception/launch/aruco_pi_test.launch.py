@@ -13,11 +13,9 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description() -> LaunchDescription:
     package_share = get_package_share_directory('px4_uavcup_perception')
-    default_config = os.path.join(
-        package_share, 'config', 'perception_pi.yaml')
-    config = LaunchConfiguration('config')
+    cameras_config = os.path.join(package_share, 'config', 'pi_cameras.yaml')
+    aruco_config = os.path.join(package_share, 'config', 'aruco.yaml')
     return LaunchDescription([
-        DeclareLaunchArgument('config', default_value=default_config),
         DeclareLaunchArgument('publish_debug_topics', default_value='true'),
         DeclareLaunchArgument('publish_debug_image', default_value='true'),
         Node(
@@ -25,14 +23,14 @@ def generate_launch_description() -> LaunchDescription:
             executable='picamera2_socket_camera_node',
             name='down_picamera',
             output='screen',
-            parameters=[config],
+            parameters=[cameras_config],
         ),
         Node(
             package='px4_uavcup_perception',
             executable='aruco_detector_node',
             name='aruco_detector_node',
             output='screen',
-            parameters=[config, {
+            parameters=[aruco_config, {
                 'publish_debug_topics': ParameterValue(
                     LaunchConfiguration('publish_debug_topics'),
                     value_type=bool),

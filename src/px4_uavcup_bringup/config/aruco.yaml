@@ -1,0 +1,18 @@
+aruco_detector_node:
+  ros__parameters:
+    image_topic: /camera/down/image_raw
+    camera_info_topic: /camera/down/camera_info
+    dictionary: DICT_5X5_100
+    marker_size_m: 0.16
+    target_marker_id: 0
+    maximum_processing_rate_hz: 15.0
+    # Flight profile publishes only target_pose + status. Test launch
+    # overrides this to expose ids/rvecs/tvecs.
+    publish_debug_topics: false
+    publish_debug_image: false
+    ids_topic: /uav/aruco/ids
+    rvecs_topic: /uav/aruco/rvecs
+    tvecs_topic: /uav/aruco/tvecs
+    target_pose_topic: /uav/aruco/target_pose
+    status_topic: /uav/aruco/status
+    debug_image_topic: /uav/aruco/debug_image
