@@ -172,9 +172,9 @@ Ba topic raw này và debug image chỉ được tạo trong profile test; profi
 flight mặc định chỉ giữ `target_pose` và diagnostic status.
 
 ZipDepth dùng checkpoint NPU được export ONNX 512x384 để giữ tỷ lệ 4:3
-của USB camera. Đặt hai file ONNX
-(graph và external weights) vào `/home/dolphiinn/models`; Docker mount thư mục
-này read-only tại `/models`.
+của USB camera. Đặt hai file ONNX (graph và external weights) vào
+`~/models`; Docker Compose mount thư mục này read-only tại `/models`. Có thể
+đặt biến `UAV_MODELS_DIR` nếu muốn lưu model ở vị trí khác.
 
 ```bash
 docker compose build ros
