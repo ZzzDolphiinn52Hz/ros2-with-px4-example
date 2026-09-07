@@ -14,7 +14,7 @@ services:
     volumes:
       - ./:/ros2_ws
       - /dev:/dev
-      - /home/dolphiinn/models:/models:ro
+      - ${UAV_MODELS_DIR:-${HOME}/models}:/models:ro
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     stdin_open: true
     tty: true
