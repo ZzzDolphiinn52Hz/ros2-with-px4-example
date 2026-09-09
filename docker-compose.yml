@@ -29,5 +29,7 @@ services:
     privileged: true
     volumes:
       - /dev:/dev
-    command: ["serial", "--dev", "/dev/serial0", "-b", "921600"]
+    # Raspberry Pi 5 GPIO header pins 8/10 expose UART0 as ttyAMA0.
+    # /dev/serial0 points to the separate three-pin debug UART (ttyAMA10).
+    command: ["serial", "--dev", "/dev/ttyAMA0", "-b", "921600"]
     restart: unless-stopped
