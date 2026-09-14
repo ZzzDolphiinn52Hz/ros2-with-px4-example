@@ -14,6 +14,11 @@ RUN printf '%s\n' \
  && find /etc/apt/sources.list /etc/apt/sources.list.d -type f \
       -exec sed -i 's|http://packages.ros.org/ros2/ubuntu|https://packages.ros.org/ros2/ubuntu|g' {} +
 
+# Use HTTPS for Ubuntu ports as well. Some hotspot/ISP paths leave plain HTTP
+# downloads half-closed, which makes apt retry indefinitely on Raspberry Pi.
+RUN find /etc/apt/sources.list /etc/apt/sources.list.d -type f \
+      -exec sed -i 's|http://ports.ubuntu.com/ubuntu-ports|https://ports.ubuntu.com/ubuntu-ports|g' {} +
+
 # Ubuntu ports first — these usually succeed even when the ROS repo is flaky.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
