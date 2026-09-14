@@ -3,16 +3,15 @@ FROM ros:humble-ros-base
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8
 
-# Hotspot and some ISPs drop HTTP to packages.ros.org (timeout on :80).
-# Retry and force HTTPS so apt can finish on a slow link.
+# Retry package downloads so apt can finish on a slow or intermittent link.
+# Keep packages.ros.org on HTTP: its current HTTPS endpoint presents an
+# osuosl.org certificate that does not match packages.ros.org.
 RUN printf '%s\n' \
       'Acquire::Retries "10";' \
       'Acquire::http::Timeout "30";' \
       'Acquire::https::Timeout "30";' \
       'Acquire::http::Pipeline-Depth "0";' \
-      > /etc/apt/apt.conf.d/80-retries \
- && find /etc/apt/sources.list /etc/apt/sources.list.d -type f \
-      -exec sed -i 's|http://packages.ros.org/ros2/ubuntu|https://packages.ros.org/ros2/ubuntu|g' {} +
+      > /etc/apt/apt.conf.d/80-retries
 
 # Use HTTPS for Ubuntu ports as well. Some hotspot/ISP paths leave plain HTTP
 # downloads half-closed, which makes apt retry indefinitely on Raspberry Pi.
