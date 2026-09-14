@@ -1,21 +1,20 @@
 zipdepth_node:
   ros__parameters:
     image_topic: /camera/front/image_raw
-    # Direct capture avoids serializing every 640x480 BGR frame through DDS.
-    # Set this to an empty string to restore ROS image subscriber mode.
-    # Use the persistent USB identity because enabling the Pi CSI camera
-    # changes the numeric /dev/videoN assignments.
-    camera_device: /dev/v4l/by-id/usb-XC-TECH_Web_Camera_20250519.1011-video-index0
+    # IMX219 host frames go directly through a local Unix socket, avoiding DDS
+    # serialization and unstable /dev/videoN assignments.
+    camera_device: ''
+    camera_socket_path: /ros2_ws/run/front_camera.sock
     camera_width: 640
     camera_height: 480
-    camera_capture_fps: 30.0
-    camera_pixel_format: MJPG
+    camera_capture_fps: 15.0
+    camera_pixel_format: RGB888
     camera_frame_id: front_camera_optical_frame
     publish_input_image: false
     model_path: /models/zipdepth_base_npu_512x384.onnx
     onnx_threads: 3
     # 0.0 disables software throttling. The Pi runs as fast as inference allows
-    # (about 5.94 FPS in the current USB-camera benchmark).
+    # Inference and the IMX219 host stream determine actual throughput.
     maximum_processing_rate_hz: 0.0
 
     # ZipDepth outputs affine-invariant inverse depth. Keep metric outputs

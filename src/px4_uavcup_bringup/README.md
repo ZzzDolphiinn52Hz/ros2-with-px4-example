@@ -15,13 +15,13 @@ ros2 launch px4_uavcup_bringup zipdepth_test.launch.py
 ros2 launch px4_uavcup_bringup pi_perception_test.launch.py
 ```
 
-`pi_perception_test.launch.py` chạy đồng thời USB ZipDepth và Pi Camera
+`pi_perception_test.launch.py` chạy đồng thời IMX219 ZipDepth và IMX500
 ArUco để kiểm tra perception; launch này không tạo PID, controller hoặc
 PX4 bridge node.
 
 | File | Node |
 | --- | --- |
-| `config/pi_cameras.yaml` | USB camera + Pi camera |
+| `config/pi_cameras.yaml` | IMX500 camera nhìn xuống |
 | `config/zipdepth.yaml` | ZipDepth |
 | `config/aruco.yaml` | ArUco detector |
 | `config/landing.yaml` | ArUco landing PID |

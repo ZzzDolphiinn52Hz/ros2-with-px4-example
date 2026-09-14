@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import socket
 import time
 
 import numpy as np
@@ -23,6 +24,7 @@ from std_msgs.msg import Float32MultiArray, Header, MultiArrayDimension
 
 from ..common.camera_health import assess_camera_health
 from ..common.image import array_to_image, image_to_bgr
+from ..cameras.picamera2_protocol import HEADER, receive_exact, unpack_header
 from .free_space import summarize_free_space
 from .pointcloud import depth_to_flu_points
 from .relative_free_space import summarize_relative_free_space
@@ -40,6 +42,7 @@ class ZipDepthNode(Node):
         super().__init__('zipdepth_node')
         self.declare_parameter('image_topic', '/camera/image_raw')
         self.declare_parameter('camera_device', '')
+        self.declare_parameter('camera_socket_path', '')
         self.declare_parameter('camera_width', 640)
         self.declare_parameter('camera_height', 480)
         self.declare_parameter('camera_capture_fps', 30.0)
@@ -112,8 +115,14 @@ class ZipDepthNode(Node):
         self._cv2 = cv2
         self._backend = ZipDepthOnnx(model_path, threads)
         self._camera = None
+        self._camera_socket = None
         self._camera_device = str(
             self.get_parameter('camera_device').value).strip()
+        self._camera_socket_path = str(
+            self.get_parameter('camera_socket_path').value).strip()
+        if self._camera_device and self._camera_socket_path:
+            raise ValueError(
+                'camera_device and camera_socket_path are mutually exclusive')
         self._publish_raw = bool(
             self.get_parameter('publish_raw_output').value)
         self._publish_metric = bool(
@@ -173,6 +182,9 @@ class ZipDepthNode(Node):
         if self._camera_device:
             self._start_direct_camera(rate)
             input_source = f'direct:{self._camera_device}'
+        elif self._camera_socket_path:
+            self._start_socket_camera(rate)
+            input_source = f'picamera2:{self._camera_socket_path}'
         else:
             latest_frame_qos = QoSProfile(
                 history=HistoryPolicy.KEEP_LAST,
@@ -226,13 +238,75 @@ class ZipDepthNode(Node):
         self._camera_timer = self.create_timer(
             timer_period, self._capture_and_process)
 
+    def _start_socket_camera(self, rate: float) -> None:
+        self._camera_width = int(self.get_parameter('camera_width').value)
+        self._camera_height = int(self.get_parameter('camera_height').value)
+        if self._camera_width <= 0 or self._camera_height <= 0:
+            raise ValueError('camera width and height must be positive')
+        self._camera_frame_id = str(
+            self.get_parameter('camera_frame_id').value)
+        if bool(self.get_parameter('publish_input_image').value):
+            self._input_publisher = self.create_publisher(
+                Image, str(self.get_parameter('image_topic').value),
+                qos_profile_sensor_data)
+        timer_period = 0.001 if rate == 0.0 else 1.0 / rate
+        self._camera_timer = self.create_timer(
+            timer_period, self._capture_socket_and_process)
+
+    def _close_camera_socket(self) -> None:
+        if self._camera_socket is not None:
+            self._camera_socket.close()
+            self._camera_socket = None
+
+    def _receive_socket_frame(self) -> np.ndarray:
+        if self._camera_socket is None:
+            connection = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            connection.settimeout(2.0)
+            try:
+                connection.connect(self._camera_socket_path)
+            except Exception:
+                connection.close()
+                raise
+            self._camera_socket = connection
+            self.get_logger().info(
+                f'Connected to Picamera2 host stream: '
+                f'{self._camera_socket_path}')
+        header = receive_exact(self._camera_socket, HEADER.size)
+        width, height, payload_size = unpack_header(header)
+        if width != self._camera_width or height != self._camera_height:
+            raise ValueError(
+                f'host frame {width}x{height} does not match configured '
+                f'{self._camera_width}x{self._camera_height}')
+        payload = receive_exact(self._camera_socket, payload_size)
+        rgb = np.frombuffer(payload, dtype=np.uint8).reshape(
+            height, width, 3)
+        return self._cv2.cvtColor(rgb, self._cv2.COLOR_RGB2BGR)
+
+    def _capture_socket_and_process(self) -> None:
+        try:
+            bgr = self._receive_socket_frame()
+        except (ConnectionError, OSError, ValueError) as error:
+            self._close_camera_socket()
+            self._publish_invalid_free_space()
+            self._publish_status(
+                DiagnosticStatus.ERROR,
+                f'Picamera2 camera frame unavailable: {error}', 0.0)
+            self.get_logger().warning(
+                f'Picamera2 host stream unavailable: {error}',
+                throttle_duration_sec=5.0)
+            return
+        self._process_camera_frame(bgr)
+
     def _capture_and_process(self) -> None:
         received, bgr = self._camera.read()
         if not received or bgr is None:
             self._publish_invalid_free_space()
             self._publish_status(
-                DiagnosticStatus.ERROR, 'USB camera frame unavailable', 0.0)
+                DiagnosticStatus.ERROR, 'V4L2 camera frame unavailable', 0.0)
             return
+        self._process_camera_frame(bgr)
+
+    def _process_camera_frame(self, bgr: np.ndarray) -> None:
         header = Header()
         header.stamp = self.get_clock().now().to_msg()
         header.frame_id = self._camera_frame_id
@@ -440,6 +514,7 @@ class ZipDepthNode(Node):
         self._status_publisher.publish(diagnostic)
 
     def destroy_node(self):
+        self._close_camera_socket()
         if self._camera is not None:
             self._camera.release()
             self._camera = None

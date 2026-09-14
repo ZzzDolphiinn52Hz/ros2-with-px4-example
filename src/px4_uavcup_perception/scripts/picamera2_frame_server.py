@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture IMX500 frames on the Pi host and serve them to the ROS container."""
+"""Capture a selected Pi camera and serve frames to the ROS container."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ import numpy as np
 from picamera2 import Picamera2
 
 from px4_uavcup_perception.cameras.picamera2_protocol import pack_header
+from px4_uavcup_perception.cameras.picamera2_selection import select_camera
 
 
 def main() -> None:
@@ -22,6 +23,12 @@ def main() -> None:
     parser.add_argument('--width', type=int, default=640)
     parser.add_argument('--height', type=int, default=480)
     parser.add_argument('--fps', type=float, default=15.0)
+    parser.add_argument(
+        '--camera-model', default='imx500',
+        help='unique model substring, for example imx500 or imx219')
+    parser.add_argument(
+        '--camera-index', type=int,
+        help='Picamera2 camera number; overrides --camera-model')
     args = parser.parse_args()
     if args.width <= 0 or args.height <= 0 or args.fps <= 0.0:
         raise ValueError('width, height and fps must be positive')
@@ -37,7 +44,13 @@ def main() -> None:
     args.socket.parent.mkdir(parents=True, exist_ok=True)
     args.socket.unlink(missing_ok=True)
 
-    camera = Picamera2()
+    camera_info = Picamera2.global_camera_info()
+    selected = select_camera(
+        camera_info, model=args.camera_model, index=args.camera_index)
+    camera_number = int(selected['Num'])
+    camera_model = str(selected.get('Model', 'unknown'))
+    camera_id = str(selected.get('Id', 'unknown'))
+    camera = Picamera2(camera_number)
     configuration = camera.create_preview_configuration(
         main={'size': (args.width, args.height), 'format': 'RGB888'},
         controls={'FrameRate': args.fps},
@@ -51,8 +64,9 @@ def main() -> None:
     server.settimeout(1.0)
     header = pack_header(args.width, args.height)
     print(
-        f'Picamera2 frame server ready: IMX500 {args.width}x{args.height} '
-        f'@ {args.fps:.1f} FPS -> {args.socket}',
+        f'Picamera2 frame server ready: {camera_model} '
+        f'(index={camera_number}, id={camera_id}) '
+        f'{args.width}x{args.height} @ {args.fps:.1f} FPS -> {args.socket}',
         flush=True,
     )
 

@@ -123,14 +123,14 @@ có thể thu hồi bằng `xhost -si:localuser:root`.
 Pipeline Pi dùng hai camera và hai namespace riêng:
 
 ```text
-USB camera -> zipdepth_node (direct V4L2, không copy ảnh BGR qua DDS)
+IMX219 phía trước -> Picamera2 host -> Unix socket -> zipdepth_node
   ├─ /uav/depth/free_space -> local_controller_shadow
   ├─ /uav/depth/zipdepth_raw (debug tùy chọn)
   ├─ /uav/depth/visualization (debug tùy chọn)
   ├─ /camera/depth/image (debug, sau hiệu chuẩn metric)
   └─ /camera/depth/points (debug, sau hiệu chuẩn metric)
 
-Pi Camera nhìn xuống -> Picamera2 host -> Unix socket -> ROS camera node
+IMX500 nhìn xuống -> Picamera2 host -> Unix socket -> ROS camera node
   ├─ /camera/down/image_raw + /camera/down/camera_info
   └─ aruco_detector_node
      ├─ /uav/aruco/target_pose + /uav/aruco/status (flight)
@@ -141,21 +141,30 @@ Pi Camera nhìn xuống -> Picamera2 host -> Unix socket -> ROS camera node
            └─ OffboardControlMode + TrajectorySetpoint
 ```
 
-IMX500 dùng Picamera2 trên Raspberry Pi OS, còn ROS Humble chạy trong
-container Ubuntu. Host bridge chuyển raw RGB qua Unix socket cục bộ; ảnh không
-đi qua Wi-Fi và USB camera `/dev/video0` vẫn dành riêng cho ZipDepth. Chạy host
-bridge từ terminal trên Pi bằng:
+IMX219 và IMX500 dùng Picamera2 trên Raspberry Pi OS, còn ROS Humble chạy
+trong container Ubuntu. Hai host bridge chuyển raw RGB qua hai Unix socket cục
+bộ; ảnh không đi qua Wi-Fi hoặc DDS. Chạy hai bridge từ hai terminal trên Pi:
 
 ```bash
 cd ~/ros2_ws
 PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \
 python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
+  --camera-model imx219 --socket run/front_camera.sock \
+  --width 640 --height 480 --fps 15
+```
+
+```bash
+cd ~/ros2_ws
+PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \
+python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
+  --camera-model imx500 --socket run/down_camera.sock \
   --width 640 --height 480 --fps 15
 ```
 
 Calibration IMX500 640x480 trong `config/pi_cameras.yaml` được nhập từ
 `~/Aruco/live_calib`. Nó chỉ áp dụng cho Pi camera ở đúng mode này; calibration
-USB camera là bộ intrinsic riêng. Test camera bridge an toàn, không khởi tạo
+IMX219 phía trước cần bộ intrinsic riêng nếu sau này bật pointcloud metric.
+Test camera bridge an toàn, không khởi tạo
 ArUco/PID/PX4:
 
 ```bash
@@ -172,7 +181,7 @@ Ba topic raw này và debug image chỉ được tạo trong profile test; profi
 flight mặc định chỉ giữ `target_pose` và diagnostic status.
 
 ZipDepth dùng checkpoint NPU được export ONNX 512x384 để giữ tỷ lệ 4:3
-của USB camera. Đặt hai file ONNX (graph và external weights) vào
+của IMX219. Đặt hai file ONNX (graph và external weights) vào
 `~/models`; Docker Compose mount thư mục này read-only tại `/models`. Có thể
 đặt biến `UAV_MODELS_DIR` nếu muốn lưu model ở vị trí khác.
 
@@ -190,9 +199,10 @@ docker compose run --rm ros bash -lc \
 
 `maximum_processing_rate_hz: 0.0` tắt giới hạn phần mềm, vì vậy node chạy
 liên tục theo tốc độ inference thực tế. Mặc định `zipdepth_node` mở
-`/dev/video0` trực tiếp và chỉ publish free-space/status nhỏ, giống pipeline
-Jetson. Raw `32FC1` 512x384, visualization, metric depth và pointcloud đều là
-debug output tùy chọn để không làm giảm FPS khi bay.
+socket `/ros2_ws/run/front_camera.sock` trực tiếp và chỉ publish
+free-space/status nhỏ, giống pipeline Jetson. Raw `32FC1` 512x384,
+visualization, metric depth và pointcloud đều là debug output tùy chọn để
+không làm giảm FPS khi bay.
 
 Để bật raw và visualization trong lúc kiểm tra:
 
@@ -202,9 +212,8 @@ ros2 launch px4_uavcup_bringup pi_vehicle.launch.py \
   publish_visualization:=true
 ```
 
-Camera publisher riêng trong launch được tắt; đặt `camera_device` rỗng và
-launch với `front_usb_camera:=true` nếu cần quay lại subscriber mode. Khi raw
-đang bật, lưu một ảnh màu bằng:
+IMX219 phía trước không tạo ROS image topic mặc định; ZipDepth đọc thẳng socket
+để giảm copy. Khi raw đang bật, lưu một ảnh màu bằng:
 
 ```bash
 docker compose run --rm ros bash -lc \
