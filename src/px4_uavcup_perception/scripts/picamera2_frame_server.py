@@ -76,7 +76,6 @@ def main() -> None:
     configuration = camera.create_preview_configuration(
         **configuration_arguments)
     camera.configure(configuration)
-    camera.start()
 
     server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     server.bind(str(args.socket))
@@ -101,7 +100,13 @@ def main() -> None:
             except socket.timeout:
                 continue
             print('ROS camera client connected', flush=True)
+            camera_running = False
             try:
+                # Start only after a consumer is ready. Starting earlier can
+                # fill Picamera2's completed-request queue while a heavy ROS
+                # client loads, eventually timing out the CSI frontend.
+                camera.start()
+                camera_running = True
                 with connection:
                     while running:
                         frame = np.ascontiguousarray(camera.capture_array())
@@ -111,14 +116,18 @@ def main() -> None:
                                 f'{frame.shape}')
                         connection.sendall(header)
                         connection.sendall(frame.data)
-            except (BrokenPipeError, ConnectionError, OSError) as error:
+            except (
+                    BrokenPipeError, ConnectionError, OSError,
+                    RuntimeError) as error:
                 if running:
                     print(
                         f'ROS camera client disconnected: {error}',
                         flush=True)
+            finally:
+                if camera_running:
+                    camera.stop()
     finally:
         server.close()
-        camera.stop()
         camera.close()
         args.socket.unlink(missing_ok=True)
 
