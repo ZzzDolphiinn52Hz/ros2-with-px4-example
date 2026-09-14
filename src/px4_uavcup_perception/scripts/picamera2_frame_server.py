@@ -66,16 +66,12 @@ def main() -> None:
         sensor_width=args.sensor_width,
         sensor_height=args.sensor_height,
     )
-    camera = Picamera2(camera_number)
     configuration_arguments = {
         'main': {'size': (args.width, args.height), 'format': 'RGB888'},
         'controls': {'FrameRate': args.fps},
     }
     if sensor_size is not None:
         configuration_arguments['raw'] = {'size': sensor_size}
-    configuration = camera.create_preview_configuration(
-        **configuration_arguments)
-    camera.configure(configuration)
 
     server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     server.bind(str(args.socket))
@@ -100,11 +96,16 @@ def main() -> None:
             except socket.timeout:
                 continue
             print('ROS camera client connected', flush=True)
+            camera = None
             camera_running = False
             try:
-                # Start only after a consumer is ready. Starting earlier can
-                # fill Picamera2's completed-request queue while a heavy ROS
-                # client loads, eventually timing out the CSI frontend.
+                # Open, configure and start only after a consumer is ready.
+                # Leaving a configured sensor idle while a heavy ROS client
+                # loads can cause the CSI frontend to time out on IMX219.
+                camera = Picamera2(camera_number)
+                configuration = camera.create_preview_configuration(
+                    **configuration_arguments)
+                camera.configure(configuration)
                 camera.start()
                 camera_running = True
                 with connection:
@@ -126,9 +127,10 @@ def main() -> None:
             finally:
                 if camera_running:
                     camera.stop()
+                if camera is not None:
+                    camera.close()
     finally:
         server.close()
-        camera.close()
         args.socket.unlink(missing_ok=True)
 
 
