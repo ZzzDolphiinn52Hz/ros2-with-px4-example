@@ -153,6 +153,9 @@ python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
   --width 640 --height 480 --fps 15
 ```
 
+Frame server tự dùng sensor mode IMX219 1640x1232 ổn định rồi scale bằng
+PiSP về 640x480; mode raw 640x480 không ổn định trên camera đã kiểm tra.
+
 ```bash
 cd ~/ros2_ws
 PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \

@@ -12,7 +12,10 @@ import numpy as np
 from picamera2 import Picamera2
 
 from px4_uavcup_perception.cameras.picamera2_protocol import pack_header
-from px4_uavcup_perception.cameras.picamera2_selection import select_camera
+from px4_uavcup_perception.cameras.picamera2_selection import (
+    select_camera,
+    select_sensor_size,
+)
 
 
 def main() -> None:
@@ -29,6 +32,12 @@ def main() -> None:
     parser.add_argument(
         '--camera-index', type=int,
         help='Picamera2 camera number; overrides --camera-model')
+    parser.add_argument(
+        '--sensor-width', type=int, default=0,
+        help='optional raw sensor mode width; set together with height')
+    parser.add_argument(
+        '--sensor-height', type=int, default=0,
+        help='optional raw sensor mode height; set together with width')
     args = parser.parse_args()
     if args.width <= 0 or args.height <= 0 or args.fps <= 0.0:
         raise ValueError('width, height and fps must be positive')
@@ -50,11 +59,22 @@ def main() -> None:
     camera_number = int(selected['Num'])
     camera_model = str(selected.get('Model', 'unknown'))
     camera_id = str(selected.get('Id', 'unknown'))
-    camera = Picamera2(camera_number)
-    configuration = camera.create_preview_configuration(
-        main={'size': (args.width, args.height), 'format': 'RGB888'},
-        controls={'FrameRate': args.fps},
+    sensor_size = select_sensor_size(
+        model=camera_model,
+        output_width=args.width,
+        output_height=args.height,
+        sensor_width=args.sensor_width,
+        sensor_height=args.sensor_height,
     )
+    camera = Picamera2(camera_number)
+    configuration_arguments = {
+        'main': {'size': (args.width, args.height), 'format': 'RGB888'},
+        'controls': {'FrameRate': args.fps},
+    }
+    if sensor_size is not None:
+        configuration_arguments['raw'] = {'size': sensor_size}
+    configuration = camera.create_preview_configuration(
+        **configuration_arguments)
     camera.configure(configuration)
     camera.start()
 
@@ -69,6 +89,10 @@ def main() -> None:
         f'{args.width}x{args.height} @ {args.fps:.1f} FPS -> {args.socket}',
         flush=True,
     )
+    if sensor_size is not None:
+        print(
+            f'Raw sensor mode: {sensor_size[0]}x{sensor_size[1]}',
+            flush=True)
 
     try:
         while running:
