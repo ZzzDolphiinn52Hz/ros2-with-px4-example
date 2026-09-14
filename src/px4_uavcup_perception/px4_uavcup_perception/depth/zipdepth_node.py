@@ -261,7 +261,10 @@ class ZipDepthNode(Node):
     def _receive_socket_frame(self) -> np.ndarray:
         if self._camera_socket is None:
             connection = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            connection.settimeout(2.0)
+            # Picamera2 opens/configures the sensor only after this client
+            # connects. Allow its first frame enough warm-up time, then use a
+            # short timeout so a stalled flight camera is detected quickly.
+            connection.settimeout(10.0)
             try:
                 connection.connect(self._camera_socket_path)
             except Exception:
@@ -278,6 +281,7 @@ class ZipDepthNode(Node):
                 f'host frame {width}x{height} does not match configured '
                 f'{self._camera_width}x{self._camera_height}')
         payload = receive_exact(self._camera_socket, payload_size)
+        self._camera_socket.settimeout(2.0)
         rgb = np.frombuffer(payload, dtype=np.uint8).reshape(
             height, width, 3)
         return self._cv2.cvtColor(rgb, self._cv2.COLOR_RGB2BGR)
