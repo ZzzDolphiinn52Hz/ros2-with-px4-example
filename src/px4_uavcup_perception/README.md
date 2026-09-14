@@ -130,15 +130,13 @@ IMX219 phía trước -> Picamera2 host -> Unix socket -> zipdepth_node
   ├─ /camera/depth/image (debug, sau hiệu chuẩn metric)
   └─ /camera/depth/points (debug, sau hiệu chuẩn metric)
 
-IMX500 nhìn xuống -> Picamera2 host -> Unix socket -> ROS camera node
-  ├─ /camera/down/image_raw + /camera/down/camera_info
-  └─ aruco_detector_node
-     ├─ /uav/aruco/target_pose + /uav/aruco/status (flight)
-     ├─ /uav/aruco/ids + rvecs + tvecs (test tùy chọn)
-     ├─ /uav/aruco/debug_image (test tùy chọn)
-     └─ /uav/aruco/target_pose -> aruco_landing_pid
-        └─ /aruco_land/cmd_vel -> cmd_vel_to_px4
-           └─ OffboardControlMode + TrajectorySetpoint
+IMX500 nhìn xuống -> Picamera2 host -> Unix socket -> aruco_detector_node
+  ├─ /uav/aruco/target_pose + /uav/aruco/status (flight)
+  ├─ /uav/aruco/ids + rvecs + tvecs (test tùy chọn)
+  ├─ /uav/aruco/debug_image (test tùy chọn)
+  └─ /uav/aruco/target_pose -> aruco_landing_pid
+     └─ /aruco_land/cmd_vel -> cmd_vel_to_px4
+        └─ OffboardControlMode + TrajectorySetpoint
 ```
 
 IMX219 và IMX500 dùng Picamera2 trên Raspberry Pi OS, còn ROS Humble chạy
@@ -178,11 +176,13 @@ PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \
   --width 640 --height 480 --fps 15
 ```
 
-Calibration IMX500 640x480 trong `config/pi_cameras.yaml` được nhập từ
-`~/Aruco/live_calib`. Nó chỉ áp dụng cho Pi camera ở đúng mode này; calibration
-IMX219 phía trước cần bộ intrinsic riêng nếu sau này bật pointcloud metric.
-Test camera bridge an toàn, không khởi tạo
-ArUco/PID/PX4:
+Calibration IMX500 640x480 trong `config/aruco.yaml` và
+`config/pi_cameras.yaml` được nhập từ `~/Aruco/live_calib`. Detector đọc thẳng
+`down_camera.sock` và dùng intrinsic trong config, nên profile perception/flight
+không publish `/camera/down/image_raw`; việc này giảm đáng kể CPU và DDS copy.
+Calibration chỉ áp dụng cho IMX500 ở đúng mode 640x480. IMX219 phía trước cần
+bộ intrinsic riêng nếu sau này bật pointcloud metric. Test camera bridge raw
+riêng, không khởi tạo ArUco/PID/PX4:
 
 ```bash
 ros2 launch px4_uavcup_perception pi_down_camera_test.launch.py

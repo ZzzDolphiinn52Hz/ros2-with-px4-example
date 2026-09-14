@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Launch the Pi vehicle stack: cameras, ZipDepth, ArUco, PID and PX4 adapter."""
+"""Launch the Pi vehicle ZipDepth, ArUco, PID and PX4 adapter stack."""
 
 import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
@@ -14,7 +13,6 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
     bringup_share = get_package_share_directory('px4_uavcup_bringup')
-    cameras_config = os.path.join(bringup_share, 'config', 'pi_cameras.yaml')
     zipdepth_config = os.path.join(bringup_share, 'config', 'zipdepth.yaml')
     aruco_config = os.path.join(bringup_share, 'config', 'aruco.yaml')
     landing_config = os.path.join(bringup_share, 'config', 'landing.yaml')
@@ -28,15 +26,6 @@ def generate_launch_description():
             'publish_aruco_debug_topics', default_value='false'),
         DeclareLaunchArgument(
             'publish_aruco_debug_image', default_value='false'),
-        DeclareLaunchArgument('down_picamera', default_value='true'),
-        Node(
-            package='px4_uavcup_perception',
-            executable='picamera2_socket_camera_node',
-            name='down_picamera',
-            output='screen',
-            parameters=[cameras_config],
-            condition=IfCondition(LaunchConfiguration('down_picamera')),
-        ),
         Node(
             package='px4_uavcup_perception',
             executable='zipdepth_node',

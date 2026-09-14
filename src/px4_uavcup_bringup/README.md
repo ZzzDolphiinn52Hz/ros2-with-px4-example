@@ -17,7 +17,9 @@ ros2 launch px4_uavcup_bringup pi_perception_test.launch.py
 
 `pi_perception_test.launch.py` chạy đồng thời IMX219 ZipDepth và IMX500
 ArUco để kiểm tra perception; launch này không tạo PID, controller hoặc
-PX4 bridge node.
+PX4 bridge node. Cả ZipDepth và ArUco đều đọc Unix socket trực tiếp; profile
+này không publish ảnh camera raw qua DDS. Muốn kiểm tra raw IMX500, chạy riêng
+`pi_down_camera_test.launch.py` thay vì chạy đồng thời với ArUco.
 
 Topology cố định của Pi là:
 

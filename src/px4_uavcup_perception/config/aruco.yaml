@@ -1,5 +1,19 @@
 aruco_detector_node:
   ros__parameters:
+    input_mode: picamera2_socket
+    camera_socket_path: /ros2_ws/run/down_camera.sock
+    camera_width: 640
+    camera_height: 480
+    camera_frame_id: down_camera_optical_frame
+    camera_matrix: [487.76491400626776, 0.0, 317.8826078015716,
+                    0.0, 485.24249180352854, 236.19716196114075,
+                    0.0, 0.0, 1.0]
+    distortion_coefficients: [0.008339856410228082,
+                              0.3759390919362346,
+                              -0.000904355208686214,
+                              0.0025204350383155627,
+                              -0.7787931736237144]
+    # These topics are used only when input_mode is changed to ros_topic.
     image_topic: /camera/down/image_raw
     camera_info_topic: /camera/down/camera_info
     dictionary: DICT_5X5_100
