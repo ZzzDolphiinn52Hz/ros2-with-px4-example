@@ -153,8 +153,8 @@ python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
   --width 640 --height 480 --fps 15
 ```
 
-Frame server tự dùng sensor mode IMX219 1640x1232 ổn định rồi scale bằng
-PiSP về 640x480; mode raw 640x480 không ổn định trên camera đã kiểm tra.
+Frame server dùng `XBGR8888` ổn định cho IMX219 rồi bỏ kênh X trước khi gửi
+RGB; `RGB888` trực tiếp gây timeout với phiên bản libcamera/PiSP đã kiểm tra.
 
 ```bash
 cd ~/ros2_ws

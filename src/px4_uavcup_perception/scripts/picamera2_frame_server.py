@@ -13,7 +13,7 @@ from picamera2 import Picamera2
 
 from px4_uavcup_perception.cameras.picamera2_protocol import pack_header
 from px4_uavcup_perception.cameras.picamera2_selection import \
-    select_sensor_size
+    select_capture_format, select_sensor_size
 
 
 def main() -> None:
@@ -59,8 +59,13 @@ def main() -> None:
         sensor_width=args.sensor_width,
         sensor_height=args.sensor_height,
     )
+    capture_format, capture_channels = select_capture_format(
+        args.camera_model)
     configuration_arguments = {
-        'main': {'size': (args.width, args.height), 'format': 'RGB888'},
+        'main': {
+            'size': (args.width, args.height),
+            'format': capture_format,
+        },
         'controls': {'FrameRate': args.fps},
     }
     if sensor_size is not None:
@@ -74,7 +79,8 @@ def main() -> None:
     print(
         f'Picamera2 frame server ready: expected={args.camera_model} '
         f'index={args.camera_index} '
-        f'{args.width}x{args.height} @ {args.fps:.1f} FPS -> {args.socket}',
+        f'{args.width}x{args.height} {capture_format} '
+        f'@ {args.fps:.1f} FPS -> {args.socket}',
         flush=True,
     )
     if sensor_size is not None:
@@ -116,10 +122,14 @@ def main() -> None:
                 with connection:
                     while running:
                         frame = np.ascontiguousarray(camera.capture_array())
-                        if frame.shape != (args.height, args.width, 3):
+                        expected_shape = (
+                            args.height, args.width, capture_channels)
+                        if frame.shape != expected_shape:
                             raise RuntimeError(
                                 'unexpected Picamera2 frame shape '
                                 f'{frame.shape}')
+                        if capture_channels == 4:
+                            frame = np.ascontiguousarray(frame[:, :, :3])
                         connection.sendall(header)
                         connection.sendall(frame.data)
             except (

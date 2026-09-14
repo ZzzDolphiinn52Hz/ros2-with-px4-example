@@ -15,9 +15,13 @@ def select_sensor_size(
         raise ValueError('sensor width and height must be non-negative')
     if sensor_width and sensor_height:
         return sensor_width, sensor_height
-    if ('imx219' in model.lower()
-            and output_width <= 1640 and output_height <= 1232):
-        # The 640x480 sensor crop times out on the tested Pi 5/IMX219 pair.
-        # Capture the stable 2x2-binned mode and let PiSP scale to the output.
-        return 1640, 1232
     return None
+
+
+def select_capture_format(model: str) -> tuple[str, int]:
+    """Return a working Picamera2 format and its array channel count."""
+    if 'imx219' in model.lower():
+        # RGB888 stalls the CSI frontend with the tested libcamera/PiSP stack.
+        # XBGR8888 is RGBX in byte order on this little-endian platform.
+        return 'XBGR8888', 4
+    return 'RGB888', 3
