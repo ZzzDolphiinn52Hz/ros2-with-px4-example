@@ -6,6 +6,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 
@@ -15,6 +16,8 @@ def generate_launch_description() -> LaunchDescription:
     launch_dir = os.path.join(perception_share, 'launch')
 
     return LaunchDescription([
+        DeclareLaunchArgument('enable_zipdepth', default_value='true'),
+        DeclareLaunchArgument('enable_aruco', default_value='true'),
         DeclareLaunchArgument('publish_depth_visualization',
                               default_value='false'),
         DeclareLaunchArgument('publish_aruco_debug_topics',
@@ -31,6 +34,7 @@ def generate_launch_description() -> LaunchDescription:
                     'publish_depth_visualization'),
                 'publish_pointcloud': 'false',
             }.items(),
+            condition=IfCondition(LaunchConfiguration('enable_zipdepth')),
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
@@ -41,5 +45,6 @@ def generate_launch_description() -> LaunchDescription:
                 'publish_debug_image': LaunchConfiguration(
                     'publish_aruco_debug_image'),
             }.items(),
+            condition=IfCondition(LaunchConfiguration('enable_aruco')),
         ),
     ])

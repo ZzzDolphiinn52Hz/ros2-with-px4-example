@@ -142,15 +142,29 @@ IMX500 nhìn xuống -> Picamera2 host -> Unix socket -> ROS camera node
 ```
 
 IMX219 và IMX500 dùng Picamera2 trên Raspberry Pi OS, còn ROS Humble chạy
-trong container Ubuntu. Hai host bridge chuyển raw RGB qua hai Unix socket cục
-bộ; ảnh không đi qua Wi-Fi hoặc DDS. Chạy hai bridge từ hai terminal trên Pi:
+trong container Ubuntu. Topology của xe là `CAM0 = IMX219 phía trước` cho
+ZipDepth và `CAM1 = IMX500 nhìn xuống` cho ArUco. Hai host bridge chuyển raw
+RGB qua hai Unix socket cục bộ; ảnh không đi qua Wi-Fi hoặc DDS.
+
+Khi đã gắn đủ hai camera, chạy một supervisor duy nhất trên Pi host. Supervisor
+khởi động hai frame server, kiểm tra model tại từng camera index và dừng cả hai
+gọn gàng khi nhấn `Ctrl+C`:
 
 ```bash
 cd ~/ros2_ws
 PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \
-python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
-  --camera-index 1 --camera-model imx219 --socket run/front_camera.sock \
-  --width 640 --height 480 --fps 15
+/usr/bin/python3 \
+  src/px4_uavcup_perception/scripts/picamera2_dual_server.py
+```
+
+Các lệnh tương đương để debug từng bridge riêng biệt là:
+
+```bash
+cd ~/ros2_ws
+PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \
+/usr/bin/python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
+  --camera-index 0 --camera-model imx219 --socket run/front_camera.sock \
+  --width 640 --height 480 --fps 30
 ```
 
 Frame server dùng `XBGR8888` ổn định cho IMX219 rồi bỏ kênh X trước khi gửi
@@ -159,8 +173,8 @@ RGB; `RGB888` trực tiếp gây timeout với phiên bản libcamera/PiSP đã 
 ```bash
 cd ~/ros2_ws
 PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \
-python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
-  --camera-index 0 --camera-model imx500 --socket run/down_camera.sock \
+/usr/bin/python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
+  --camera-index 1 --camera-model imx500 --socket run/down_camera.sock \
   --width 640 --height 480 --fps 15
 ```
 

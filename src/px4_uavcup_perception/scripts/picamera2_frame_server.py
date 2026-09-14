@@ -20,12 +20,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--socket', type=Path,
-        default=Path(__file__).resolve().parents[3] / 'run/down_camera.sock')
+        default=Path(__file__).resolve().parents[3] / 'run/front_camera.sock')
     parser.add_argument('--width', type=int, default=640)
     parser.add_argument('--height', type=int, default=480)
-    parser.add_argument('--fps', type=float, default=15.0)
+    parser.add_argument('--fps', type=float, default=30.0)
     parser.add_argument(
-        '--camera-model', default='imx500',
+        '--camera-model', default='imx219',
         help='unique model substring, for example imx500 or imx219')
     parser.add_argument(
         '--camera-index', type=int, default=0,
