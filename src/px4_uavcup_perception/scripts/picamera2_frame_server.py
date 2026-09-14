@@ -12,10 +12,8 @@ import numpy as np
 from picamera2 import Picamera2
 
 from px4_uavcup_perception.cameras.picamera2_protocol import pack_header
-from px4_uavcup_perception.cameras.picamera2_selection import (
-    select_camera,
-    select_sensor_size,
-)
+from px4_uavcup_perception.cameras.picamera2_selection import \
+    select_sensor_size
 
 
 def main() -> None:
@@ -30,8 +28,9 @@ def main() -> None:
         '--camera-model', default='imx500',
         help='unique model substring, for example imx500 or imx219')
     parser.add_argument(
-        '--camera-index', type=int,
-        help='Picamera2 camera number; overrides --camera-model')
+        '--camera-index', type=int, default=0,
+        help=(
+            'Picamera2 camera number; use an explicit index with two cameras'))
     parser.add_argument(
         '--sensor-width', type=int, default=0,
         help='optional raw sensor mode width; set together with height')
@@ -53,14 +52,8 @@ def main() -> None:
     args.socket.parent.mkdir(parents=True, exist_ok=True)
     args.socket.unlink(missing_ok=True)
 
-    camera_info = Picamera2.global_camera_info()
-    selected = select_camera(
-        camera_info, model=args.camera_model, index=args.camera_index)
-    camera_number = int(selected['Num'])
-    camera_model = str(selected.get('Model', 'unknown'))
-    camera_id = str(selected.get('Id', 'unknown'))
     sensor_size = select_sensor_size(
-        model=camera_model,
+        model=args.camera_model,
         output_width=args.width,
         output_height=args.height,
         sensor_width=args.sensor_width,
@@ -79,8 +72,8 @@ def main() -> None:
     server.settimeout(1.0)
     header = pack_header(args.width, args.height)
     print(
-        f'Picamera2 frame server ready: {camera_model} '
-        f'(index={camera_number}, id={camera_id}) '
+        f'Picamera2 frame server ready: expected={args.camera_model} '
+        f'index={args.camera_index} '
         f'{args.width}x{args.height} @ {args.fps:.1f} FPS -> {args.socket}',
         flush=True,
     )
@@ -102,7 +95,19 @@ def main() -> None:
                 # Open, configure and start only after a consumer is ready.
                 # Leaving a configured sensor idle while a heavy ROS client
                 # loads can cause the CSI frontend to time out on IMX219.
-                camera = Picamera2(camera_number)
+                # Do not call Picamera2.global_camera_info() here. On the
+                # tested Pi camera stack, enumerating and then opening from
+                # the same process can leave IMX219 without CSI frames.
+                camera = Picamera2(args.camera_index)
+                actual_model = str(
+                    camera.camera_properties.get('Model', 'unknown'))
+                if args.camera_model.lower() not in actual_model.lower():
+                    raise RuntimeError(
+                        f'camera index {args.camera_index} is {actual_model}, '
+                        f'expected {args.camera_model}')
+                print(
+                    f'Opened Picamera2 camera: {actual_model} '
+                    f'(index={args.camera_index})', flush=True)
                 configuration = camera.create_preview_configuration(
                     **configuration_arguments)
                 camera.configure(configuration)

@@ -149,7 +149,7 @@ bộ; ảnh không đi qua Wi-Fi hoặc DDS. Chạy hai bridge từ hai terminal
 cd ~/ros2_ws
 PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \
 python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
-  --camera-model imx219 --socket run/front_camera.sock \
+  --camera-index 1 --camera-model imx219 --socket run/front_camera.sock \
   --width 640 --height 480 --fps 15
 ```
 
@@ -160,7 +160,7 @@ PiSP về 640x480; mode raw 640x480 không ổn định trên camera đã kiểm
 cd ~/ros2_ws
 PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \
 python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
-  --camera-model imx500 --socket run/down_camera.sock \
+  --camera-index 0 --camera-model imx500 --socket run/down_camera.sock \
   --width 640 --height 480 --fps 15
 ```
 
