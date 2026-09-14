@@ -39,6 +39,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ros-humble-tf2-geometry-msgs \
         ros-humble-robot-state-publisher \
         ros-humble-camera-calibration \
+        ros-humble-rqt-image-view \
     && rm -rf /var/lib/apt/lists/*
 
 RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc
