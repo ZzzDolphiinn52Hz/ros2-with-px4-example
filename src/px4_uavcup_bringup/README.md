@@ -31,7 +31,9 @@ Topology cố định của Pi là:
 Trên bộ gá hiện tại, IMX219 bị roll 180° nên ZipDepth xoay frame 180° trước
 inference để L/C/R khớp thân drone. IMX500 nhìn xuống bị yaw 180° so với đầu
 drone; ảnh ArUco được giữ nguyên cho đúng calibration và extrinsic trong
-`landing.yaml` xử lý phép xoay này.
+`landing.yaml` xử lý phép xoay này. IMX500 cũng nằm sau cơ cấu gắp ở tâm thân
+10 cm; PID dùng lever-arm `[-0.10, 0.0, 0.0] m` để tâm gắp, không phải tâm
+camera, hội tụ lên marker.
 
 Trên Raspberry Pi OS, khởi động cả hai frame server bằng một lệnh trước khi
 launch ROS container:

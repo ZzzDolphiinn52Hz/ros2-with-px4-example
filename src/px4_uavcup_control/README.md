@@ -6,6 +6,11 @@ PX4 `/fmu/in/*`. Phiên đầu chạy
 hoàn toàn ở **shadow mode**: đọc `/uav/depth/free_space`, nhưng chỉ publish vận
 tốc đề xuất và không tạo publisher PX4 `/fmu/in/*`.
 
+PID ArUco bù lever-arm của camera trước khi tính sai số ngang. Trên bộ gá hiện
+tại, IMX500 nằm sau cơ cấu gắp ở tâm thân 10 cm nên
+`camera_position_body_flu_m: [-0.10, 0.0, 0.0]`. Khoảng cách hạ cuối vẫn được
+đo dọc trục quang camera và điều chỉnh riêng bằng `final_marker_distance_m`.
+
 ```bash
 ros2 launch px4_uavcup_control shadow_controller.launch.py
 ```

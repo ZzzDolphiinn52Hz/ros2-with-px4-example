@@ -14,15 +14,23 @@ DOWN_CAMERA_OPTICAL_TO_BODY_FLU = np.array([
 ], dtype=np.float64)
 
 
-def camera_target_to_body_flu(camera_xyz, rotation) -> np.ndarray:
-    """Transform a marker translation into ROS body FLU coordinates."""
+def camera_target_to_body_flu(
+        camera_xyz,
+        rotation,
+        camera_position_body=(0.0, 0.0, 0.0)) -> np.ndarray:
+    """Transform a camera-relative marker position into body FLU."""
     target = np.asarray(camera_xyz, dtype=np.float64)
     matrix = np.asarray(rotation, dtype=np.float64)
-    if target.shape != (3,) or matrix.shape != (3, 3):
-        raise ValueError('expected a 3-vector and a 3x3 rotation')
-    if not np.all(np.isfinite(target)) or not np.all(np.isfinite(matrix)):
+    camera_position = np.asarray(
+        camera_position_body, dtype=np.float64)
+    if (target.shape != (3,) or matrix.shape != (3, 3)
+            or camera_position.shape != (3,)):
+        raise ValueError('expected two 3-vectors and a 3x3 rotation')
+    if (not np.all(np.isfinite(target))
+            or not np.all(np.isfinite(matrix))
+            or not np.all(np.isfinite(camera_position))):
         raise ValueError('landing geometry must be finite')
-    return matrix @ target
+    return camera_position + matrix @ target
 
 
 @dataclass

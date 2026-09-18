@@ -19,6 +19,22 @@ def test_down_camera_axes_match_rear_facing_mounting():
     np.testing.assert_allclose(right, [0.0, -0.2, -1.0])
 
 
+def test_rear_camera_lever_arm_centres_marker_under_gripper():
+    camera_position = [-0.10, 0.0, 0.0]
+
+    camera_over_marker = camera_target_to_body_flu(
+        [0.0, 0.0, 1.0],
+        DOWN_CAMERA_OPTICAL_TO_BODY_FLU,
+        camera_position)
+    gripper_over_marker = camera_target_to_body_flu(
+        [0.0, 0.10, 1.0],
+        DOWN_CAMERA_OPTICAL_TO_BODY_FLU,
+        camera_position)
+
+    np.testing.assert_allclose(camera_over_marker, [-0.10, 0.0, -1.0])
+    np.testing.assert_allclose(gripper_over_marker, [0.0, 0.0, -1.0])
+
+
 def test_pid_is_bounded_and_resettable():
     pid = PidAxis(1.0, 1.0, 0.0, integral_limit=0.1, output_limit=0.2)
     assert pid.update(1.0, 1.0) == pytest.approx(0.2)

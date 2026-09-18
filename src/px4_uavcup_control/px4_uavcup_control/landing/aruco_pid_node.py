@@ -21,7 +21,7 @@ from .pid import (
 
 
 class ArucoLandingPidNode(Node):
-    """Center over a selected marker and descend only inside an alignment gate."""
+    """Centre over one marker and descend only inside an alignment gate."""
 
     def __init__(self) -> None:
         super().__init__('aruco_landing_pid')
@@ -43,6 +43,8 @@ class ArucoLandingPidNode(Node):
         self.declare_parameter(
             'camera_to_body_flu_rotation',
             DOWN_CAMERA_OPTICAL_TO_BODY_FLU.reshape(-1).tolist())
+        self.declare_parameter(
+            'camera_position_body_flu_m', [0.0, 0.0, 0.0])
 
         self._enabled = bool(self.get_parameter('enabled').value)
         self._marker_timeout = float(
@@ -59,6 +61,13 @@ class ArucoLandingPidNode(Node):
         self._rotation = np.asarray(
             self.get_parameter('camera_to_body_flu_rotation').value,
             dtype=np.float64).reshape(3, 3)
+        self._camera_position = np.asarray(
+            self.get_parameter('camera_position_body_flu_m').value,
+            dtype=np.float64)
+        if (self._camera_position.shape != (3,)
+                or not np.all(np.isfinite(self._camera_position))):
+            raise ValueError(
+                'camera_position_body_flu_m must contain 3 finite values')
         rate = float(self.get_parameter('publish_rate_hz').value)
         self._validate_parameters(rate)
 
@@ -93,7 +102,9 @@ class ArucoLandingPidNode(Node):
         self.create_timer(1.0, self._publish_status)
         self.get_logger().warning(
             f'ArUco landing PID enabled={self._enabled}; it only publishes '
-            'bounded cmd_vel and never arms, changes mode, lands, or disarms PX4')
+            'bounded cmd_vel and never arms, changes mode, lands, or disarms '
+            f'PX4; camera_position_body_flu_m='
+            f'{self._camera_position.tolist()}')
 
     def _validate_parameters(self, rate: float) -> None:
         positive = {
@@ -108,7 +119,8 @@ class ArucoLandingPidNode(Node):
             if not math.isfinite(value) or value <= 0.0:
                 raise ValueError(f'{name} must be finite and positive')
         if self._deadband < 0.0 or not math.isfinite(self._deadband):
-            raise ValueError('horizontal_deadband_m must be finite and non-negative')
+            raise ValueError(
+                'horizontal_deadband_m must be finite and non-negative')
 
     def _on_enable(self, request, response):
         self._enabled = bool(request.data)
@@ -135,7 +147,8 @@ class ArucoLandingPidNode(Node):
             message.pose.position.z,
         ], dtype=np.float64)
         try:
-            body = camera_target_to_body_flu(camera_xyz, self._rotation)
+            body = camera_target_to_body_flu(
+                camera_xyz, self._rotation, self._camera_position)
         except ValueError as error:
             self.get_logger().error(str(error), throttle_duration_sec=1.0)
             return
@@ -147,10 +160,14 @@ class ArucoLandingPidNode(Node):
         self._last_pid_time = now
         self._last_pose_time = now
 
-        forward_error = 0.0 if abs(body[0]) < self._deadband else float(body[0])
+        forward_error = (
+            0.0 if abs(body[0]) < self._deadband else float(body[0]))
         left_error = 0.0 if abs(body[1]) < self._deadband else float(body[1])
         self._horizontal_error = math.hypot(body[0], body[1])
-        self._marker_distance = max(0.0, -float(body[2]))
+        # The final approach threshold remains the optical-axis distance from
+        # the camera to the marker. Camera XYZ translation compensates the
+        # horizontal gripper alignment without changing that calibrated range.
+        self._marker_distance = max(0.0, float(camera_xyz[2]))
 
         command = Twist()
         command.linear.x = self._forward_pid.update(forward_error, dt)
@@ -188,7 +205,8 @@ class ArucoLandingPidNode(Node):
         status.hardware_id = 'down_camera'
         status.level = (
             DiagnosticStatus.OK if self._enabled and self._state not in (
-                'marker_lost', 'waiting_for_marker') else DiagnosticStatus.WARN)
+                'marker_lost', 'waiting_for_marker')
+            else DiagnosticStatus.WARN)
         if not self._enabled:
             status.level = DiagnosticStatus.STALE
         status.message = self._state
@@ -198,6 +216,10 @@ class ArucoLandingPidNode(Node):
                      value=f'{self._horizontal_error:.3f}'),
             KeyValue(key='marker_distance_m',
                      value=f'{self._marker_distance:.3f}'),
+            KeyValue(
+                key='camera_position_body_flu_m',
+                value=','.join(
+                    f'{value:.3f}' for value in self._camera_position)),
         ]
         array = DiagnosticArray()
         array.header.stamp = self.get_clock().now().to_msg()

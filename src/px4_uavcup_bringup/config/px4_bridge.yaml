@@ -16,8 +16,9 @@ aruco_to_px4_landing_target:
     camera_to_body_frd_rotation: [0.0, 1.0, 0.0,
                                   -1.0, 0.0, 0.0,
                                   0.0, 0.0, 1.0]
-    # Measure this lever arm after the final camera mount is fixed.
-    camera_position_body_frd_m: [0.0, 0.0, 0.0]
+    # IMX500 is 10 cm behind the body-centred gripper. Vertical lever arm is
+    # still unmeasured and remains zero.
+    camera_position_body_frd_m: [-0.10, 0.0, 0.0]
 
 cmd_vel_to_px4:
   ros__parameters:

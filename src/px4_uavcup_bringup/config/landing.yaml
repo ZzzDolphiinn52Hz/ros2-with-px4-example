@@ -22,3 +22,6 @@ aruco_landing_pid:
     camera_to_body_flu_rotation: [0.0, 1.0, 0.0,
                                   1.0, 0.0, 0.0,
                                   0.0, 0.0, -1.0]
+    # Camera is 10 cm behind the body-centred gripper. Z remains unmeasured;
+    # final_marker_distance_m continues to use camera-to-marker optical range.
+    camera_position_body_flu_m: [-0.10, 0.0, 0.0]
