@@ -8,8 +8,8 @@ import numpy as np
 
 
 DOWN_CAMERA_OPTICAL_TO_BODY_FLU = np.array([
-    [0.0, -1.0, 0.0],
-    [-1.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0],
+    [1.0, 0.0, 0.0],
     [0.0, 0.0, -1.0],
 ], dtype=np.float64)
 
@@ -43,7 +43,8 @@ class PidAxis:
 
     def update(self, error: float, dt: float) -> float:
         if not np.isfinite(error) or not np.isfinite(dt) or dt <= 0.0:
-            raise ValueError('PID error and dt must be finite; dt must be positive')
+            raise ValueError(
+                'PID error and dt must be finite; dt must be positive')
         self.integral = float(np.clip(
             self.integral + error * dt,
             -self.integral_limit, self.integral_limit))
@@ -51,5 +52,7 @@ class PidAxis:
         if self.previous_error is not None:
             derivative = (error - self.previous_error) / dt
         self.previous_error = error
-        output = self.kp * error + self.ki * self.integral + self.kd * derivative
+        output = (
+            self.kp * error + self.ki * self.integral
+            + self.kd * derivative)
         return float(np.clip(output, -self.output_limit, self.output_limit))

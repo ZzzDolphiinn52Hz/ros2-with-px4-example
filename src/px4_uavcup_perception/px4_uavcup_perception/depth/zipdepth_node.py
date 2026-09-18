@@ -48,6 +48,7 @@ class ZipDepthNode(Node):
         self.declare_parameter('camera_capture_fps', 30.0)
         self.declare_parameter('camera_pixel_format', 'MJPG')
         self.declare_parameter('camera_frame_id', 'front_camera_optical_frame')
+        self.declare_parameter('rotate_input_180', False)
         self.declare_parameter('publish_input_image', False)
         self.declare_parameter(
             'model_path', '~/models/zipdepth_base_npu_512x384.onnx')
@@ -116,6 +117,8 @@ class ZipDepthNode(Node):
         self._backend = ZipDepthOnnx(model_path, threads)
         self._camera = None
         self._camera_socket = None
+        self._rotate_input_180 = bool(
+            self.get_parameter('rotate_input_180').value)
         self._camera_device = str(
             self.get_parameter('camera_device').value).strip()
         self._camera_socket_path = str(
@@ -203,6 +206,7 @@ class ZipDepthNode(Node):
             f'metric_calibration={self._metric_enabled}, '
             f'rate_limit={rate if rate > 0.0 else "unlimited"}, '
             f'input={input_source}, raw={self._publish_raw}, '
+            f'input_rotation={180 if self._rotate_input_180 else 0}deg, '
             f'visualization={self._publish_visualization}, '
             f'pointcloud={self._publish_pointcloud}')
 
@@ -311,6 +315,7 @@ class ZipDepthNode(Node):
         self._process_camera_frame(bgr)
 
     def _process_camera_frame(self, bgr: np.ndarray) -> None:
+        bgr = self._orient_input(bgr)
         header = Header()
         header.stamp = self.get_clock().now().to_msg()
         header.frame_id = self._camera_frame_id
@@ -328,6 +333,7 @@ class ZipDepthNode(Node):
         started = time.perf_counter()
         try:
             bgr = image_to_bgr(message)
+            bgr = self._orient_input(bgr)
         except Exception as error:
             self._publish_invalid_free_space()
             self._publish_status(
@@ -335,6 +341,11 @@ class ZipDepthNode(Node):
                 (time.perf_counter() - started) * 1000.0)
             return
         self._process_bgr(bgr, message.header, started)
+
+    def _orient_input(self, bgr: np.ndarray) -> np.ndarray:
+        if not self._rotate_input_180:
+            return bgr
+        return np.ascontiguousarray(bgr[::-1, ::-1])
 
     def _process_bgr(
             self, bgr: np.ndarray, header: Header,
@@ -506,6 +517,9 @@ class ZipDepthNode(Node):
             KeyValue(key='output_width', value=str(self._backend.width)),
             KeyValue(key='output_height', value=str(self._backend.height)),
             KeyValue(key='input_source', value=self._input_source),
+            KeyValue(
+                key='input_rotation_deg',
+                value='180' if self._rotate_input_180 else '0'),
             KeyValue(key='raw_enabled', value=str(self._publish_raw).lower()),
             KeyValue(
                 key='visualization_enabled',

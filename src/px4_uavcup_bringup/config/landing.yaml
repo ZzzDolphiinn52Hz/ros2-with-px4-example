@@ -16,8 +16,9 @@ aruco_landing_pid:
     maximum_descent_speed_m_s: 0.20
     final_marker_distance_m: 0.35
 
-    # Confirmed on the installed down camera (2026-08-26): image top points
-    # vehicle-forward and image right points vehicle-right.
-    camera_to_body_flu_rotation: [0.0, -1.0, 0.0,
-                                  -1.0, 0.0, 0.0,
+    # Confirmed on the installed down camera (2026-09-18): the IMX500 is
+    # yawed 180 degrees relative to the vehicle nose. Therefore image-bottom
+    # points vehicle-forward and image-right points vehicle-left.
+    camera_to_body_flu_rotation: [0.0, 1.0, 0.0,
+                                  1.0, 0.0, 0.0,
                                   0.0, 0.0, -1.0]

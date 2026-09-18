@@ -10,10 +10,11 @@ aruco_to_px4_landing_target:
     maximum_attitude_age_s: 0.25
     maximum_target_distance_m: 12.0
 
-    # Confirmed down-camera orientation: image top is vehicle-forward,
-    # image right is vehicle-right, and optical +Z is vehicle-down.
-    camera_to_body_frd_rotation: [0.0, -1.0, 0.0,
-                                  1.0, 0.0, 0.0,
+    # Confirmed down-camera orientation: the IMX500 is yawed 180 degrees.
+    # Image-bottom is vehicle-forward, image-right is vehicle-left, and
+    # optical +Z is vehicle-down.
+    camera_to_body_frd_rotation: [0.0, 1.0, 0.0,
+                                  -1.0, 0.0, 0.0,
                                   0.0, 0.0, 1.0]
     # Measure this lever arm after the final camera mount is fixed.
     camera_position_body_frd_m: [0.0, 0.0, 0.0]

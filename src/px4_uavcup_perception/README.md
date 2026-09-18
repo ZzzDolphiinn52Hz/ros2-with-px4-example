@@ -145,8 +145,9 @@ ZipDepth và `CAM1 = IMX500 nhìn xuống` cho ArUco. Hai host bridge chuyển r
 RGB qua hai Unix socket cục bộ; ảnh không đi qua Wi-Fi hoặc DDS.
 
 Khi đã gắn đủ hai camera, chạy một supervisor duy nhất trên Pi host. Supervisor
-khởi động hai frame server, kiểm tra model tại từng camera index và dừng cả hai
-gọn gàng khi nhấn `Ctrl+C`:
+dùng chung một libcamera manager và hai luồng/socket riêng; cách này tránh hai
+tiến trình tranh cùng PiSP pipeline. Nó kiểm tra model tại từng camera index và
+dừng cả hai gọn gàng khi nhấn `Ctrl+C`:
 
 ```bash
 cd ~/ros2_ws
@@ -187,6 +188,12 @@ riêng, không khởi tạo ArUco/PID/PX4:
 ```bash
 ros2 launch px4_uavcup_perception pi_down_camera_test.launch.py
 ```
+
+Hướng lắp đã xác nhận ngày 2026-09-18: IMX500 bị yaw 180° so với đầu drone.
+Detector giữ nguyên ảnh đã calibrate; PID dùng extrinsic tương ứng, trong đó
+image-bottom là vehicle-forward và image-right là vehicle-left. IMX219 ở đầu
+drone bị roll 180°; `zipdepth_node` xoay input 180° trước inference để
+left/center/right đúng với thân drone.
 
 Detector dùng `DICT_5X5_100`. Năm marker ID 0-4 đã in từ `DICT_5X5_50` vẫn có
 cùng mã trong tập 100 và đã được kiểm tra nhận đúng ID. Kích thước marker pose

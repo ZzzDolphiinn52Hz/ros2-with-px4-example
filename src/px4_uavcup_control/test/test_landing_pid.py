@@ -8,12 +8,13 @@ from px4_uavcup_control.landing.pid import (
 )
 
 
-def test_down_camera_axes_match_forward_and_right_mounting():
-    # Marker above the image centre is ahead; marker at image-right is right.
+def test_down_camera_axes_match_rear_facing_mounting():
+    # The installed camera is yawed 180 degrees: image-bottom is ahead and
+    # image-right is vehicle-left.
     ahead = camera_target_to_body_flu(
-        [0.0, -0.2, 1.0], DOWN_CAMERA_OPTICAL_TO_BODY_FLU)
+        [0.0, 0.2, 1.0], DOWN_CAMERA_OPTICAL_TO_BODY_FLU)
     right = camera_target_to_body_flu(
-        [0.2, 0.0, 1.0], DOWN_CAMERA_OPTICAL_TO_BODY_FLU)
+        [-0.2, 0.0, 1.0], DOWN_CAMERA_OPTICAL_TO_BODY_FLU)
     np.testing.assert_allclose(ahead, [0.2, 0.0, -1.0])
     np.testing.assert_allclose(right, [0.0, -0.2, -1.0])
 

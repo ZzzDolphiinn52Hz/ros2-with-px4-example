@@ -10,6 +10,9 @@ zipdepth_node:
     camera_capture_fps: 15.0
     camera_pixel_format: RGB888
     camera_frame_id: front_camera_optical_frame
+    # The installed nose IMX219 is rolled 180 degrees. Normalize the image
+    # before inference so published L/C/R matches vehicle left/centre/right.
+    rotate_input_180: true
     publish_input_image: false
     model_path: /models/zipdepth_base_npu_512x384.onnx
     onnx_threads: 3
