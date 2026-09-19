@@ -4,6 +4,9 @@ FROM ubuntu:22.04 AS builder
 # with Micro XRCE-DDS Agent v2.4.2; v2.4.3 targets newer Fast DDS releases
 # and can reject PX4 participant creation with status 255.
 ARG XRCE_AGENT_VERSION=v2.4.2
+# Agent v2.4.2 references the now-deleted moving branch ``2.12.x``.
+# Pin its final patch release so clean Docker builds remain reproducible.
+ARG FASTDDS_TAG=v2.12.2
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -15,6 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN git clone --depth 1 --branch "${XRCE_AGENT_VERSION}" \
         https://github.com/eProsima/Micro-XRCE-DDS-Agent.git /src/agent \
+    && sed -i "s/set(_fastdds_tag 2.12.x)/set(_fastdds_tag ${FASTDDS_TAG})/" \
+        /src/agent/CMakeLists.txt \
     && cmake -S /src/agent -B /src/agent/build \
         -DCMAKE_BUILD_TYPE=Release \
     && cmake --build /src/agent/build --parallel 4 \
