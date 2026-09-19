@@ -313,7 +313,7 @@ mặc định, không tự arm/disarm. Mất marker quá `0.35 s` sẽ ra lệnh
 zero và giữ độ cao.
 
 PX4 v1.17 qua TELEM2 cần Micro XRCE-DDS Agent. Image agent được pin ở
-v2.4.3 và chạy 921600 baud:
+v2.4.2 (bản tương thích ROS 2 Humble/Fast DDS 2.6.x) và chạy 921600 baud:
 
 ```bash
 docker compose build xrce-agent

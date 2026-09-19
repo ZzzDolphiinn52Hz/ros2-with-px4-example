@@ -1,6 +1,9 @@
 FROM ubuntu:22.04 AS builder
 
-ARG XRCE_AGENT_VERSION=v2.4.3
+# ROS 2 Humble ships Fast DDS 2.6.x. PX4's compatibility matrix pairs it
+# with Micro XRCE-DDS Agent v2.4.2; v2.4.3 targets newer Fast DDS releases
+# and can reject PX4 participant creation with status 255.
+ARG XRCE_AGENT_VERSION=v2.4.2
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
