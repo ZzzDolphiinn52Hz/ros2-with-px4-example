@@ -1,0 +1,24 @@
+corridor_controller_shadow:
+  ros__parameters:
+    corridor_topic: /uav/depth/relative_corridor
+    advisory_velocity_topic: /uav/local_controller/advisory_velocity
+    state_topic: /uav/local_controller/state
+    status_topic: /uav/local_controller/status
+    body_frame_id: base_link
+
+    watchdog_rate_hz: 20.0
+    input_timeout_sec: 0.4
+    minimum_clearance: 0.10
+    minimum_valid_fraction: 0.90
+    target_deadband: 0.08
+    recovery_frames: 3
+
+    # Shadow-only body-FLU advisories. These are never sent to PX4 here.
+    forward_speed_mps: 0.20
+    minimum_forward_scale: 0.25
+    maximum_lateral_speed_mps: 0.20
+    maximum_vertical_speed_mps: 0.12
+
+    # Smooth and rate-limit image-space target motion between frames.
+    ema_alpha: 0.35
+    maximum_target_step: 0.20

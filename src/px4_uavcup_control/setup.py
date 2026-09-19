@@ -29,6 +29,8 @@ setup(
         'console_scripts': [
             'local_controller_shadow = '
             'px4_uavcup_control.obstacle.local_controller_shadow:main',
+            'corridor_controller_shadow = '
+            'px4_uavcup_control.obstacle.corridor_controller_shadow:main',
             'aruco_landing_pid_node = '
             'px4_uavcup_control.landing.aruco_pid_node:main',
         ],

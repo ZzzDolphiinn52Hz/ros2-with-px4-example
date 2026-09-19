@@ -23,6 +23,7 @@ là runtime được hỗ trợ của package này.
 | `/uav/depth/free_space` | `std_msgs/Float32MultiArray` | `[left, center, right, nearest, valid_fraction]` |
 | `/uav/depth/status` | `diagnostic_msgs/DiagnosticArray` | Health, calibration và latency |
 | `/uav/depth/relative_free_space` | `std_msgs/Float32MultiArray` | Relative clearance `[L,C,R,nearest,valid]`, chỉ dùng shadow |
+| `/uav/depth/relative_corridor` | `std_msgs/Float32MultiArray` | Vùng trống 2D `[x,y,width,height,clearance,score,valid]`, chỉ dùng shadow |
 | `/camera/depth/image` | `sensor_msgs/Image` | Depth `32FC1`, chỉ bật khi debug |
 | `/uav/depth/visualization` | `sensor_msgs/Image` | Depth `mono8`, chỉ bật khi debug |
 | `/camera/depth/points` | `sensor_msgs/PointCloud2` | PointCloud FLU, chỉ bật khi debug |
@@ -124,7 +125,8 @@ Pipeline Pi dùng hai camera và hai namespace riêng:
 
 ```text
 IMX219 phía trước -> Picamera2 host -> Unix socket -> zipdepth_node
-  ├─ /uav/depth/free_space -> local_controller_shadow
+  ├─ /uav/depth/relative_corridor -> corridor_controller_shadow
+  ├─ /uav/depth/relative_free_space (L/C/R debug tương thích)
   ├─ /uav/depth/zipdepth_raw (debug tùy chọn)
   ├─ /uav/depth/visualization (debug tùy chọn)
   ├─ /camera/depth/image (debug, sau hiệu chuẩn metric)
@@ -286,11 +288,14 @@ python3 src/px4_uavcup_perception/scripts/calibrate_zipdepth_metric.py fit \
   --input /ros2_ws/artifacts/zipdepth_metric_samples.json
 ```
 
-Khi chưa có metric anchor, node publish thêm
-`/uav/depth/relative_free_space`. Giá trị 0..1 chỉ biểu diễn khoảng trống tương
-đối trong cùng frame, không phải mét và không thể phát hiện an toàn một bức
-tường phẳng chiếm toàn ảnh. Scene thiếu contrast tạo NaN để shadow controller
-vào FAILSAFE.
+Khi chưa có metric anchor, node vẫn giữ `/uav/depth/relative_free_space` để
+debug L/C/R và publish `/uav/depth/relative_corridor` cho controller shadow 2D.
+Corridor là cửa sổ cố định đủ rộng/cao theo tỷ lệ pixel, được chọn bằng
+percentile độ thoáng bảo thủ và ưu tiên gần tâm ảnh. `x/y` chuẩn hóa trong
+`[-1,1]`: trái/trên âm, phải/dưới dương. Các giá trị này chỉ xếp hạng tương đối
+trong cùng frame, không phải mét và chưa chứng minh kích thước thật của drone
+lọt qua. Scene thiếu contrast hoặc không có cửa sổ đạt ngưỡng tạo NaN để
+controller vào FAILSAFE.
 
 Gateway `/uav/aruco/target_pose -> /fmu/in/landing_target_pose` cũng mặc định
 `enabled: false`. Chỉ bật sau khi đã đo extrinsic camera-to-body, xác nhận đúng

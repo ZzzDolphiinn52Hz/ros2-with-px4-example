@@ -18,7 +18,7 @@ def generate_launch_description() -> LaunchDescription:
     perception_config_default = os.path.join(
         perception_share, 'config', 'zipdepth.yaml')
     control_config_default = os.path.join(
-        control_share, 'config', 'shadow_controller_relative.yaml')
+        control_share, 'config', 'corridor_controller.yaml')
     perception_config = LaunchConfiguration('perception_config')
     control_config = LaunchConfiguration('control_config')
 
@@ -39,8 +39,8 @@ def generate_launch_description() -> LaunchDescription:
         ),
         Node(
             package='px4_uavcup_control',
-            executable='local_controller_shadow',
-            name='local_controller_shadow',
+            executable='corridor_controller_shadow',
+            name='corridor_controller_shadow',
             output='screen',
             parameters=[control_config],
         ),

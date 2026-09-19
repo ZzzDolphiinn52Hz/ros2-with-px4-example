@@ -25,6 +25,7 @@ from std_msgs.msg import Float32MultiArray, Header, MultiArrayDimension
 from ..common.camera_health import assess_camera_health
 from ..common.image import array_to_image, image_to_bgr
 from ..cameras.picamera2_protocol import HEADER, receive_exact, unpack_header
+from .corridor import RelativeCorridor, find_relative_corridor
 from .free_space import summarize_free_space
 from .pointcloud import depth_to_flu_points
 from .relative_free_space import summarize_relative_free_space
@@ -72,8 +73,21 @@ class ZipDepthNode(Node):
         self.declare_parameter(
             'relative_free_space_topic',
             '/uav/depth/relative_free_space')
+        self.declare_parameter(
+            'relative_corridor_topic',
+            '/uav/depth/relative_corridor')
         self.declare_parameter('relative_near_percentile', 85.0)
         self.declare_parameter('relative_minimum_contrast_span', 0.001)
+        self.declare_parameter('corridor_roi_top_fraction', 0.08)
+        self.declare_parameter('corridor_roi_bottom_fraction', 0.92)
+        self.declare_parameter('corridor_width_fraction', 0.32)
+        self.declare_parameter('corridor_height_fraction', 0.32)
+        self.declare_parameter('corridor_sampling_stride', 4)
+        self.declare_parameter('corridor_stride_fraction', 0.04)
+        self.declare_parameter('corridor_clearance_percentile', 20.0)
+        self.declare_parameter('corridor_minimum_clearance', 0.10)
+        self.declare_parameter('corridor_minimum_valid_fraction', 0.90)
+        self.declare_parameter('corridor_centre_bias', 0.12)
         self.declare_parameter('publish_raw_output', False)
         self.declare_parameter('publish_metric_depth', False)
         self.declare_parameter('publish_visualization', False)
@@ -181,6 +195,9 @@ class ZipDepthNode(Node):
         self._relative_free_space_publisher = self.create_publisher(
             Float32MultiArray,
             str(self.get_parameter('relative_free_space_topic').value), 1)
+        self._relative_corridor_publisher = self.create_publisher(
+            Float32MultiArray,
+            str(self.get_parameter('relative_corridor_topic').value), 1)
         self._input_publisher = None
         if self._camera_device:
             self._start_direct_camera(rate)
@@ -372,6 +389,36 @@ class ZipDepthNode(Node):
                     'relative_minimum_contrast_span').value),
             )
             self._publish_relative_free_space(relative_summary.as_list())
+            corridor_sampling_stride = int(self.get_parameter(
+                'corridor_sampling_stride').value)
+            if corridor_sampling_stride <= 0:
+                raise ValueError(
+                    'corridor_sampling_stride must be positive')
+            corridor = find_relative_corridor(
+                raw[::corridor_sampling_stride,
+                    ::corridor_sampling_stride],
+                roi_top_fraction=float(self.get_parameter(
+                    'corridor_roi_top_fraction').value),
+                roi_bottom_fraction=float(self.get_parameter(
+                    'corridor_roi_bottom_fraction').value),
+                window_width_fraction=float(self.get_parameter(
+                    'corridor_width_fraction').value),
+                window_height_fraction=float(self.get_parameter(
+                    'corridor_height_fraction').value),
+                stride_fraction=float(self.get_parameter(
+                    'corridor_stride_fraction').value),
+                clearance_percentile=float(self.get_parameter(
+                    'corridor_clearance_percentile').value),
+                minimum_clearance=float(self.get_parameter(
+                    'corridor_minimum_clearance').value),
+                minimum_valid_fraction=float(self.get_parameter(
+                    'corridor_minimum_valid_fraction').value),
+                centre_bias=float(self.get_parameter(
+                    'corridor_centre_bias').value),
+                minimum_contrast_span=float(self.get_parameter(
+                    'relative_minimum_contrast_span').value),
+            )
+            self._publish_relative_corridor(corridor)
             if self._raw_publisher is not None:
                 raw_message = array_to_image(raw, '32FC1')
                 raw_message.header = header
@@ -379,6 +426,7 @@ class ZipDepthNode(Node):
             if self._visualization_publisher is not None:
                 visualization, _, _ = \
                     normalize_inverse_depth_for_display(raw)
+                self._draw_corridor(visualization, corridor)
                 visualization_message = array_to_image(
                     visualization, 'mono8')
                 visualization_message.header = header
@@ -432,6 +480,9 @@ class ZipDepthNode(Node):
 
     def _publish_invalid_free_space(self) -> None:
         self._publish_free_space([float('nan')] * 4 + [0.0])
+        self._publish_relative_corridor(RelativeCorridor(
+            float('nan'), float('nan'), 0.0, 0.0,
+            float('nan'), float('nan'), 0.0))
 
     def _publish_free_space(self, values) -> None:
         message = Float32MultiArray()
@@ -454,6 +505,51 @@ class ZipDepthNode(Node):
         message.layout.dim = [dimension]
         message.data = list(values)
         self._relative_free_space_publisher.publish(message)
+
+    def _publish_relative_corridor(
+            self, corridor: RelativeCorridor) -> None:
+        message = Float32MultiArray()
+        dimension = MultiArrayDimension()
+        dimension.label = (
+            'x_norm,y_norm,width_fraction,height_fraction,'
+            'clearance,score,valid_fraction;units=relative')
+        dimension.size = 7
+        dimension.stride = 7
+        message.layout.dim = [dimension]
+        message.data = corridor.as_list()
+        self._relative_corridor_publisher.publish(message)
+
+    def _draw_corridor(
+            self, visualization: np.ndarray,
+            corridor: RelativeCorridor) -> None:
+        if not corridor.valid:
+            return
+        height, width = visualization.shape[:2]
+        centre_x = int(round(
+            (corridor.x_normalized + 1.0) * 0.5 * (width - 1)))
+        centre_y = int(round(
+            (corridor.y_normalized + 1.0) * 0.5 * (height - 1)))
+        half_width = max(1, int(round(
+            corridor.width_fraction * width * 0.5)))
+        half_height = max(1, int(round(
+            corridor.height_fraction * height * 0.5)))
+        left = max(0, centre_x - half_width)
+        right = min(width - 1, centre_x + half_width)
+        top = max(0, centre_y - half_height)
+        bottom = min(height - 1, centre_y + half_height)
+        self._cv2.rectangle(
+            visualization,
+            (left, top),
+            (right, bottom),
+            255,
+            2,
+        )
+        self._cv2.drawMarker(
+            visualization, (centre_x, centre_y), 255,
+            markerType=self._cv2.MARKER_CROSS,
+            markerSize=14,
+            thickness=2,
+        )
 
     def _make_pointcloud(self, depth: np.ndarray, stamp) -> PointCloud2:
         principal_x = self._principal_x

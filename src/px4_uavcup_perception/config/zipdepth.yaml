@@ -38,9 +38,23 @@ zipdepth_node:
     pointcloud_topic: /camera/depth/points
     free_space_topic: /uav/depth/free_space
     relative_free_space_topic: /uav/depth/relative_free_space
+    relative_corridor_topic: /uav/depth/relative_corridor
     status_topic: /uav/depth/status
     relative_near_percentile: 85.0
     relative_minimum_contrast_span: 0.001
+
+    # Fixed-size 2D opening search. Fractions refer to the 512x384 model map.
+    # This is relative-only shadow guidance, not a metric fit guarantee.
+    corridor_roi_top_fraction: 0.08
+    corridor_roi_bottom_fraction: 0.92
+    corridor_width_fraction: 0.32
+    corridor_height_fraction: 0.32
+    corridor_sampling_stride: 4
+    corridor_stride_fraction: 0.04
+    corridor_clearance_percentile: 20.0
+    corridor_minimum_clearance: 0.10
+    corridor_minimum_valid_fraction: 0.90
+    corridor_centre_bias: 0.12
 
     # Debug publishers are selected through launch arguments, like the Jetson
     # pipeline. PointCloud and metric depth remain blocked until calibration.
