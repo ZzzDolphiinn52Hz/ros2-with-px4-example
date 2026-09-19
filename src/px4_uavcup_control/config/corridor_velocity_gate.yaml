@@ -1,0 +1,9 @@
+corridor_velocity_gate:
+  ros__parameters:
+    advisory_topic: /uav/local_controller/advisory_velocity
+    cmd_vel_topic: /uav/local_controller/cmd_vel
+    required_frame_id: base_link
+    input_timeout_sec: 0.35
+    publish_rate_hz: 20.0
+    maximum_horizontal_speed_mps: 0.20
+    maximum_vertical_speed_mps: 0.12

@@ -54,3 +54,11 @@ Output:
 Các trạng thái corridor: `TRACK_CORRIDOR`, `CORRIDOR_CENTERED`, `BRAKE`,
 `FAILSAFE`. Mất depth, depth invalid hoặc quá timeout luôn tạo advisory bằng
 zero. Target ảnh được EMA và giới hạn bước nhảy để giảm đổi hướng liên tục.
+
+## PX4 bench gate
+
+`pi_corridor_px4_bench.launch.py` thêm hai khóa độc lập giữa corridor và PX4:
+`corridor_velocity_gate` cùng `cmd_vel_to_px4`. Cả hai luôn khởi động ở trạng
+thái disabled, không tự arm và không tự request Offboard. Gate quên lệnh cũ
+mỗi lần enable/disable, kiểm tra frame `base_link`, giới hạn vận tốc và phát
+zero nếu advisory stale. Trong bench launch, trục Z corridor bị khóa.
