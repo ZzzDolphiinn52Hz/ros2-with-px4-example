@@ -312,7 +312,7 @@ class ZipDepthNode(Node):
             bgr = self._receive_socket_frame()
         except (ConnectionError, OSError, ValueError) as error:
             self._close_camera_socket()
-            self._publish_invalid_free_space()
+            self._publish_invalid_depth_outputs()
             self._publish_status(
                 DiagnosticStatus.ERROR,
                 f'Picamera2 camera frame unavailable: {error}', 0.0)
@@ -325,7 +325,7 @@ class ZipDepthNode(Node):
     def _capture_and_process(self) -> None:
         received, bgr = self._camera.read()
         if not received or bgr is None:
-            self._publish_invalid_free_space()
+            self._publish_invalid_depth_outputs()
             self._publish_status(
                 DiagnosticStatus.ERROR, 'V4L2 camera frame unavailable', 0.0)
             return
@@ -352,7 +352,7 @@ class ZipDepthNode(Node):
             bgr = image_to_bgr(message)
             bgr = self._orient_input(bgr)
         except Exception as error:
-            self._publish_invalid_free_space()
+            self._publish_invalid_depth_outputs()
             self._publish_status(
                 DiagnosticStatus.ERROR, str(error),
                 (time.perf_counter() - started) * 1000.0)
@@ -458,7 +458,7 @@ class ZipDepthNode(Node):
                 )
                 self._publish_free_space(summary.as_list())
             else:
-                self._publish_invalid_free_space()
+                self._publish_invalid_metric_free_space()
             completed = time.perf_counter()
             if self._last_completed is not None:
                 elapsed = completed - self._last_completed
@@ -473,13 +473,18 @@ class ZipDepthNode(Node):
                 (completed - started) * 1000.0,
                 inference_ms)
         except Exception as error:
-            self._publish_invalid_free_space()
+            self._publish_invalid_depth_outputs()
             self._publish_status(
                 DiagnosticStatus.ERROR, str(error),
                 (time.perf_counter() - started) * 1000.0)
 
-    def _publish_invalid_free_space(self) -> None:
+    def _publish_invalid_metric_free_space(self) -> None:
         self._publish_free_space([float('nan')] * 4 + [0.0])
+
+    def _publish_invalid_depth_outputs(self) -> None:
+        self._publish_invalid_metric_free_space()
+        self._publish_relative_free_space(
+            [float('nan')] * 4 + [0.0])
         self._publish_relative_corridor(RelativeCorridor(
             float('nan'), float('nan'), 0.0, 0.0,
             float('nan'), float('nan'), 0.0))
