@@ -21,19 +21,22 @@ def generate_launch_description() -> LaunchDescription:
         control_share, 'config', 'corridor_controller.yaml')
     perception_config = LaunchConfiguration('perception_config')
     control_config = LaunchConfiguration('control_config')
+    publish_visualization = LaunchConfiguration('publish_visualization')
 
     return LaunchDescription([
         DeclareLaunchArgument(
             'perception_config', default_value=perception_config_default),
         DeclareLaunchArgument(
             'control_config', default_value=control_config_default),
+        DeclareLaunchArgument(
+            'publish_visualization', default_value='false'),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(perception_launch),
             launch_arguments={
                 'config': perception_config,
                 'publish_raw_output': 'false',
                 'publish_metric_depth': 'false',
-                'publish_visualization': 'false',
+                'publish_visualization': publish_visualization,
                 'publish_pointcloud': 'false',
             }.items(),
         ),

@@ -30,6 +30,13 @@ không khởi tạo ArUco, PX4 adapter hoặc topic lệnh `/fmu/in/*`:
 ros2 launch px4_uavcup_control pi_zipdepth_shadow.launch.py
 ```
 
+Bật ảnh depth debug có hình chữ nhật và dấu tâm corridor được chọn:
+
+```bash
+ros2 launch px4_uavcup_control pi_zipdepth_shadow.launch.py \
+  publish_visualization:=true
+```
+
 Relative mode không suy ra được khoảng cách phanh hay kích thước khe theo mét.
 Ảnh invalid, scene thiếu contrast hoặc không có cửa sổ đạt độ thoáng tối thiểu
 luôn chuyển sang `FAILSAFE/BRAKE`. Output này chỉ dùng để bench-test.
