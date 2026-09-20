@@ -5,6 +5,7 @@ import pytest
 from px4_uavcup_px4_bridge.cmd_vel_to_px4 import (
     body_flu_to_ned_velocity,
     clamp_xy,
+    initial_target_z_ned,
     integrate_altitude_target,
     px4_quaternion_to_heading_ned,
     ros_yaw_rate_to_ned,
@@ -78,3 +79,11 @@ def test_negative_ros_up_velocity_descends_in_ned():
 def test_altitude_target_stops_at_minimum_height():
     target = integrate_altitude_target(-0.21, -0.2, 1.0, 0.2, 3.0)
     assert target == pytest.approx(-0.2)
+
+
+def test_enable_holds_current_ned_altitude_by_default():
+    assert initial_target_z_ned(-0.93, 0.7, True) == pytest.approx(-0.93)
+
+
+def test_enable_can_use_configured_altitude_when_requested():
+    assert initial_target_z_ned(-0.93, 0.7, False) == pytest.approx(-0.7)

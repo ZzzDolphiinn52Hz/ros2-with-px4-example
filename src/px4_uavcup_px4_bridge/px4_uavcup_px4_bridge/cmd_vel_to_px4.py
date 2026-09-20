@@ -135,6 +135,17 @@ def vehicle_command_result_text(result: int) -> str:
     return names.get(int(result), f'UNKNOWN({int(result)})')
 
 
+def initial_target_z_ned(
+    current_z_ned: float,
+    configured_altitude_m: float,
+    hold_current_altitude: bool,
+) -> float:
+    """Select a safe initial NED Z target when the adapter is enabled."""
+    if hold_current_altitude:
+        return float(current_z_ned)
+    return -float(configured_altitude_m)
+
+
 class CmdVelToPx4(Node):
     """Safe, explicitly-enabled velocity adapter for PX4 Offboard mode."""
 
@@ -149,6 +160,7 @@ class CmdVelToPx4(Node):
         self.declare_parameter(
             'vehicle_status_topic', '/fmu/out/vehicle_status_v1')
         self.declare_parameter('target_altitude_m', 0.7)
+        self.declare_parameter('hold_current_altitude_on_enable', True)
         self.declare_parameter('max_xy_speed_m_s', 0.4)
         self.declare_parameter('max_yaw_rate_rad_s', 0.3)
         self.declare_parameter('max_xy_accel_m_s2', 0.3)
@@ -163,6 +175,8 @@ class CmdVelToPx4(Node):
 
         self._target_altitude_m = float(
             self.get_parameter('target_altitude_m').value)
+        self._hold_current_altitude_on_enable = bool(
+            self.get_parameter('hold_current_altitude_on_enable').value)
         self._max_xy_speed = float(
             self.get_parameter('max_xy_speed_m_s').value)
         self._max_yaw_rate = float(
@@ -387,12 +401,16 @@ class CmdVelToPx4(Node):
                     'PX4 local position/attitude is not valid; adapter remains disabled')
                 return response
 
-            self._target_z_ned = -self._target_altitude_m
+            self._target_z_ned = initial_target_z_ned(
+                self._local_position.z,
+                self._target_altitude_m,
+                self._hold_current_altitude_on_enable,
+            )
             self._enabled = True
             self._zero_motion()
             response.success = True
             response.message = (
-                f'enabled; target altitude={self._target_altitude_m:.2f} m, '
+                f'enabled; target altitude={-self._target_z_ned:.2f} m, '
                 'now wait for heartbeat before selecting Offboard')
             self.get_logger().warning(response.message)
             return response
@@ -563,7 +581,7 @@ class CmdVelToPx4(Node):
         )
         self.get_logger().info(
             f'enabled={self._enabled} altitude={altitude} '
-            f'target={self._target_altitude_m:.2f}m nav_state={nav_state} '
+            f'target={-self._target_z_ned:.2f}m nav_state={nav_state} '
             f'active_cmd=[{self._active_forward:.2f} forward, '
             f'{self._active_left:.2f} left, '
             f'{self._active_up:.2f} up, '

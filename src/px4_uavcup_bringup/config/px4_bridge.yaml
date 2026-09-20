@@ -27,6 +27,9 @@ cmd_vel_to_px4:
     attitude_topic: /fmu/out/vehicle_attitude
     vehicle_status_topic: /fmu/out/vehicle_status_v1
     target_altitude_m: 0.70
+    # Enabling Offboard first holds the estimator's current Z. The configured
+    # altitude is retained only as an explicit fallback when this is false.
+    hold_current_altitude_on_enable: true
     max_xy_speed_m_s: 0.35
     max_yaw_rate_rad_s: 0.25
     max_xy_accel_m_s2: 0.30
