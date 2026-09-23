@@ -15,6 +15,21 @@ aruco_landing_pid:
     vertical_kp: 0.35
     maximum_descent_speed_m_s: 0.20
     final_marker_distance_m: 0.35
+    lock_confirmation_frames: 5
+    # Unmeasured camera-to-gripper vertical offset. Leave 0 until measured;
+    # blind transition then uses ArUco optical range as pad-relative AGL.
+    camera_to_gripper_vertical_m: 0.0
+    blind_transition_agl_m: 0.30
+    blind_transition_alignment_radius_m: 0.08
+    blind_transition_confirmation_frames: 5
+    blind_descent_speed_m_s: 0.10
+    touchdown_descent_speed_m_s: 0.05
+    maximum_blind_descent_duration_s: 12.0
+    land_detected_topic: /fmu/out/vehicle_land_detected
+    local_position_topic: /fmu/out/vehicle_local_position_v1
+    latch_xy_yaw_service: /cmd_vel_to_px4/latch_xy_yaw
+    release_xy_yaw_service: /cmd_vel_to_px4/release_xy_yaw
+    disarm_service: /cmd_vel_to_px4/request_disarm
 
     # Confirmed on the installed down camera (2026-09-18): the IMX500 is
     # yawed 180 degrees relative to the vehicle nose. Therefore image-bottom

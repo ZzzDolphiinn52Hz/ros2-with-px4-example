@@ -33,6 +33,35 @@ def camera_target_to_body_flu(
     return camera_position + matrix @ target
 
 
+def gripper_clearance_from_marker(
+        camera_marker_distance_m: float,
+        camera_to_gripper_vertical_m: float) -> float:
+    """Estimate gripper clearance above a marker on the target surface."""
+    values = (camera_marker_distance_m, camera_to_gripper_vertical_m)
+    if not all(np.isfinite(value) and value >= 0.0 for value in values):
+        raise ValueError('landing clearances must be finite and non-negative')
+    return max(0.0, camera_marker_distance_m - camera_to_gripper_vertical_m)
+
+
+def ready_for_blind_descent(
+        gripper_clearance_m: float,
+        horizontal_error_m: float,
+        transition_clearance_m: float,
+        maximum_horizontal_error_m: float) -> bool:
+    """Return whether visual alignment is safe to hand off to blind descent."""
+    values = (
+        gripper_clearance_m,
+        horizontal_error_m,
+        transition_clearance_m,
+        maximum_horizontal_error_m,
+    )
+    if not all(np.isfinite(value) and value >= 0.0 for value in values):
+        raise ValueError('blind-descent gate values must be non-negative')
+    return (
+        gripper_clearance_m <= transition_clearance_m
+        and horizontal_error_m <= maximum_horizontal_error_m)
+
+
 @dataclass
 class PidAxis:
     """Small PID with integral/output clamps and derivative on error."""

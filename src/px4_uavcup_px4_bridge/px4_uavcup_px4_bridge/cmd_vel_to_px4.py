@@ -27,6 +27,7 @@ from px4_msgs.msg import (
     VehicleAttitude,
     VehicleCommand,
     VehicleCommandAck,
+    VehicleLandDetected,
     VehicleLocalPosition,
     VehicleStatus,
 )
@@ -146,6 +147,37 @@ def initial_target_z_ned(
     return -float(configured_altitude_m)
 
 
+def ros_up_to_ned_down(velocity_up: float) -> float:
+    """ROS body-up velocity becomes PX4 NED-down velocity."""
+    if not math.isfinite(velocity_up):
+        raise ValueError('vertical velocity must be finite')
+    return -float(velocity_up)
+
+
+def latched_position_velocity(
+    north: float,
+    east: float,
+    yaw_ned: float,
+    velocity_up: float,
+) -> Tuple[Tuple[float, float, float], Tuple[float, float, float], float]:
+    """Mixed PX4 setpoint: hold N/E/yaw, descend with NED-down velocity.
+
+    ``TrajectorySetpoint`` NaNs select the controller per axis. Non-NaN
+    position on an axis is tracked as position; a NaN position with a finite
+    velocity on that axis is tracked as velocity. This is the PX4 v1.17
+    multicopter combination used for the blind final descent.
+    """
+    values = (north, east, yaw_ned, velocity_up)
+    if not all(math.isfinite(value) for value in values):
+        raise ValueError('latched setpoint values must be finite')
+    nan = float('nan')
+    return (
+        (float(north), float(east), nan),
+        (nan, nan, ros_up_to_ned_down(velocity_up)),
+        float(yaw_ned),
+    )
+
+
 class CmdVelToPx4(Node):
     """Safe, explicitly-enabled velocity adapter for PX4 Offboard mode."""
 
@@ -159,6 +191,8 @@ class CmdVelToPx4(Node):
             'attitude_topic', '/fmu/out/vehicle_attitude')
         self.declare_parameter(
             'vehicle_status_topic', '/fmu/out/vehicle_status_v1')
+        self.declare_parameter(
+            'land_detected_topic', '/fmu/out/vehicle_land_detected')
         self.declare_parameter('target_altitude_m', 0.7)
         self.declare_parameter('hold_current_altitude_on_enable', True)
         self.declare_parameter('max_xy_speed_m_s', 0.4)
@@ -211,9 +245,16 @@ class CmdVelToPx4(Node):
         self._local_position: Optional[VehicleLocalPosition] = None
         self._attitude: Optional[VehicleAttitude] = None
         self._vehicle_status: Optional[VehicleStatus] = None
+        self._land_detected: Optional[VehicleLandDetected] = None
         self._last_cmd_time_ns: Optional[int] = None
         self._z_reset_counter: Optional[int] = None
+        self._xy_reset_counter: Optional[int] = None
+        self._heading_reset_counter: Optional[int] = None
         self._target_z_ned = -self._target_altitude_m
+        self._xy_yaw_latched = False
+        self._latched_x_ned = 0.0
+        self._latched_y_ned = 0.0
+        self._latched_yaw_ned = 0.0
         self._enabled = False
         self._target_forward = 0.0
         self._target_left = 0.0
@@ -250,6 +291,12 @@ class CmdVelToPx4(Node):
             px4_qos,
         )
         self.create_subscription(
+            VehicleLandDetected,
+            self.get_parameter('land_detected_topic').value,
+            self._on_land_detected,
+            px4_qos,
+        )
+        self.create_subscription(
             VehicleCommandAck,
             '/fmu/out/vehicle_command_ack',
             self._on_vehicle_command_ack,
@@ -274,6 +321,14 @@ class CmdVelToPx4(Node):
         self.create_service(SetBool, '~/enable', self._on_enable)
         self.create_service(
             Trigger, '~/request_offboard', self._on_request_offboard)
+        self.create_service(
+            Trigger, '~/request_posctl', self._on_request_posctl)
+        self.create_service(
+            Trigger, '~/latch_xy_yaw', self._on_latch_xy_yaw)
+        self.create_service(
+            Trigger, '~/release_xy_yaw', self._on_release_xy_yaw)
+        self.create_service(
+            Trigger, '~/request_disarm', self._on_request_disarm)
 
         period = 1.0 / self._publish_rate_hz
         self.create_timer(period, self._publish)
@@ -316,17 +371,24 @@ class CmdVelToPx4(Node):
             self.get_logger().error('Rejected non-finite /cmd_vel command')
             return
 
-        forward, left = clamp_xy(
-            float(msg.linear.x),
-            float(msg.linear.y),
-            self._max_xy_speed,
-        )
-        self._target_forward = forward
-        self._target_left = left
-        self._target_yaw_rate = max(
-            -self._max_yaw_rate,
-            min(self._max_yaw_rate, float(msg.angular.z)),
-        )
+        if self._xy_yaw_latched:
+            # Blind descent holds the latched NED XY/yaw. Horizontal cmd_vel
+            # must not become position-loop feedforward on those axes.
+            self._target_forward = 0.0
+            self._target_left = 0.0
+            self._target_yaw_rate = 0.0
+        else:
+            forward, left = clamp_xy(
+                float(msg.linear.x),
+                float(msg.linear.y),
+                self._max_xy_speed,
+            )
+            self._target_forward = forward
+            self._target_left = left
+            self._target_yaw_rate = max(
+                -self._max_yaw_rate,
+                min(self._max_yaw_rate, float(msg.angular.z)),
+            )
         self._target_up = (
             max(-self._max_vertical_speed,
                 min(self._max_vertical_speed, float(msg.linear.z)))
@@ -346,13 +408,34 @@ class CmdVelToPx4(Node):
                 f'{self._z_reset_counter}->{msg.z_reset_counter}; '
                 f'target_z += {msg.delta_z:.3f} m')
             self._z_reset_counter = int(msg.z_reset_counter)
+        if self._xy_reset_counter is None:
+            self._xy_reset_counter = int(msg.xy_reset_counter)
+        elif int(msg.xy_reset_counter) != self._xy_reset_counter:
+            if self._xy_yaw_latched:
+                self._latched_x_ned += float(msg.delta_xy[0])
+                self._latched_y_ned += float(msg.delta_xy[1])
+            self._xy_reset_counter = int(msg.xy_reset_counter)
+        if self._heading_reset_counter is None:
+            self._heading_reset_counter = int(msg.heading_reset_counter)
+        elif int(msg.heading_reset_counter) != self._heading_reset_counter:
+            if self._xy_yaw_latched:
+                self._latched_yaw_ned += float(msg.delta_heading)
+                self._latched_yaw_ned = math.atan2(
+                    math.sin(self._latched_yaw_ned),
+                    math.cos(self._latched_yaw_ned))
+            self._heading_reset_counter = int(msg.heading_reset_counter)
         self._local_position = msg
 
     def _on_vehicle_status(self, msg: VehicleStatus) -> None:
         self._vehicle_status = msg
 
+    def _on_land_detected(self, msg: VehicleLandDetected) -> None:
+        self._land_detected = msg
+
     def _on_vehicle_command_ack(self, msg: VehicleCommandAck) -> None:
-        if int(msg.command) != VehicleCommand.VEHICLE_CMD_DO_SET_MODE:
+        if int(msg.command) not in (
+                VehicleCommand.VEHICLE_CMD_DO_SET_MODE,
+                VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM):
             return
         result = vehicle_command_result_text(msg.result)
         log = self.get_logger().info
@@ -361,9 +444,13 @@ class CmdVelToPx4(Node):
             VehicleCommandAck.VEHICLE_CMD_RESULT_IN_PROGRESS,
         ):
             log = self.get_logger().error
+        command_name = (
+            'mode request'
+            if int(msg.command) == VehicleCommand.VEHICLE_CMD_DO_SET_MODE
+            else 'arm/disarm request')
         log(
-            'PX4 Offboard mode request ACK: '
-            f'{result} param1={msg.result_param1} param2={msg.result_param2}')
+            f'PX4 {command_name} ACK: {result} '
+            f'param1={msg.result_param1} param2={msg.result_param2}')
 
     def _on_attitude(self, msg: VehicleAttitude) -> None:
         self._attitude = msg
@@ -375,6 +462,27 @@ class CmdVelToPx4(Node):
             return px4_quaternion_to_heading_ned(self._attitude.q)
         except ValueError:
             return None
+
+    def _publish_vehicle_command(
+            self, command_id: int, param1: float = 0.0,
+            param2: float = 0.0) -> None:
+        command = VehicleCommand()
+        command.timestamp = self._now_us()
+        command.param1 = float(param1)
+        command.param2 = float(param2)
+        command.param3 = 0.0
+        command.param4 = 0.0
+        command.param5 = 0.0
+        command.param6 = 0.0
+        command.param7 = 0.0
+        command.command = int(command_id)
+        command.target_system = 1
+        command.target_component = 1
+        command.source_system = 1
+        command.source_component = 1
+        command.confirmation = 0
+        command.from_external = True
+        self._vehicle_command_pub.publish(command)
 
     def _position_is_valid(self) -> bool:
         position = self._local_position
@@ -417,6 +525,7 @@ class CmdVelToPx4(Node):
 
         self._enabled = False
         self._zero_motion()
+        self._xy_yaw_latched = False
         response.success = True
         response.message = 'disabled; Offboard heartbeat/setpoint publishing stopped'
         self.get_logger().warning(response.message)
@@ -447,27 +556,94 @@ class CmdVelToPx4(Node):
             response.message = 'PX4 preflight checks have not passed'
             return response
 
-        command = VehicleCommand()
-        command.timestamp = self._now_us()
-        command.param1 = 1.0  # MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
-        command.param2 = 6.0  # PX4 custom main mode: OFFBOARD
-        command.param3 = 0.0
-        command.param4 = 0.0
-        command.param5 = 0.0
-        command.param6 = 0.0
-        command.param7 = 0.0
-        command.command = VehicleCommand.VEHICLE_CMD_DO_SET_MODE
-        command.target_system = 1
-        command.target_component = 1
-        command.source_system = 1
-        command.source_component = 1
-        command.confirmation = 0
-        command.from_external = True
-        self._vehicle_command_pub.publish(command)
+        self._publish_vehicle_command(
+            VehicleCommand.VEHICLE_CMD_DO_SET_MODE,
+            1.0,  # MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
+            6.0,  # PX4 custom main mode: OFFBOARD
+        )
 
         response.success = True
         response.message = (
             'Offboard mode request published; verify PX4 ACK and nav_state=14')
+        self.get_logger().warning(response.message)
+        return response
+
+    def _on_request_posctl(
+        self,
+        request: Trigger.Request,
+        response: Trigger.Response,
+    ) -> Trigger.Response:
+        del request
+        status = self._vehicle_status
+        if status is None:
+            response.success = False
+            response.message = 'PX4 vehicle status has not been received'
+            return response
+        self._publish_vehicle_command(
+            VehicleCommand.VEHICLE_CMD_DO_SET_MODE,
+            1.0,  # MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
+            3.0,  # PX4 custom main mode: POSCTL
+        )
+        response.success = True
+        response.message = 'POSCTL mode request published; verify nav_state=2'
+        self.get_logger().warning(response.message)
+        return response
+
+    def _on_latch_xy_yaw(
+        self,
+        request: Trigger.Request,
+        response: Trigger.Response,
+    ) -> Trigger.Response:
+        del request
+        position = self._local_position
+        heading = self._heading_ned()
+        if not self._enabled:
+            response.success = False
+            response.message = 'adapter is disabled; XY/yaw was not latched'
+            return response
+        if not self._position_is_valid() or heading is None:
+            response.success = False
+            response.message = 'PX4 local position/attitude is invalid'
+            return response
+        self._latched_x_ned = float(position.x)
+        self._latched_y_ned = float(position.y)
+        self._latched_yaw_ned = float(heading)
+        self._xy_yaw_latched = True
+        self._zero_motion()
+        response.success = True
+        response.message = (
+            f'latched NED XY=({self._latched_x_ned:.3f}, '
+            f'{self._latched_y_ned:.3f}) yaw={self._latched_yaw_ned:.3f}')
+        self.get_logger().warning(response.message)
+        return response
+
+    def _on_release_xy_yaw(
+        self,
+        request: Trigger.Request,
+        response: Trigger.Response,
+    ) -> Trigger.Response:
+        del request
+        self._xy_yaw_latched = False
+        self._zero_motion()
+        response.success = True
+        response.message = 'released latched XY/yaw; velocity control restored'
+        self.get_logger().warning(response.message)
+        return response
+
+    def _on_request_disarm(
+        self,
+        request: Trigger.Request,
+        response: Trigger.Response,
+    ) -> Trigger.Response:
+        del request
+        if self._land_detected is None or not self._land_detected.landed:
+            response.success = False
+            response.message = 'PX4 has not confirmed landed; disarm blocked'
+            return response
+        self._publish_vehicle_command(
+            VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0, 0.0)
+        response.success = True
+        response.message = 'disarm request published after landed confirmation'
         self.get_logger().warning(response.message)
         return response
 
@@ -499,8 +675,12 @@ class CmdVelToPx4(Node):
         self._target_yaw_rate = 0.0
         self._target_up = 0.0
         if self._last_cmd_time_ns is not None and not self._timeout_logged:
-            self.get_logger().warning(
-                '/cmd_vel timeout: braking XY/yaw command to zero; holding altitude')
+            if self._xy_yaw_latched:
+                self.get_logger().warning(
+                    '/cmd_vel timeout: zeroing vertical velocity; holding latched XY/yaw')
+            else:
+                self.get_logger().warning(
+                    '/cmd_vel timeout: braking XY/yaw command to zero; holding altitude')
             self._timeout_logged = True
 
     def _publish(self) -> None:
@@ -532,7 +712,7 @@ class CmdVelToPx4(Node):
         vertical_error = self._target_up - self._active_up
         self._active_up += max(
             -vertical_delta, min(vertical_delta, vertical_error))
-        if self._allow_vertical:
+        if self._allow_vertical and not self._xy_yaw_latched:
             # ROS cmd_vel Z is positive up. Integrate it into a bounded NED Z
             # position target so a lost command naturally becomes altitude hold.
             self._target_z_ned = integrate_altitude_target(
@@ -547,10 +727,10 @@ class CmdVelToPx4(Node):
 
         mode = OffboardControlMode()
         mode.timestamp = self._now_us()
-        # Position is the highest-level active controller because Z is held by
-        # a position setpoint. NaN XY position allows velocity control there.
+        # mc_pos_control is selected by either flag. TrajectorySetpoint NaNs
+        # choose position vs velocity per axis (PX4 v1.17 multicopter).
         mode.position = True
-        mode.velocity = False
+        mode.velocity = True
         mode.acceleration = False
         mode.attitude = False
         mode.body_rate = False
@@ -561,12 +741,25 @@ class CmdVelToPx4(Node):
         nan = float('nan')
         setpoint = TrajectorySetpoint()
         setpoint.timestamp = mode.timestamp
-        setpoint.position = [nan, nan, float(self._target_z_ned)]
-        setpoint.velocity = [velocity_north, velocity_east, nan]
+        if self._xy_yaw_latched:
+            position, velocity, yaw = latched_position_velocity(
+                self._latched_x_ned,
+                self._latched_y_ned,
+                self._latched_yaw_ned,
+                self._active_up,
+            )
+            setpoint.position = list(position)
+            setpoint.velocity = list(velocity)
+            setpoint.yaw = yaw
+            setpoint.yawspeed = nan
+        else:
+            setpoint.position = [nan, nan, float(self._target_z_ned)]
+            setpoint.velocity = [velocity_north, velocity_east, nan]
+            setpoint.yaw = nan
+            setpoint.yawspeed = ros_yaw_rate_to_ned(
+                self._active_yaw_rate)
         setpoint.acceleration = [nan, nan, nan]
         setpoint.jerk = [nan, nan, nan]
-        setpoint.yaw = nan
-        setpoint.yawspeed = ros_yaw_rate_to_ned(self._active_yaw_rate)
         self._trajectory_pub.publish(setpoint)
 
     def _status(self) -> None:
@@ -579,9 +772,14 @@ class CmdVelToPx4(Node):
             'unknown' if self._vehicle_status is None
             else str(int(self._vehicle_status.nav_state))
         )
+        landed = (
+            'unknown' if self._land_detected is None
+            else str(bool(self._land_detected.landed)).lower()
+        )
         self.get_logger().info(
             f'enabled={self._enabled} altitude={altitude} '
             f'target={-self._target_z_ned:.2f}m nav_state={nav_state} '
+            f'xy_yaw_latched={self._xy_yaw_latched} landed={landed} '
             f'active_cmd=[{self._active_forward:.2f} forward, '
             f'{self._active_left:.2f} left, '
             f'{self._active_up:.2f} up, '

@@ -7,7 +7,9 @@ from px4_uavcup_px4_bridge.cmd_vel_to_px4 import (
     clamp_xy,
     initial_target_z_ned,
     integrate_altitude_target,
+    latched_position_velocity,
     px4_quaternion_to_heading_ned,
+    ros_up_to_ned_down,
     ros_yaw_rate_to_ned,
     slew_xy,
     vehicle_command_result_text,
@@ -87,3 +89,24 @@ def test_enable_holds_current_ned_altitude_by_default():
 
 def test_enable_can_use_configured_altitude_when_requested():
     assert initial_target_z_ned(-0.93, 0.7, False) == pytest.approx(-0.7)
+
+
+def test_ros_up_descent_is_positive_ned_down():
+    assert ros_up_to_ned_down(-0.10) == pytest.approx(0.10)
+
+
+def test_latched_setpoint_holds_xy_yaw_and_uses_velocity_z():
+    position, velocity, yaw = latched_position_velocity(
+        1.2, -0.4, 0.5, -0.10)
+    assert position[0] == pytest.approx(1.2)
+    assert position[1] == pytest.approx(-0.4)
+    assert math.isnan(position[2])
+    assert math.isnan(velocity[0])
+    assert math.isnan(velocity[1])
+    assert velocity[2] == pytest.approx(0.10)
+    assert yaw == pytest.approx(0.5)
+
+
+def test_latched_setpoint_rejects_non_finite_values():
+    with pytest.raises(ValueError):
+        latched_position_velocity(math.nan, 0.0, 0.0, 0.0)
