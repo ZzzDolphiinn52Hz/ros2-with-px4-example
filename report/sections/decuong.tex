@@ -3,6 +3,7 @@
 \newgeometry{left=25mm,right=15mm,top=25mm,bottom=20mm}
 \thispagestyle{empty}
 \begingroup
+\pagestyle{empty}
 \setstretch{1}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0pt}
@@ -15,6 +16,7 @@
   TRƯỜNG ĐẠI HỌC BÁCH KHOA TP. HỒ CHÍ MINH\par}
   \vspace{1mm}
   \textbf{KHOA ĐIỆN -- ĐIỆN TỬ}\par
+  \vspace{1mm}
   \textbf{BỘ MÔN: ĐIỀU KHIỂN TỰ ĐỘNG}
 \end{minipage}\hfill
 \begin{minipage}[t]{0.47\textwidth}
@@ -29,64 +31,137 @@
   TP. HCM, ngày....tháng....năm....}
 \end{minipage}
 
-\vspace{8mm}
+\vspace{5mm}
 \begin{center}
   \textbf{ĐỀ CƯƠNG CHI TIẾT}
 \end{center}
 \vspace{1mm}
 
-% Các chiều cao cố định giữ nguyên khoảng trống để điền và ký xác nhận.
-\setlength{\tabcolsep}{2.5mm}
-\renewcommand{\arraystretch}{1}
-\noindent
-\begin{tabular}{|p{\dimexpr\textwidth-2\tabcolsep-2\arrayrulewidth\relax}|}
-\hline
-\begin{minipage}[c][11mm][c]{\linewidth}
-  \textbf{TÊN ĐỒ ÁN 2:}
-\end{minipage}\\ \hline
-\begin{minipage}[c][10mm][c]{\linewidth}
+% Khung cho phép ngắt giữa các dòng, kể cả trong cùng một mục.
+% Không bọc toàn bộ nội dung trong tabular hoặc minipage.
+\mdfdefinestyle{decuongfield}{
+  linewidth=0.4pt,
+  leftmargin=0pt,rightmargin=0pt,
+  innerleftmargin=2.5mm,innerrightmargin=2.5mm,
+  innertopmargin=3mm,innerbottommargin=3mm,
+  skipabove=0pt,skipbelow=0pt,
+  splittopskip=3mm,splitbottomskip=3mm,
+  nobreak=false,backgroundcolor=white
+}
+\begin{mdframed}[style=decuongfield]
+  \textbf{TÊN ĐỒ ÁN 2: THIẾT KẾ  DRONE TỰ ĐỘNG HẠ CÁNH VÀ GẮP HÀNG BẰNG MÃ ARUCO}
+\par\vspace{-1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+\vspace{3mm}
   \textbf{Cán bộ hướng dẫn: PGS. TS NGUYỄN TẤN LŨY}
-\end{minipage}\\ \hline
-\begin{minipage}[c][12mm][c]{\linewidth}
-  \textbf{Thời gian thực hiện:} Từ ngày....................đến ngày................
-\end{minipage}\\ \hline
-\begin{minipage}[c][23mm][c]{\linewidth}
+\par\vspace{-1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+\vspace{3mm}
+  \textbf{Thời gian thực hiện:} Từ ngày .../.../...... đến ngày .../.../......
+\par\vspace{-1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+\vspace{3mm}
   \textbf{Sinh viên thực hiện:}\par
-  \vspace{4mm}
+  \vspace{2mm}
   \textbf{NGUYỄN VĂN TUẤN ANH -- 2310131}
-\end{minipage}\\ \hline
-\begin{minipage}[c][76mm][t]{\linewidth}
-  \vspace{3mm}
-  \textbf{Nội dung đề tài:} \textit{(Mô tả chi tiết}\par
-  \vspace{5mm}
-  \textit{mục tiêu,}\par
-  \vspace{5mm}
-  \textit{phạm vi, đối tượng,}\par
-  \vspace{5mm}
-  \textit{phương pháp thực hiện,}\par
-  \vspace{5mm}
-  \textit{kết quả mong đợi của đề tài)}
-\end{minipage}\\ \hline
-\begin{minipage}[c][42mm][t]{\linewidth}
-  \vspace{3mm}
-  \textbf{Kế hoạch thực hiện:} \textit{(Mô tả kế hoạch làm việc và phân công công việc cho từng sinh viên tham gia)}
-\end{minipage}\\ \hline
-\multicolumn{1}{|@{}c@{}|}{%
-  \begin{minipage}[c][25mm][t]{\dimexpr0.5\textwidth-\arrayrulewidth\relax}
+\par\vspace{-1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+
+\vspace{1mm}
+  \textbf{Nội dung đề tài:}\\
+\textbf{Mục tiêu:} Nghiên cứu, thiết kế và triển khai hệ thống UAV 
+  quadrotor S500 Frame có khả năng tự động hạ cánh chính 
+  xác lên vị trí đánh dấu bằng mã ArUco, thực hiện gắp hàng với 
+  tải trọng mục tiêu 1 kg, sau đó cất cánh và tiếp tục nhiệm vụ 
+  bay, trên nền tảng Raspberry Pi 5 kết hợp firmware PX4 và ROS 2.
+\begin{itemize}
+\item \textbf{Tính toán và thiết kế phần cứng gripper:} 
+    Phân tích yêu cầu tải trọng để lựa chọn cấu hình servo,
+    thiết kế và chế tạo giá đỡ, móc/càng gắp phù hợp 
+    với khung S500 và hộp hàng.
+\item \textbf{Triển khai hệ thống định vị tương đối bằng ArUco:}
+    Tìm hiểu nguyên lý phát hiện và ước lượng pose của mã ArUco. 
+    Xây dựng pipeline phát hiện marker từ camera nhìn xuống, 
+    hiệu chuẩn camera, ước lượng vị trí và hướng tương đối của 
+    UAV so với marker.
+\item \textbf{Xây dựng bộ điều khiển hạ cánh chính xác (Landing Controller):}
+    Triển khai thuật toán PID cho phép UAV tự động tiếp cận,
+     căn chỉnh và hạ cánh chính xác lên vị trí marker.
+      Tích hợp với PX4 (qua uXRCE-DDS) bằng offboard control mode.
+\item \textbf{Xây dựng pipeline Lading - Pickup - Takeoff:}
+    Xây dựng state machine điều phối toàn bộ quy trình: 
+    bay đến vùng marker → căn chỉnh → hạ cánh → xác nhận landing
+     → kích hoạt gripper gắp hàng → cất cánh và tiếp tục 
+     nhiệm vụ. 
+\item \textbf{Tích hợp hệ thống và đánh giá thực nghiệm:}
+    Đánh giá định lượng độ chính xác hạ cánh, tỷ lệ thành công của thao tác gắp hàng, thời gian thực hiện và khả năng hoạt động ổn định trong môi trường thử nghiệm, từ đó đề xuất hướng cải tiến.
+\end{itemize}
+\par\vspace{-1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+
+
+\vspace{1mm}
+\textbf{Phạm vi triển khai:} 
+\begin{itemize}
+  \item UAV: quadrotor S500 Frame, Raspberry Pi 5, PX4 firmware, ROS 2 Humble
+  \item Camera: downward-facing camera (Raspberry Pi Camera)
+  \item Vật thể gắp: hộp hàng 15x10x10 cm, tải 1 kg
+  \item Mã ArUco: nxn, ID=n, kích thước i20 cm
+  \item Điều kiện triển khai: sân cỏ ngoài trời - Trường Đại học Bách Khoa TP. HCM, không có gió mạnh, không mưa
+\end{itemize}
+\par\vspace{-2mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+
+
+\vspace{1mm}
+\textbf{Phương pháp:} 
+Kết hợp thiết kế cơ khí (tính toán tải trọng, lựa chọn servo và chế tạo gripper), thị giác máy tính (phát hiện và ước lượng pose ArUco bằng OpenCV trên Raspberry Pi 5) và điều khiển bay (offboard control qua uXRCE-DDS kết hợp PID). State machine được sử dụng để điều phối toàn bộ pipeline hạ cánh–gắp hàng–cất cánh. Hệ thống được kiểm thử từng module và tích hợp trên phần cứng thực, đánh giá bằng số liệu định lượng về độ chính xác và tỷ lệ thành công.
+\par\vspace{-2mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+
+
+\vspace{1mm}
+\textbf{Kết quả dự kiến:} 
+\begin{itemize}
+\item Hoàn thiện mô hình UAV S500 tích hợp gripper có khả năng gắp hàng 1 kg.
+\item Độ chính xác hạ cánh đạt trên 90\% số lần thử nghiệm, với sai số vị trí trung bình nhỏ hơn 10 cm so với tâm marker.
+\item Tỷ lệ thành công của chuỗi hạ cánh – gắp hàng – cất cánh đạt trên 80\% trong điều kiện thử nghiệm có kiểm soát.
+\item Thời gian thực hiện toàn bộ pipeline (từ bắt đầu tiếp cận đến cất cánh lại) dưới 30 giây.
+\item Báo cáo kỹ thuật trình bày số liệu định lượng, hạn chế của hệ thống và hướng cải tiến.
+\end{itemize}
+\par\vspace{-2mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+
+
+\vspace{1mm}
+\textbf{Kế hoạch thực hiện:} \textit{(Mô tả kế hoạch làm việc và phân công công việc cho từng sinh viên tham gia)}
+\begin{itemize}
+\item Tuần 1--2: Khảo sát yêu cầu, tính toán và thiết kế gripper; lựa chọn linh kiện.
+\item Tuần 3--4: Chế tạo và lắp ráp gripper; hiệu chuẩn camera và xây dựng pipeline phát hiện ArUco.
+\item Tuần 5--6: Xây dựng landing controller (PID + offboard) và state machine điều phối pipeline.
+\item Tuần 7--8: Tích hợp hệ thống, kiểm thử thực nghiệm, thu thập số liệu và đánh giá.
+\item Tuần 9--10: Hoàn thiện báo cáo, đề xuất cải tiến và bảo vệ đồ án.
+\end{itemize}
+\par\vspace{-2mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+
+\vspace{3mm}
+\noindent
+  \begin{minipage}[c][35mm][t]{\dimexpr0.5\linewidth-\arrayrulewidth\relax}
     \vspace{4mm}\centering
     \textbf{Xác nhận của Cán bộ hướng dẫn}\\
     (ký và ghi rõ họ tên)
   \end{minipage}%
   \vrule width\arrayrulewidth
-  \begin{minipage}[c][25mm][t]{\dimexpr0.5\textwidth-2\arrayrulewidth\relax}
+  \begin{minipage}[c][35mm][t]{\dimexpr0.5\linewidth-2\arrayrulewidth\relax}
     \vspace{4mm}\centering
-    {\fontsize{11}{15}\selectfont TP. HCM, ngày....tháng ....năm.....}\\
+    {\fontsize{11}{15}\selectfont TP. HCM, ngày .... tháng .... năm ..... }\\
     Sinh viên\\
     (ký và ghi rõ họ tên)
   \end{minipage}%
-}\\ \hline
-\end{tabular}
+
+\end{mdframed}
 \par
-\endgroup
 \clearpage
+\endgroup
 \restoregeometry
