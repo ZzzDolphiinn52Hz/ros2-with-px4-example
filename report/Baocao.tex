@@ -1,0 +1,285 @@
+\documentclass[a4paper]{article}
+\usepackage[utf8]{vntex}
+\usepackage{wrapfig}
+%\usepackage[english,vietnam]{babel}
+%\usepackage[utf8]{inputenc}
+\usepackage{mathptmx}[ptm]
+%\usepackage[utf8]{inputenc}
+%\usepackage[francais]{babel}
+\usepackage{a4wide,amssymb,epsfig,latexsym,array,hhline,fancyhdr}
+\usepackage[normalem]{ulem}
+%\usepackage{soul}
+
+\usepackage[makeroom]{cancel}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{multicol,longtable,amscd}
+\usepackage{diagbox}%Make diagonal lines in tables
+\usepackage{booktabs}
+\usepackage{alltt}
+\usepackage[framemethod=tikz]{mdframed}% For highlighting paragraph backgrounds
+\usepackage{caption,subcaption}
+
+\usepackage{lastpage}
+\usepackage[lined,boxed,commentsnumbered]{algorithm2e}
+\usepackage{enumerate}
+\usepackage{color}
+\usepackage{graphicx}							% Standard graphics package
+\graphicspath{{images/}{Images/}}
+\usepackage{array}
+\usepackage{tabularx, caption}
+\usepackage{multirow}
+\usepackage{multicol}
+\usepackage{rotating}
+\usepackage{graphics}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage{indentfirst}
+\usepackage{epsfig}
+\usepackage{tikz}
+\usepackage{eso-pic}
+
+\usetikzlibrary{arrows,decorations.pathmorphing,backgrounds,calc,positioning,shapes.geometric}
+
+% Cover frame in absolute paper coordinates so it cannot drift
+\newcommand{\InternshipCoverFrame}{%
+  \AddToShipoutPictureBG*{%
+    \AtPageLowerLeft{%
+      \begin{tikzpicture}
+        \useasboundingbox (0,0) rectangle (\paperwidth,\paperheight);
+        \draw[line width=4pt]
+          (0.40in,0.50in) rectangle (\paperwidth-0.40in,\paperheight-0.50in);
+        \draw[line width=1.5pt]
+          (0.45in,0.55in) rectangle (\paperwidth-0.45in,\paperheight-0.55in);
+      \end{tikzpicture}%
+    }%
+  }%
+}
+
+\usepackage[unicode]{hyperref}
+\hypersetup{urlcolor=blue,linkcolor=black,citecolor=black,colorlinks=true} 
+\usepackage{listings}
+
+%\usepackage{pstcol} 								% PSTricks with the standard color package
+
+\usepackage[normalem]{ulem}
+
+\newtheorem{theorem}{{\bf Định lý}}
+\newtheorem{property}{{\bf Tính chất}}
+\newtheorem{proposition}{{\bf Mệnh đề}}
+\newtheorem{corollary}[proposition]{{\bf Hệ quả}}
+\newtheorem{lemma}[proposition]{{\bf Bổ đề}}
+\theoremstyle{definition}
+\newtheorem{exer}{Bài toán}
+
+\def\thesislayout{	% A4: 210 × 297
+	\geometry{
+		a4paper,
+		total={160mm,240mm},  % fix over page
+		left=30mm,
+		top=30mm,
+	}
+}
+\def\thesisheadlayout{	% A4: 210 × 297
+	\geometry{
+		a4paper,
+		total={160mm,240mm},  % fix over page
+		left=30mm,
+		top=10mm,
+	}
+}
+\thesislayout
+
+% Màu và kiểu hiển thị mã nguồn Python.
+\definecolor{codebackground}{RGB}{247,249,252}
+\definecolor{codeframe}{RGB}{203,213,225}
+\definecolor{codekeyword}{RGB}{30,64,175}
+\definecolor{codecomment}{RGB}{22,101,52}
+\definecolor{codestring}{RGB}{180,83,9}
+\definecolor{codenumber}{RGB}{100,116,139}
+
+\lstdefinestyle{pythoncode}{
+  language=Python,
+  basicstyle=\small\ttfamily,
+  keywordstyle=\color{codekeyword}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  stringstyle=\color{codestring},
+  numberstyle=\tiny\ttfamily\color{codenumber},
+  numbers=left,
+  stepnumber=1,
+  numbersep=10pt,
+  backgroundcolor=\color{codebackground},
+  frame=single,
+  rulecolor=\color{codeframe},
+  framerule=0.6pt,
+  framesep=6pt,
+  xleftmargin=1.5em,
+  framexleftmargin=1em,
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  keepspaces=true,
+  columns=fullflexible,
+  tabsize=4,
+  captionpos=t,
+  breaklines=true,
+  breakatwhitespace=false,
+  aboveskip=1em,
+  belowskip=1em
+}
+
+\lstdefinestyle{terminaloutput}{
+  language={},
+  basicstyle=\footnotesize\ttfamily,
+  backgroundcolor=\color{codebackground},
+  frame=single,
+  rulecolor=\color{codeframe},
+  numbers=none,
+  breaklines=true,
+  columns=fullflexible
+}
+
+\lstset{style=pythoncode}
+%\usepackage{fancyhdr}
+\setlength{\headheight}{40pt}
+\pagestyle{fancy}
+\fancyhead{} % clear all header fields
+\fancyhead[L]{
+ \begin{tabular}{rl}
+    \begin{picture}(25,15)(0,0)
+    \put(0,-8){\includegraphics[width=10mm, height=10mm]{hcmut.png}}
+    %\put(0,-8){\epsfig{width=10mm,figure=hcmut.eps}}
+   \end{picture}&
+	%\includegraphics[width=8mm, height=8mm]{hcmut.png} & %
+	\begin{tabular}{l}
+		\textbf{Trường Đại Học Bách Khoa - Đại học Quốc gia TP.HCM }\\
+		\textbf{Khoa Điện - Điện Tử}
+	\end{tabular} 	
+ \end{tabular}
+}
+\fancyhead[R]{
+	\begin{tabular}{l}
+		\tiny \bf \\
+		\tiny \bf 
+	\end{tabular}  }
+\fancyfoot{} % clear all footer fields
+\fancyfoot[L]{\scriptsize  Báo cáo đồ án 2 - HK1 2026 - 2027}
+\fancyfoot[R]{\scriptsize  Trang {\thepage}/\pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\footrulewidth}{0.3pt}
+
+
+%%%
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{3}
+\makeatletter
+\newcounter {subsubsubsection}[subsubsection]
+\renewcommand\thesubsubsubsection{\thesubsubsection .\@alph\c@subsubsubsection}
+\newcommand\subsubsubsection{\@startsection{subsubsubsection}{4}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\normalfont\normalsize\bfseries}}
+\newcommand*\l@subsubsubsection{\@dottedtocline{3}{10.0em}{4.1em}}
+\newcommand*{\subsubsubsectionmark}[1]{}
+\makeatother
+
+\everymath{\color{black}}%make in-line maths symbols blue to read/check easily
+
+% --- Thiết lập dàn trang và dãn dòng ---
+% Dãn dòng vừa phải, phù hợp với báo cáo tiếng Việt.
+\setstretch{1.15}
+\raggedbottom
+\setlength{\parindent}{1.25em}
+\setlength{\parskip}{0.35em plus 0.08em minus 0.04em}
+\setlength{\emergencystretch}{2em}
+
+% Khoảng cách tiêu đề nhất quán, tránh tiêu đề bị dính vào đoạn văn.
+\titleformat{\section}
+  {\normalfont\Large\bfseries}
+  {\thesection}{0.75em}{}
+\titlespacing*{\section}{0pt}{2.2ex plus 0.6ex minus 0.2ex}{1.1ex plus 0.2ex}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}
+  {\thesubsection}{0.75em}{}
+\titlespacing*{\subsection}{0pt}{1.8ex plus 0.5ex minus 0.2ex}{0.8ex plus 0.2ex}
+
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries}
+  {\thesubsubsection}{0.75em}{}
+\titlespacing*{\subsubsection}{0pt}{1.4ex plus 0.4ex minus 0.2ex}{0.5ex plus 0.1ex}
+
+% Khoảng cách hình, bảng và chú thích cân đối hơn.
+\captionsetup[figure]{labelfont={small,bf},textfont={small,it},skip=5pt}
+\setlength{\floatsep}{10pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{12pt plus 2pt minus 3pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+
+\thesislayout
+
+\begin{document}
+
+\hypersetup{pageanchor=false}
+\newgeometry{left=25mm,right=25mm,top=20mm,bottom=18mm}
+\begin{titlepage}
+\InternshipCoverFrame
+\thispagestyle{empty}
+\begingroup
+\centering
+\setstretch{1}
+\setlength{\parskip}{0pt}
+\bfseries
+\fontsize{13}{18}\selectfont
+TRƯỜNG ĐẠI HỌC BÁCH KHOA TP. HỒ CHÍ MINH\par
+\vspace{4mm}
+KHOA ĐIỆN -- ĐIỆN TỬ\par
+\vspace{4mm}
+BỘ MÔN ĐIỀU KHIỂN TỰ ĐỘNG\par
+
+\vspace{17mm}
+\includegraphics[width=40mm]{hcmut.png}\par
+\vspace{18mm}
+NGUYỄN VĂN TUẤN ANH -- 2310131
+
+\vspace{28mm}
+{\fontsize{15}{20}\selectfont ĐỒ ÁN 2\par}
+\vspace{5mm}
+{\fontsize{16}{24}\selectfont
+THIEEST L\par}
+\vspace{6mm}
+\textless(TÊN BẰNG TIẾNG ANH)\textgreater\par
+
+\vspace{18mm}
+{\fontsize{11}{16}\selectfont
+GIẢNG VIÊN HƯỚNG DẪN\par
+\vspace{4mm}
+PGS. TS NGUYỄN TẤN LŨY\par}
+
+\vfill
+{\fontsize{12}{16}\selectfont TP. HỒ CHÍ MINH, 2026\par}
+\endgroup
+\end{titlepage}
+\restoregeometry
+\input{sections/decuong}
+\hypersetup{pageanchor=true}
+\pagenumbering{arabic}
+
+\tableofcontents
+
+\newpage
+\listoffigures
+
+\newpage
+\listoftables
+
+\newpage
+\input{sections/decuong}
+\newpage
+\input{sections/Chuong1}
+\newpage
+\input{sections/Chuong2}
+\newpage
+\input{sections/Chuong3}
+\end{document}
