@@ -106,7 +106,7 @@
   \item UAV: quadrotor S500 Frame, Raspberry Pi 5, PX4 firmware, ROS 2 Humble
   \item Camera: downward-facing camera (Raspberry Pi Camera)
   \item Vật thể gắp: hộp hàng 15x10x10 cm, tải 1 kg
-  \item Mã ArUco: nxn, ID=n, kích thước i20 cm
+  \item Mã ArUco: nxn, ID=n, kích thước 20 cm
   \item Điều kiện triển khai: sân cỏ ngoài trời - Trường Đại học Bách Khoa TP. HCM, không có gió mạnh, không mưa
 \end{itemize}
 \par\vspace{-2mm}
@@ -115,7 +115,13 @@
 
 \vspace{1mm}
 \textbf{Phương pháp:} 
-Kết hợp thiết kế cơ khí (tính toán tải trọng, lựa chọn servo và chế tạo gripper), thị giác máy tính (phát hiện và ước lượng pose ArUco bằng OpenCV trên Raspberry Pi 5) và điều khiển bay (offboard control qua uXRCE-DDS kết hợp PID). State machine được sử dụng để điều phối toàn bộ pipeline hạ cánh–gắp hàng–cất cánh. Hệ thống được kiểm thử từng module và tích hợp trên phần cứng thực, đánh giá bằng số liệu định lượng về độ chính xác và tỷ lệ thành công.
+\begin{itemize}
+\item Tính toán tải trọng, lựa chọn động cơ và kích thước cánh phù hợp, lựa chọn cấu hình servo, thiết kế gripper tích hợp vào khung S500 có thể nâng tải 1kg.
+\item Thị giác máy tính: phát hiện và ước lượng pose ArUco bằng OpenCV trên Raspberry Pi 5, kèm hiệu chuẩn camera.
+\item Điều khiển bay: triển khai bộ điều khiển PID kết hợp offboard control mode qua uXRCE-DDS với PX4.
+\item Điều phối hệ thống: sử dụng state machine để quản lý chuỗi hành động hạ cánh – gắp hàng – cất cánh.
+\item Đánh giá thực nghiệm: kiểm thử từng module và hệ thống tích hợp trên phần cứng thực, thu thập số liệu định lượng về độ chính xác và tỷ lệ thành công.
+\end{itemize}
 \par\vspace{-2mm}
 \noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
 
@@ -136,8 +142,8 @@ Kết hợp thiết kế cơ khí (tính toán tải trọng, lựa chọn servo
 \vspace{1mm}
 \textbf{Kế hoạch thực hiện:} \textit{(Mô tả kế hoạch làm việc và phân công công việc cho từng sinh viên tham gia)}
 \begin{itemize}
-\item Tuần 1--2: Khảo sát yêu cầu, tính toán và thiết kế gripper; lựa chọn linh kiện.
-\item Tuần 3--4: Chế tạo và lắp ráp gripper; hiệu chuẩn camera và xây dựng pipeline phát hiện ArUco.
+\item Tuần 1--2: Khảo sát yêu cầu, tính toán và thiết kế gripper; lựa chọn linh kiện, triển khai phần cứng UAV.
+\item Tuần 3--4: Tìm hiểu vể mã ArUco và phương thức giao tiếp giữa firmware PX4 và ROS2; chọn và hiệu chuẩn camera và xây dựng pipeline phát hiện ArUco.
 \item Tuần 5--6: Xây dựng landing controller (PID + offboard) và state machine điều phối pipeline.
 \item Tuần 7--8: Tích hợp hệ thống, kiểm thử thực nghiệm, thu thập số liệu và đánh giá.
 \item Tuần 9--10: Hoàn thiện báo cáo, đề xuất cải tiến và bảo vệ đồ án.

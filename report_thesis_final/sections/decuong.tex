@@ -1,0 +1,158 @@
+% Trang đề cương chi tiết theo mẫu của Bộ môn Điều khiển tự động.
+\clearpage
+\newgeometry{left=25mm,right=15mm,top=25mm,bottom=20mm}
+\thispagestyle{empty}
+\begingroup
+\pagestyle{empty}
+\setstretch{1}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\fontsize{12}{16}\selectfont
+% Giãn danh sách vừa phải cho đề cương nhiều trang.
+\let\decuongitemize\itemize
+\renewcommand{\itemize}{\decuongitemize
+  \setlength{\itemsep}{2pt}
+  \setlength{\parsep}{0pt}
+  \setlength{\topsep}{4pt}}
+
+\noindent
+\begin{minipage}[t]{0.51\textwidth}
+  \centering
+  {\fontsize{10}{14}\selectfont
+  TRƯỜNG ĐẠI HỌC BÁCH KHOA TP. HỒ CHÍ MINH\par}
+  \vspace{1mm}
+  \textbf{KHOA ĐIỆN -- ĐIỆN TỬ}\par
+  \vspace{1mm}
+  \textbf{BỘ MÔN: ĐIỀU KHIỂN TỰ ĐỘNG}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.47\textwidth}
+  \centering
+  {\fontsize{10}{14}\selectfont
+  CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\par
+  \vspace{1mm}
+  Độc lập - Tự do - Hạnh phúc\par
+  \rule{0.6\linewidth}{0.4pt}\par} 
+  \vspace{4mm}
+  {\fontsize{10}{14}\selectfont\itshape
+  TP. HCM, ngày....tháng....năm....}
+\end{minipage}
+
+\vspace{5mm}
+\begin{center}
+  \textbf{ĐỀ CƯƠNG CHI TIẾT}
+\end{center}
+\vspace{1mm}
+
+% Khung cho phép ngắt giữa các dòng, kể cả trong cùng một mục.
+% Không bọc toàn bộ nội dung trong tabular hoặc minipage.
+\mdfdefinestyle{decuongfield}{
+  linewidth=0.4pt,
+  leftmargin=0pt,rightmargin=0pt,
+  innerleftmargin=2.5mm,innerrightmargin=2.5mm,
+  innertopmargin=3mm,innerbottommargin=3mm,
+  skipabove=0pt,skipbelow=0pt,
+  splittopskip=3mm,splitbottomskip=3mm,
+  nobreak=false,backgroundcolor=white
+}
+\begin{mdframed}[style=decuongfield]
+  \textbf{TÊN ĐỒ ÁN TỐT NGHIỆP: ỨNG DỤNG MÔ HÌNH ZIPDEPTH TRÊN RASPBERRY PI 5 CHO HỆ THỐNG UAV TỰ ĐỘNG NÉ VẬT CẢN}
+\par\vspace{-1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+\vspace{3mm}
+  \textbf{Cán bộ hướng dẫn: PGS. TS NGUYỄN TẤN LŨY}
+\par\vspace{-1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+\vspace{3mm}
+  \textbf{Thời gian thực hiện:} Từ ngày .../.../...... đến ngày .../.../......
+\par\vspace{-1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+\vspace{3mm}
+  \textbf{Sinh viên thực hiện:}\par
+  \vspace{2mm}
+  \textbf{NGUYỄN VĂN TUẤN ANH -- 2310131}
+\par\vspace{-1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+
+\vspace{1mm}
+\textbf{Nội dung đề tài:}\par
+\textbf{Mục tiêu:} Nghiên cứu và triển khai hệ thống né vật cản cục bộ cho UAV quadrotor S500 bằng camera đơn hướng về phía trước, ứng dụng mô hình ước lượng độ sâu ZipDepth trên Raspberry Pi 5. Tích hợp nhận thức môi trường và điều khiển bay qua ROS 2, PX4 để UAV phát hiện vùng có nguy cơ va chạm, giảm tốc hoặc đổi hướng, sau đó tiếp tục di chuyển đến điểm đích trong môi trường thử nghiệm có kiểm soát.
+\begin{itemize}
+\item \textbf{Khảo sát và triển khai ZipDepth:} Tìm hiểu nguyên lý ước lượng độ sâu đơn ảnh, lựa chọn trọng số huấn luyện sẵn và xây dựng luồng thu ảnh, tiền xử lý, suy luận, hậu xử lý trên Raspberry Pi 5.
+\item \textbf{Tối ưu suy luận trên thiết bị nhúng:} Khảo sát độ phân giải đầu vào, số luồng CPU và phương án xuất ONNX; so sánh cấu hình gốc với cấu hình tối ưu về độ trễ, tốc độ xử lý, bộ nhớ và chất lượng bản đồ độ sâu.
+\item \textbf{Nhận biết vật cản từ bản đồ độ sâu:} Kiểm tra quy ước đầu ra, xử lý nhiễu theo không gian và thời gian, phân chia vùng quan sát và xác định hướng di chuyển ít nguy cơ. Đánh giá thang đo đầu ra bằng dữ liệu khoảng cách tham chiếu; chỉ sử dụng ngưỡng theo mét khi đã hiệu chuẩn và kiểm chứng trên các cảnh độc lập.
+\item \textbf{Thiết kế điều khiển né vật cản:} Xây dựng thuật toán né cục bộ và máy trạng thái gồm di chuyển đến đích, giảm tốc, né, dừng chờ và tiếp tục nhiệm vụ. Xét kích thước UAV, trường nhìn camera và độ trễ của hệ thống khi lựa chọn hướng, vận tốc và khoảng dự phòng.
+\item \textbf{Tích hợp và đánh giá:} Kết nối các nút ROS 2 với PX4 qua uXRCE-DDS và chế độ Offboard; kiểm thử bằng dữ liệu ghi hình, mô phỏng và thực nghiệm để đánh giá khả năng tránh va chạm, hoàn thành nhiệm vụ và hoạt động ổn định.
+\end{itemize}
+\par\vspace{1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+\vspace{2mm}
+\textbf{Phạm vi triển khai:}
+\begin{itemize}
+\item UAV S500, Raspberry Pi 5, PX4 và ROS2; trọng tâm phát triển là nhận thức độ sâu và né vật cản khi bay.
+\item Sử dụng camera RGB đơn hướng về phía trước; hiệu chuẩn nội tại và xác định tư thế lắp camera so với thân UAV. Raspberry Pi 5 thực hiện suy luận trên CPU trong cấu hình cơ sở.
+\item Khai thác mô hình ZipDepth huấn luyện sẵn; tập trung triển khai, tối ưu và ứng dụng, không đặt yêu cầu huấn luyện lại mô hình từ đầu.
+\item Xét vật cản tĩnh và động có kích thước đủ lớn trong trường nhìn, điều kiện đủ sáng, bay tốc độ thấp và ưu tiên né theo phương ngang ở độ cao được giữ ổn định. Không mở rộng sang lập bản đồ và quy hoạch đường đi toàn cục.
+\item Thử nghiệm tại khu vực được bố trí trước, có trạng thái vị trí và độ cao đủ tin cậy từ hệ thống bay; ghi nhận nguồn định vị sử dụng trong từng phép thử. 
+\end{itemize}
+\par\vspace{1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+\vspace{2mm}
+\textbf{Phương pháp thực hiện:}
+\begin{itemize}
+\item Nghiên cứu tài liệu ZipDepth, ước lượng độ sâu đơn ảnh và điều khiển né vật cản; xây dựng kiến trúc gồm thu ảnh, ước lượng độ sâu, đánh giá nguy cơ và phát lệnh vận tốc.
+\item Thu thập bộ ảnh/video tại khu vực dự kiến triển khai, với nhiều vị trí và khoảng cách vật cản. Dùng khoảng cách đo độc lập làm tham chiếu; tách dữ liệu hiệu chuẩn và dữ liệu đánh giá để kiểm tra khả năng tổng quát của phương án quy đổi thang đo.
+\item Đo riêng thời gian suy luận và độ trễ toàn tuyến từ thời điểm thu ảnh đến khi phát lệnh; khảo sát các mức độ phân giải và cấu hình chạy. Kiểm tra sai khác đầu ra sau chuyển đổi mô hình trước khi dùng để điều khiển.
+\item Xây dựng luật chọn hướng dựa trên vùng quan sát và chỉ số nguy cơ, kèm ngưỡng chuyển trạng thái có hysteresis để hạn chế dao động. Giới hạn vận tốc theo độ trễ đo được; dừng chờ khi dữ liệu cũ, mất ảnh hoặc không tìm được hướng di chuyển phù hợp.
+\item Kiểm thử thuật toán trong mô phỏng PX4 SITL, sau đó thử tích hợp trên phần cứng và bay tốc độ thấp. Duy trì vòng gửi tín hiệu Offboard độc lập với vòng suy luận để độ trễ mô hình không làm gián đoạn điều khiển.
+\item So sánh các cấu hình trước và sau tối ưu trên cùng kịch bản, thực hiện lặp lại và ghi log ROS 2/PX4. Thống kê kết quả theo vị trí vật cản, ánh sáng và vận tốc bay; phân tích các trường hợp thất bại.
+\end{itemize}
+\par\vspace{1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+\vspace{2mm}
+\textbf{Kết quả dự kiến và tiêu chí đánh giá:}
+\begin{itemize}
+\item Hệ thống UAV S500 tích hợp camera phía trước và Raspberry Pi 5, có khả năng tạo bản đồ độ sâu bằng ZipDepth và thực hiện né vật cản cục bộ qua ROS 2/PX4.
+\item Bộ mã nguồn, cấu hình triển khai, sơ đồ kết nối và dữ liệu thử nghiệm có thể tái lập; có hiển thị ảnh, bản đồ độ sâu và trạng thái điều khiển.
+\item Báo cáo hiệu năng trên Raspberry Pi 5 gồm số khung hình xử lý mỗi giây, độ trễ trung vị và phân vị 95\%, mức sử dụng CPU, RAM và nhiệt độ khi chạy liên tục. Lựa chọn vận tốc thử nghiệm dựa trên kết quả đo, không suy diễn hiệu năng từ thiết bị khác.
+\item Đánh giá chất lượng nhận biết vùng vật cản và độ ổn định theo thời gian. Nếu quy đổi sang khoảng cách theo mét, báo cáo sai số trên tập đánh giá độc lập và miền khoảng cách đã kiểm chứng.
+\item Đánh giá tỷ lệ hoàn thành hành trình không va chạm, số lần va chạm/can thiệp thủ công, khoảng cách gần vật cản nhất đo bằng phương tiện tham chiếu độc lập, thời gian và chiều dài đường bay. Công bố số lượt thử cùng điều kiện của từng kịch bản.
+\item Báo cáo tổng kết nêu rõ giới hạn của camera đơn và mô hình độ sâu, ảnh hưởng của độ trễ đến điều khiển, cùng hướng cải tiến cho nhiệm vụ vận chuyển hàng tự động.
+\end{itemize}
+\par\vspace{1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+\vspace{2mm}
+\textbf{Kế hoạch thực hiện:}
+\begin{itemize}
+\item Tuần 1--2: Khảo sát tài liệu, xác định yêu cầu và kịch bản thử nghiệm; kiểm tra nền tảng UAV kế thừa và thiết kế kiến trúc hệ thống.
+\item Tuần 3--4: Lắp camera phía trước, hiệu chuẩn và thu thập dữ liệu; triển khai ZipDepth trên Raspberry Pi 5 và đo hiệu năng ban đầu.
+\item Tuần 5--6: Tối ưu cấu hình suy luận, thử chuyển đổi mô hình; kiểm tra chất lượng bản đồ độ sâu và khả năng hiệu chuẩn thang đo.
+\item Tuần 7--8: Xây dựng xử lý bản đồ độ sâu, chỉ số nguy cơ và thuật toán né cục bộ; kiểm thử bằng dữ liệu ghi hình.
+\item Tuần 9--10: Tích hợp ROS 2/PX4 Offboard và máy trạng thái; kiểm thử các kịch bản vật cản, dữ liệu trễ và mất ảnh trên mô phỏng.
+\item Tuần 11--12: Tích hợp phần cứng hoàn chỉnh, kiểm thử tại chỗ và bay tốc độ thấp; hiệu chỉnh tham số theo độ trễ và phản ứng thực tế.
+\item Tuần 13--14: Thực nghiệm lặp lại theo ma trận kịch bản, so sánh các cấu hình và thống kê kết quả.
+\item Tuần 15--16: Hoàn thiện hệ thống, phân tích hạn chế, viết báo cáo.
+\end{itemize}
+\par\vspace{1mm}
+\noindent\makebox[\linewidth][l]{\hspace*{-2.5mm}\rule{\dimexpr\linewidth+5mm\relax}{0.4pt}}\par
+\vspace{2mm}
+
+\vspace{3mm}
+\noindent
+  \begin{minipage}[c][35mm][t]{\dimexpr0.5\linewidth-\arrayrulewidth\relax}
+    \vspace{4mm}\centering
+    \textbf{Xác nhận của Cán bộ hướng dẫn}\\
+    (ký và ghi rõ họ tên)
+  \end{minipage}%
+  \vrule width\arrayrulewidth
+  \begin{minipage}[c][35mm][t]{\dimexpr0.5\linewidth-2\arrayrulewidth\relax}
+    \vspace{4mm}\centering
+    {\fontsize{11}{15}\selectfont TP. HCM, ngày .... tháng .... năm ..... }\\
+    Sinh viên\\
+    (ký và ghi rõ họ tên)
+  \end{minipage}%
+
+\end{mdframed}
+\par
+\clearpage
+\endgroup
+\restoregeometry
