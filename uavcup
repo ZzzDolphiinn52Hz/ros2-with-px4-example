@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+WORKSPACE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+cd "$WORKSPACE_DIR"
+
+ROS_PACKAGES=(
+  px4_msgs
+  px4_uavcup_perception
+  px4_uavcup_control
+  px4_uavcup_px4_bridge
+  px4_uavcup_bringup
+)
+
+usage() {
+  cat <<'EOF'
+Usage: ./uavcup COMMAND
+
+Commands:
+  setup             Initialize px4_msgs, build both Docker targets and ROS.
+  doctor            Check Docker, cameras, model, UART and Pi health.
+  cameras           Run CAM0 IMX219 + CAM1 IMX500 host frame servers.
+  aruco-test        Run only the ArUco detector (no PX4/control nodes).
+  zipdepth-test     Run only ZipDepth (no PX4/control nodes).
+  perception-test   Run ArUco and ZipDepth together (no PX4/control nodes).
+  vehicle           Run the full perception/control/PX4 ROS stack.
+  agent             Start the PX4 Micro XRCE-DDS serial agent.
+  agent-logs        Follow Micro XRCE-DDS agent logs.
+  unit-test         Run tests for the four project packages.
+  shell             Open a ROS workspace shell.
+  stop              Stop Compose services.
+EOF
+}
+
+require_command() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "ERROR: required command not found: $1" >&2
+    exit 1
+  fi
+}
+
+require_workspace_build() {
+  if [[ ! -f install/setup.bash ]]; then
+    echo "ERROR: workspace is not built. Run: ./uavcup setup" >&2
+    exit 1
+  fi
+}
+
+require_zipdepth_model() {
+  local model_dir="${UAV_MODELS_DIR:-$HOME/models}"
+  local model="$model_dir/zipdepth_base_npu_512x384.onnx"
+  if [[ ! -f "$model" ]]; then
+    echo "ERROR: ZipDepth model not found: $model" >&2
+    echo "Set UAV_MODELS_DIR or copy the model into ~/models." >&2
+    exit 1
+  fi
+}
+
+ros_run() {
+  docker compose run --rm ros bash -lc \
+    "source /opt/ros/humble/setup.bash && source install/setup.bash && $*"
+}
+
+command="${1:-}"
+case "$command" in
+  setup)
+    require_command git
+    require_command docker
+    git submodule update --init --recursive
+    docker compose build ros xrce-agent
+    docker compose run --rm ros bash -lc \
+      "source /opt/ros/humble/setup.bash && colcon build --symlink-install --packages-select ${ROS_PACKAGES[*]}"
+    ;;
+
+  doctor)
+    require_command docker
+    echo "Workspace: $WORKSPACE_DIR"
+    echo "Architecture: $(uname -m)"
+    echo "Kernel: $(uname -r)"
+    docker compose version
+    if [[ -f install/setup.bash ]]; then
+      echo "ROS build: OK"
+    else
+      echo "ROS build: MISSING (run ./uavcup setup)"
+    fi
+    model_dir="${UAV_MODELS_DIR:-$HOME/models}"
+    if [[ -f "$model_dir/zipdepth_base_npu_512x384.onnx" ]]; then
+      echo "ZipDepth model: OK ($model_dir)"
+    else
+      echo "ZipDepth model: MISSING ($model_dir)"
+    fi
+    if /usr/bin/python3 -c 'import picamera2' >/dev/null 2>&1; then
+      echo "Picamera2: OK"
+    else
+      echo "Picamera2: MISSING on host"
+    fi
+    if command -v rpicam-hello >/dev/null 2>&1; then
+      rpicam-hello --list-cameras || true
+    else
+      echo "rpicam-hello: MISSING"
+    fi
+    [[ -e /dev/ttyAMA0 ]] && echo "PX4 UART: /dev/ttyAMA0 present" \
+      || echo "PX4 UART: /dev/ttyAMA0 missing"
+    if command -v vcgencmd >/dev/null 2>&1; then
+      vcgencmd get_throttled || true
+      vcgencmd measure_temp || true
+      vcgencmd measure_temp pmic || true
+      vcgencmd pmic_read_adc EXT5V_V || true
+    fi
+    ;;
+
+  cameras)
+    if ! /usr/bin/python3 -c 'import picamera2' >/dev/null 2>&1; then
+      echo "ERROR: Picamera2 is not available on the Raspberry Pi host." >&2
+      exit 1
+    fi
+    export PYTHONPATH="$WORKSPACE_DIR/src/px4_uavcup_perception${PYTHONPATH:+:$PYTHONPATH}"
+    exec /usr/bin/python3 \
+      src/px4_uavcup_perception/scripts/picamera2_dual_server.py
+    ;;
+
+  aruco-test)
+    require_workspace_build
+    ros_run ros2 launch px4_uavcup_bringup aruco_test.launch.py
+    ;;
+
+  zipdepth-test)
+    require_workspace_build
+    require_zipdepth_model
+    ros_run ros2 launch px4_uavcup_bringup zipdepth_test.launch.py
+    ;;
+
+  perception-test)
+    require_workspace_build
+    require_zipdepth_model
+    ros_run ros2 launch px4_uavcup_bringup pi_perception_test.launch.py
+    ;;
+
+  vehicle)
+    require_workspace_build
+    require_zipdepth_model
+    ros_run ros2 launch px4_uavcup_bringup pi_vehicle.launch.py
+    ;;
+
+  agent)
+    docker compose up -d xrce-agent
+    ;;
+
+  agent-logs)
+    docker compose logs -f xrce-agent
+    ;;
+
+  unit-test)
+    require_workspace_build
+    ros_run colcon test --event-handlers console_direct+ --packages-select \
+      px4_uavcup_perception px4_uavcup_control \
+      px4_uavcup_px4_bridge px4_uavcup_bringup
+    ros_run colcon test-result --verbose
+    ;;
+
+  shell)
+    require_workspace_build
+    exec docker compose run --rm ros bash
+    ;;
+
+  stop)
+    docker compose down
+    ;;
+
+  -h|--help|help)
+    usage
+    ;;
+
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

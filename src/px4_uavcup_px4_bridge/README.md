@@ -1,17 +1,24 @@
-# PX4 UAV Cup PX4 bridge
+# px4_uavcup_px4_bridge
 
-Package này chỉ chuyển lệnh ROS sang giao tiếp PX4. Nó không cảm nhận môi
-trường và không tính vận tốc điều khiển.
+Package chỉ giữ adapter đang dùng:
 
-| Executable | Vai trò |
-| --- | --- |
-| `cmd_vel_to_px4` | `geometry_msgs/Twist` → Offboard heartbeat + trajectory setpoint |
-| `aruco_to_px4_landing_target` | ArUco pose → `LandingTargetPose` |
-
-Cả hai node mặc định disabled. Chúng không arm, không đổi mode trừ khi gọi
-service `request_offboard` trên `cmd_vel_to_px4`.
-
-```bash
-ros2 run px4_uavcup_px4_bridge cmd_vel_to_px4
-ros2 run px4_uavcup_px4_bridge aruco_to_px4_landing_target
+```text
+/aruco_land/cmd_vel -> cmd_vel_to_px4 -> PX4 OffboardControlMode
+                                      -> PX4 TrajectorySetpoint
 ```
+
+Adapter mặc định disabled và không tự arm. Enable bị từ chối nếu PX4 local
+position (`xy_valid`, `z_valid`) hoặc attitude không hợp lệ. Request Offboard là
+một service riêng, chỉ hoạt động sau khi adapter đã phát heartbeat/setpoint.
+
+Các service chính:
+
+- `/cmd_vel_to_px4/enable`
+- `/cmd_vel_to_px4/request_offboard`
+- `/cmd_vel_to_px4/request_posctl`
+- `/cmd_vel_to_px4/latch_xy_yaw`
+- `/cmd_vel_to_px4/release_xy_yaw`
+- `/cmd_vel_to_px4/request_disarm`
+
+Disarm chỉ được gửi khi PX4 `VehicleLandDetected.landed == true`. Config duy
+nhất nằm tại `config/px4_bridge.yaml`.

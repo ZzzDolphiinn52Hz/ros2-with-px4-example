@@ -12,11 +12,14 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
-    bringup_share = get_package_share_directory('px4_uavcup_bringup')
-    zipdepth_config = os.path.join(bringup_share, 'config', 'zipdepth.yaml')
-    aruco_config = os.path.join(bringup_share, 'config', 'aruco.yaml')
-    landing_config = os.path.join(bringup_share, 'config', 'landing.yaml')
-    bridge_config = os.path.join(bringup_share, 'config', 'px4_bridge.yaml')
+    perception_share = get_package_share_directory('px4_uavcup_perception')
+    control_share = get_package_share_directory('px4_uavcup_control')
+    bridge_share = get_package_share_directory('px4_uavcup_px4_bridge')
+    zipdepth_config = os.path.join(
+        perception_share, 'config', 'zipdepth.yaml')
+    aruco_config = os.path.join(perception_share, 'config', 'aruco.yaml')
+    landing_config = os.path.join(control_share, 'config', 'landing.yaml')
+    bridge_config = os.path.join(bridge_share, 'config', 'px4_bridge.yaml')
     return LaunchDescription([
         DeclareLaunchArgument('publish_raw_output', default_value='false'),
         DeclareLaunchArgument('publish_metric_depth', default_value='false'),

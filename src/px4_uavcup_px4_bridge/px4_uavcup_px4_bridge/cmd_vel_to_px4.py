@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Adapt Nav2 ``/cmd_vel`` commands to PX4 Offboard trajectory setpoints.
+"""Adapt body-FLU ``/cmd_vel`` commands to PX4 Offboard trajectory setpoints.
 
-Nav2 publishes ``geometry_msgs/Twist`` in the ROS base FLU frame. PX4 expects
-trajectory velocities in the earth-fixed NED frame. This node rotates and
-converts the horizontal velocity, keeps a fixed NED altitude setpoint, and
-limits acceleration so a 2D lidar-equipped multicopter does not tilt sharply.
+The landing/control stack publishes ``geometry_msgs/Twist`` in body FLU. PX4
+expects trajectory velocities in the earth-fixed NED frame. This node rotates
+and converts horizontal velocity, holds altitude, and limits acceleration.
 
 Safety policy:
 

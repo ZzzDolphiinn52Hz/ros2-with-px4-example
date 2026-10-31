@@ -4,7 +4,7 @@
   <name>px4_uavcup_perception</name>
   <version>0.1.0</version>
   <description>
-    Jetson TensorRT camera perception for the PX4 Urban UAV Cup vehicle.
+    Raspberry Pi 5 ArUco and ZipDepth perception for the PX4 UAV Cup vehicle.
   </description>
   <maintainer email="anh.nguyenvantuan54@hcmut.edu.vn">dolphiinn</maintainer>
   <license>Apache-2.0</license>

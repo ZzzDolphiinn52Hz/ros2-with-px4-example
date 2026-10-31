@@ -16,9 +16,10 @@ aruco_landing_pid:
     maximum_descent_speed_m_s: 0.20
     final_marker_distance_m: 0.35
     lock_confirmation_frames: 5
-    # Unmeasured camera-to-gripper vertical offset. Leave 0 until measured;
-    # blind transition then uses ArUco optical range as pad-relative AGL.
-    camera_to_gripper_vertical_m: 0.0
+    # Measured vertical distance from the down camera to the gripper contact
+    # point. A 0.45 m camera-marker range therefore means about 0.30 m AGL at
+    # the gripper, where the controller transitions to blind vertical descent.
+    camera_to_gripper_vertical_m: 0.15
     blind_transition_agl_m: 0.30
     blind_transition_alignment_radius_m: 0.08
     blind_transition_confirmation_frames: 5
@@ -37,6 +38,6 @@ aruco_landing_pid:
     camera_to_body_flu_rotation: [0.0, 1.0, 0.0,
                                   1.0, 0.0, 0.0,
                                   0.0, 0.0, -1.0]
-    # Camera is 10 cm behind the body-centred gripper. Z remains unmeasured;
-    # final_marker_distance_m continues to use camera-to-marker optical range.
+    # Camera is 10 cm behind the body-centred gripper. Vertical offset is
+    # configured separately above because it is used as an AGL correction.
     camera_position_body_flu_m: [-0.10, 0.0, 0.0]

@@ -1,326 +1,69 @@
-# PX4 UAV Cup perception
+# px4_uavcup_perception
 
-Package này giữ pipeline perception cho Jetson Xavier NX và Raspberry Pi 5.
-Đường Jetson dùng Depth Anything TensorRT; đường Pi dùng ZipDepth ONNX.
-
-```text
-/dev/video0 -> center crop / resize -> camera health -> TensorRT
-            -> linear depth calibration -> free-space
-            -> /uav/depth/free_space
-```
-
-Package chỉ cảm nhận môi trường. Nó không arm, không đổi mode, không publish
-PX4 trajectory setpoint và không tạo publisher `/fmu/in/*`.
-
-Pipeline Gazebo/PyTorch trước đây (`gz_image_bridge`, `depth_anything_node`,
-`free_space_node`, `perception_sim.launch.py`) đã bị loại bỏ. Mô phỏng không còn
-là runtime được hỗ trợ của package này.
-
-## Output
-
-| Topic | Type | Nội dung |
-| --- | --- | --- |
-| `/uav/depth/free_space` | `std_msgs/Float32MultiArray` | `[left, center, right, nearest, valid_fraction]` |
-| `/uav/depth/status` | `diagnostic_msgs/DiagnosticArray` | Health, calibration và latency |
-| `/uav/depth/relative_free_space` | `std_msgs/Float32MultiArray` | Relative clearance `[L,C,R,nearest,valid]`, chỉ dùng shadow |
-| `/uav/depth/relative_corridor` | `std_msgs/Float32MultiArray` | Vùng trống 2D `[x,y,width,height,clearance,score,valid]`, chỉ dùng shadow |
-| `/camera/depth/image` | `sensor_msgs/Image` | Depth `32FC1`, chỉ bật khi debug |
-| `/uav/depth/visualization` | `sensor_msgs/Image` | Depth `mono8`, chỉ bật khi debug |
-| `/camera/depth/points` | `sensor_msgs/PointCloud2` | PointCloud FLU, chỉ bật khi debug |
-
-Camera health gate chặn ảnh quá tối, quá sáng hoặc thiếu texture. Khi perception
-không đáng tin, `/uav/depth/free_space` là:
+Perception dành riêng cho Raspberry Pi 5 với hai camera CSI:
 
 ```text
-[NaN, NaN, NaN, NaN, 0.0]
+CAM0 IMX219 -> front_camera.sock -> ZipDepth 512x384
+CAM1 IMX500 -> down_camera.sock  -> ArUco pose
 ```
 
-Sau lỗi, camera phải có 5 frame tốt liên tiếp trước khi depth được sử dụng lại.
+Picamera2 chạy trên Raspberry Pi OS host; ROS 2 Humble chạy trong container.
+Raw frame đi qua Unix socket, không truyền ảnh qua Wi-Fi/DDS trong profile bay.
 
-## Build trên Jetson ROS 2 Foxy
+## Output chính
+
+| Topic | Nội dung |
+| --- | --- |
+| `/uav/depth/relative_free_space` | `[left, center, right, nearest, valid]` tương đối |
+| `/uav/depth/relative_corridor` | corridor tránh vật cản tương đối |
+| `/uav/depth/status` | FPS, latency và trạng thái ZipDepth |
+| `/uav/aruco/target_pose` | pose marker ID mục tiêu trong optical frame |
+| `/uav/aruco/status` | marker count, target visibility và latency |
+
+Raw depth, visualization, pointcloud, ArUco ID/rvec/tvec và debug image đều là
+publisher tùy chọn để tránh giảm FPS khi bay.
+
+## Chạy
+
+Ưu tiên giao diện ở root repository:
 
 ```bash
-source /opt/ros/foxy/setup.bash
-source ~/ros2_ws/install/setup.bash
-cd ~/uavcup_ws
-colcon --log-base log_foxy build \
-  --build-base build_foxy \
-  --install-base install_foxy \
-  --symlink-install \
-  --packages-select px4_uavcup_perception px4_uavcup_control
-source ~/uavcup_ws/install_foxy/setup.bash
+./uavcup cameras
+./uavcup aruco-test
+./uavcup zipdepth-test
+./uavcup perception-test
 ```
 
-Chỉ chạy perception:
+Các profile test không khởi động PID, PX4 bridge hoặc topic `/fmu/in/*`.
 
-```bash
-ros2 launch px4_uavcup_perception perception_jetson.launch.py
-```
+## Config và calibration
 
-Chạy perception cùng local controller shadow mode:
+- `config/zipdepth.yaml`: model/socket/topic ZipDepth.
+- `config/aruco.yaml`: dictionary, marker size và intrinsic IMX500.
+- `config/pi_cameras.yaml`: raw IMX500 socket publisher để debug/calibration.
+- `calibration/`: checkerboard và marker A4 có kích thước in xác định.
 
-```bash
-ros2 launch px4_uavcup_control jetson_perception_shadow.launch.py
-```
+IMX500 hiện dùng 640x480 với calibration trong `aruco.yaml`. Detector giữ ảnh
+gốc để calibration còn đúng; phép biến đổi camera-to-body nằm trong package
+control. Nếu đổi sensor, mode ảnh hoặc gá camera thì phải calibrate lại.
 
-Không chạy hai launch trên đồng thời vì chúng sẽ tranh `/dev/video0`.
-
-Camera được center-crop `1280x720 -> 720x720`, sau đó resize `364x364` cho
-TensorRT. Mọi output áp dụng:
-
-```text
-depth_corrected = depth_calibration_scale * raw + depth_calibration_bias_m
-```
-
-## Debug
-
-```bash
-ros2 launch px4_uavcup_perception perception_jetson.launch.py \
-  publish_depth_image:=true \
-  publish_visualization:=true \
-  publish_pointcloud:=true
-```
-
-PointCloud dùng hệ FLU (`x` trước, `y` trái, `z` lên) và không được dùng cho
-điều khiển khi intrinsic camera vẫn chỉ là giá trị xấp xỉ.
-
-## Utility hiệu chuẩn camera
-
-Node utility dưới đây chỉ publish ảnh camera; không thuộc đường runtime bay:
-
-```bash
-ros2 launch px4_uavcup_perception camera_calibration.launch.py
-```
-
-Nó không được chạy đồng thời với perception. Bộ file in A4 nằm trong
-`calibration/`: checkerboard 9x6 ô 25 mm và năm ArUco `DICT_5X5_50` ID 0-4.
-Bảng A3 ô 30 mm cũ vẫn được giữ lại.
-
-USB camera Pi được calibrate đúng mode runtime 640x480. Checkerboard A4 mặc
-định có 9x6 góc trong và ô 0.025 m. Pi chỉ publish
-`/camera/front/image_raw`; GUI
-`cameracalibrator` chạy trên PC với `--no-service-check` vì publisher utility
-không ghi calibration trực tiếp vào driver.
-
-Trên Raspberry Pi có desktop, có thể chạy capture và GUI ngay trong cùng
-container để ảnh raw không phải đi qua DDS/Wi-Fi:
+Chạy GUI calibration IMX500 sau khi camera host server đã hoạt động:
 
 ```bash
 xhost +si:localuser:root
-docker compose run --rm ros bash -lc \
-  'source /opt/ros/humble/setup.bash && \
-   colcon build --symlink-install --packages-select px4_uavcup_perception && \
-   source install/setup.bash && \
+docker compose run --rm -e DISPLAY="$DISPLAY" ros bash -lc \
+  'source /opt/ros/humble/setup.bash && source install/setup.bash && \
    ros2 launch px4_uavcup_perception camera_calibration_gui.launch.py'
 ```
 
-Nếu dùng lại bảng A3 ô 30 mm, thêm `square_size_m:=0.03` vào lệnh launch.
+## ZipDepth metric
 
-Chỉ cấp quyền X11 cục bộ cho root trong container. Sau khi calibration xong,
-có thể thu hồi bằng `xhost -si:localuser:root`.
+ZipDepth hiện được dùng ở relative mode. Không coi
+`/uav/depth/relative_free_space` là mét. Metric depth/pointcloud chỉ được bật
+khi `metric_calibration_enabled` có calibration đáng tin cậy cho camera thật.
 
-## Raspberry Pi 5: ZipDepth + ArUco
-
-Pipeline Pi dùng hai camera và hai namespace riêng:
+Model mặc định nằm ngoài Git tại:
 
 ```text
-IMX219 phía trước -> Picamera2 host -> Unix socket -> zipdepth_node
-  ├─ /uav/depth/relative_corridor -> corridor_controller_shadow
-  ├─ /uav/depth/relative_free_space (L/C/R debug tương thích)
-  ├─ /uav/depth/zipdepth_raw (debug tùy chọn)
-  ├─ /uav/depth/visualization (debug tùy chọn)
-  ├─ /camera/depth/image (debug, sau hiệu chuẩn metric)
-  └─ /camera/depth/points (debug, sau hiệu chuẩn metric)
-
-IMX500 nhìn xuống -> Picamera2 host -> Unix socket -> aruco_detector_node
-  ├─ /uav/aruco/target_pose + /uav/aruco/status (flight)
-  ├─ /uav/aruco/ids + rvecs + tvecs (test tùy chọn)
-  ├─ /uav/aruco/debug_image (test tùy chọn)
-  └─ /uav/aruco/target_pose -> aruco_landing_pid
-     └─ /aruco_land/cmd_vel -> cmd_vel_to_px4
-        └─ OffboardControlMode + TrajectorySetpoint
+~/models/zipdepth_base_npu_512x384.onnx
 ```
-
-IMX219 và IMX500 dùng Picamera2 trên Raspberry Pi OS, còn ROS Humble chạy
-trong container Ubuntu. Topology của xe là `CAM0 = IMX219 phía trước` cho
-ZipDepth và `CAM1 = IMX500 nhìn xuống` cho ArUco. Hai host bridge chuyển raw
-RGB qua hai Unix socket cục bộ; ảnh không đi qua Wi-Fi hoặc DDS.
-
-Khi đã gắn đủ hai camera, chạy một supervisor duy nhất trên Pi host. Supervisor
-dùng chung một libcamera manager và hai luồng/socket riêng; cách này tránh hai
-tiến trình tranh cùng PiSP pipeline. Nó kiểm tra model tại từng camera index và
-dừng cả hai gọn gàng khi nhấn `Ctrl+C`:
-
-```bash
-cd ~/ros2_ws
-PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \
-/usr/bin/python3 \
-  src/px4_uavcup_perception/scripts/picamera2_dual_server.py
-```
-
-Các lệnh tương đương để debug từng bridge riêng biệt là:
-
-```bash
-cd ~/ros2_ws
-PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \
-/usr/bin/python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
-  --camera-index 0 --camera-model imx219 --socket run/front_camera.sock \
-  --width 640 --height 480 --fps 30
-```
-
-Frame server dùng `XBGR8888` ổn định cho IMX219 rồi bỏ kênh X trước khi gửi
-RGB; `RGB888` trực tiếp gây timeout với phiên bản libcamera/PiSP đã kiểm tra.
-
-```bash
-cd ~/ros2_ws
-PYTHONPATH=$PWD/src/px4_uavcup_perception:$PYTHONPATH \
-/usr/bin/python3 src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
-  --camera-index 1 --camera-model imx500 --socket run/down_camera.sock \
-  --width 640 --height 480 --fps 15
-```
-
-Calibration IMX500 640x480 trong `config/aruco.yaml` và
-`config/pi_cameras.yaml` được nhập từ `~/Aruco/live_calib`. Detector đọc thẳng
-`down_camera.sock` và dùng intrinsic trong config, nên profile perception/flight
-không publish `/camera/down/image_raw`; việc này giảm đáng kể CPU và DDS copy.
-Calibration chỉ áp dụng cho IMX500 ở đúng mode 640x480. IMX219 phía trước cần
-bộ intrinsic riêng nếu sau này bật pointcloud metric. Test camera bridge raw
-riêng, không khởi tạo ArUco/PID/PX4:
-
-```bash
-ros2 launch px4_uavcup_perception pi_down_camera_test.launch.py
-```
-
-Hướng lắp đã xác nhận ngày 2026-09-18: IMX500 bị yaw 180° so với đầu drone.
-Detector giữ nguyên ảnh đã calibrate; PID dùng extrinsic tương ứng, trong đó
-image-bottom là vehicle-forward và image-right là vehicle-left. IMX219 ở đầu
-drone bị roll 180°; `zipdepth_node` xoay input 180° trước inference để
-left/center/right đúng với thân drone.
-
-Detector dùng `DICT_5X5_100`. Năm marker ID 0-4 đã in từ `DICT_5X5_50` vẫn có
-cùng mã trong tập 100 và đã được kiểm tra nhận đúng ID. Kích thước marker pose
-là cạnh vuông đen ngoài cùng `0.16 m`. Test detector riêng bằng
-`aruco_pi_test.launch.py`; launch này không tạo PID, Offboard hoặc PX4 command.
-Các phần tử trong `/uav/aruco/rvecs` và `/uav/aruco/tvecs` đi theo đúng thứ tự
-ID của `/uav/aruco/ids`; `tvecs` dùng mét trong optical frame camera.
-Ba topic raw này và debug image chỉ được tạo trong profile test; profile
-flight mặc định chỉ giữ `target_pose` và diagnostic status.
-
-ZipDepth dùng checkpoint NPU được export ONNX 512x384 để giữ tỷ lệ 4:3
-của IMX219. Đặt hai file ONNX (graph và external weights) vào
-`~/models`; Docker Compose mount thư mục này read-only tại `/models`. Có thể
-đặt biến `UAV_MODELS_DIR` nếu muốn lưu model ở vị trí khác.
-
-```bash
-docker compose build ros
-docker compose run --rm ros bash -lc \
-  'source /opt/ros/humble/setup.bash && \
-   colcon build --symlink-install --packages-select \
-     px4_msgs px4_uavcup_perception px4_uavcup_control \
-     px4_uavcup_px4_bridge px4_uavcup_bringup'
-docker compose run --rm ros bash -lc \
-  'source /opt/ros/humble/setup.bash && source install/setup.bash && \
-   ros2 launch px4_uavcup_bringup pi_vehicle.launch.py'
-```
-
-`maximum_processing_rate_hz: 0.0` tắt giới hạn phần mềm, vì vậy node chạy
-liên tục theo tốc độ inference thực tế. Mặc định `zipdepth_node` mở
-socket `/ros2_ws/run/front_camera.sock` trực tiếp và chỉ publish
-free-space/status nhỏ, giống pipeline Jetson. Raw `32FC1` 512x384,
-visualization, metric depth và pointcloud đều là debug output tùy chọn để
-không làm giảm FPS khi bay.
-
-Để bật raw và visualization trong lúc kiểm tra:
-
-```bash
-ros2 launch px4_uavcup_bringup pi_vehicle.launch.py \
-  publish_raw_output:=true \
-  publish_visualization:=true
-```
-
-IMX219 phía trước không tạo ROS image topic mặc định; ZipDepth đọc thẳng socket
-để giảm copy. Khi raw đang bật, lưu một ảnh màu bằng:
-
-```bash
-docker compose run --rm ros bash -lc \
-  'source /opt/ros/humble/setup.bash && source install/setup.bash && \
-   PYTHONPATH=/ros2_ws/src/px4_uavcup_perception:$PYTHONPATH \
-   python3 src/px4_uavcup_perception/scripts/check_ros_depth_topic.py \
-   --timeout 30 --save-color /ros2_ws/zipdepth_raw_color.png'
-```
-
-Ảnh `zipdepth_raw_color.png` chỉ là bản hiển thị percentile 2..98; đỏ là gần,
-xanh là xa. Dữ liệu raw không bị sửa và vẫn không mang đơn vị mét trước hiệu
-chuẩn metric.
-
-`ZipDepth` cho inverse depth affine-invariant. Mặc định
-`metric_calibration_enabled: false`, nên free-space được publish ở trạng thái
-không hợp lệ cho tới khi fit `inverse_depth_scale` và
-`inverse_depth_shift_per_m` trong không gian disparity bằng dữ liệu đo thật,
-sau đó nghịch đảo kết quả sang mét.
-
-Vì controller shadow dùng ngưỡng theo mét, khi calibration chưa bật thì
-`/uav/depth/free_space` cố ý là `[NaN, NaN, NaN, NaN, 0.0]` và controller ở
-`FAILSAFE`. Không bật `publish_metric_depth` hoặc `publish_pointcloud` trước
-khi đã fit calibration và camera intrinsic. Sau hiệu chuẩn, chuỗi L/C/R dùng
-lại trực tiếp `summarize_free_space` và `local_controller_shadow` của Jetson.
-
-Thử nghiệm thực tế `0.5 m` và `1.0 m` xác nhận output ZipDepth không hỗ trợ
-một global scale/shift cố định. Utility dưới đây chỉ dùng để thu dữ liệu và
-kiểm tra giả thuyết calibration; không được lấy kết quả của một scene để bật
-metric khi bay. Muốn metric cần một metric anchor ở từng frame hoặc đổi sang
-model/sensor metric.
-
-Thu calibration bằng một mặt phẳng đặt vuông góc camera, chiếm toàn bộ ROI giữa.
-Khoảng cách được đo từ mặt kính/lens camera tới mặt phẳng. Khi launch đang bật
-`publish_raw_output:=true`, thêm từng mẫu vào cùng dataset bằng:
-
-```bash
-python3 src/px4_uavcup_perception/scripts/calibrate_zipdepth_metric.py collect \
-  --distance-m 1.0 --samples 20 \
-  --output /ros2_ws/artifacts/zipdepth_metric_samples.json
-```
-
-Sau ít nhất ba khoảng cách khác nhau, fit calibration bằng:
-
-```bash
-python3 src/px4_uavcup_perception/scripts/calibrate_zipdepth_metric.py fit \
-  --input /ros2_ws/artifacts/zipdepth_metric_samples.json
-```
-
-Khi chưa có metric anchor, node vẫn giữ `/uav/depth/relative_free_space` để
-debug L/C/R và publish `/uav/depth/relative_corridor` cho controller shadow 2D.
-Corridor là cửa sổ cố định đủ rộng/cao theo tỷ lệ pixel, được chọn bằng
-percentile độ thoáng bảo thủ và ưu tiên gần tâm ảnh. `x/y` chuẩn hóa trong
-`[-1,1]`: trái/trên âm, phải/dưới dương. Các giá trị này chỉ xếp hạng tương đối
-trong cùng frame, không phải mét và chưa chứng minh kích thước thật của drone
-lọt qua. Scene thiếu contrast hoặc không có cửa sổ đạt ngưỡng tạo NaN để
-controller vào FAILSAFE.
-
-Gateway `/uav/aruco/target_pose -> /fmu/in/landing_target_pose` cũng mặc định
-`enabled: false`. Chỉ bật sau khi đã đo extrinsic camera-to-body, xác nhận đúng
-hệ optical -> FRD -> NED, và bench-test với FC không gắn cánh quạt. Nếu ArUco
-được dùng để external vision hoặc chỉ đọc ID nhiệm vụ thay vì precision landing,
-phải dùng gateway khác; không tái sử dụng `LandingTargetPose` sai ngữ nghĩa.
-Firmware PX4 v1.17 stock không liệt kê `LandingTargetPose` trong
-`dds_topics.yaml`; precision landing qua topic này cần firmware tùy biến expose nó,
-hoặc phải chọn bridge ROS/MAVLink khác.
-
-Pipeline Offboard hiện tại không dùng `LandingTargetPose`. PID chỉ publish
-`cmd_vel` body-FLU có giới hạn; adapter chuyển XY sang NED và tích phân lệnh Z
-thành altitude setpoint có chặn `0.20..3.0 m`. Cả PID lẫn adapter đều tắt
-mặc định, không tự arm/disarm. Mất marker quá `0.35 s` sẽ ra lệnh
-zero và giữ độ cao.
-
-PX4 v1.17 qua TELEM2 cần Micro XRCE-DDS Agent. Image agent được pin ở
-v2.4.2 (bản tương thích ROS 2 Humble/Fast DDS 2.6.x) và chạy 921600 baud:
-
-```bash
-docker compose build xrce-agent
-docker compose up -d xrce-agent
-docker compose logs -f xrce-agent
-```
-
-Trước đó Pi phải enable UART hardware, disable Linux serial console và
-reboot. Trên PX4: tắt MAVLink ở TELEM2, đặt `UXRCE_DDS_CFG=TELEM2` và
-`SER_TEL2_BAUD=921600`.

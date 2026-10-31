@@ -27,20 +27,14 @@ setup(
     zip_safe=True,
     maintainer='dolphiinn',
     maintainer_email='anh.nguyenvantuan54@hcmut.edu.vn',
-    description='Jetson TensorRT camera perception for the Urban UAV Cup',
+    description='Raspberry Pi 5 ArUco and ZipDepth perception',
     license='Apache-2.0',
     entry_points={
         'console_scripts': [
-            'camera_calibration_publisher = '
-            'px4_uavcup_perception.cameras.calibration_publisher:main',
-            'jetson_depth_node = '
-            'px4_uavcup_perception.depth.jetson_node:main',
             'zipdepth_node = '
             'px4_uavcup_perception.depth.zipdepth_node:main',
             'aruco_detector_node = '
             'px4_uavcup_perception.aruco.detector_node:main',
-            'v4l2_camera_node = '
-            'px4_uavcup_perception.cameras.v4l2_node:main',
             'picamera2_socket_camera_node = '
             'px4_uavcup_perception.cameras.picamera2_socket_node:main',
         ],

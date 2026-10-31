@@ -13,13 +13,13 @@ from launch_ros.actions import Node
 
 def generate_launch_description() -> LaunchDescription:
     control_share = get_package_share_directory('px4_uavcup_control')
-    bringup_share = get_package_share_directory('px4_uavcup_bringup')
+    bridge_share = get_package_share_directory('px4_uavcup_px4_bridge')
     shadow_launch = os.path.join(
         control_share, 'launch', 'pi_zipdepth_shadow.launch.py')
     gate_config = os.path.join(
         control_share, 'config', 'corridor_velocity_gate.yaml')
     bridge_config = os.path.join(
-        bringup_share, 'config', 'px4_bridge.yaml')
+        bridge_share, 'config', 'px4_bridge.yaml')
 
     return LaunchDescription([
         DeclareLaunchArgument('publish_visualization', default_value='false'),

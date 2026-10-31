@@ -56,8 +56,8 @@ zipdepth_node:
     corridor_minimum_valid_fraction: 0.90
     corridor_centre_bias: 0.12
 
-    # Debug publishers are selected through launch arguments, like the Jetson
-    # pipeline. PointCloud and metric depth remain blocked until calibration.
+    # Debug publishers are selected through launch arguments. PointCloud and
+    # metric depth remain blocked until calibration.
     pointcloud_stride: 4
     pointcloud_frame_id: front_camera_link
     focal_x_px: 430.0

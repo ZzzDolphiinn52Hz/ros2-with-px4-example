@@ -71,6 +71,8 @@ Thumbs.db
 /third_party/Depth-Anything-V2/
 /models/*.pth
 /models/*.engine
+/models/*.onnx
+/models/*.data
 
 # Local perception captures and calibration datasets
 /artifacts/

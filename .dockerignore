@@ -2,8 +2,15 @@
 build
 install
 log
+artifacts
+run
+models
+third_party
+.venv*
+.pytest_cache
 **/__pycache__
 **/*.pyc
-maps_backup
 .vscode
 .vscode-server
+report_thesis2
+report_thesis_final

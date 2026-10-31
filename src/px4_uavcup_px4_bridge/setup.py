@@ -22,13 +22,11 @@ setup(
     zip_safe=True,
     maintainer='dolphiinn',
     maintainer_email='anh.nguyenvantuan54@hcmut.edu.vn',
-    description='PX4 Offboard and landing-target bridges',
+    description='Safe body-velocity to PX4 Offboard adapter',
     license='Apache-2.0',
     entry_points={
         'console_scripts': [
             'cmd_vel_to_px4 = px4_uavcup_px4_bridge.cmd_vel_to_px4:main',
-            'aruco_to_px4_landing_target = '
-            'px4_uavcup_px4_bridge.aruco_landing_target:main',
         ],
     },
 )

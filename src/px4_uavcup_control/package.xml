@@ -4,7 +4,7 @@
   <name>px4_uavcup_control</name>
   <version>0.1.0</version>
   <description>
-    Local obstacle avoidance and ArUco landing PID for the Urban UAV Cup.
+    ZipDepth obstacle avoidance and ArUco landing control for Raspberry Pi 5.
   </description>
   <maintainer email="anh.nguyenvantuan54@hcmut.edu.vn">dolphiinn</maintainer>
   <license>Apache-2.0</license>
@@ -12,6 +12,7 @@
   <depend>rclpy</depend>
   <depend>diagnostic_msgs</depend>
   <depend>geometry_msgs</depend>
+  <depend>px4_msgs</depend>
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
 

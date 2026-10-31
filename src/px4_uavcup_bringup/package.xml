@@ -4,7 +4,7 @@
   <name>px4_uavcup_bringup</name>
   <version>0.1.0</version>
   <description>
-    Full-vehicle launch files for the Urban UAV Cup Pi stack.
+    Raspberry Pi 5 ZipDepth, ArUco landing and PX4 launch files.
   </description>
   <maintainer email="anh.nguyenvantuan54@hcmut.edu.vn">dolphiinn</maintainer>
   <license>Apache-2.0</license>
