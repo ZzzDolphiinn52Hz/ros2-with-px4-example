@@ -43,7 +43,7 @@ thân UAV và hệ tọa độ world.
 ArUco (Augmented Reality University of Cordoba) là một loại mã đánh dấu thị giác (fiducial marker) được sử dụng phổ biến trong các hệ thống thị giác máy tính nhằm nhận dạng và xác định vị trí tương đối của đối tượng thông qua hình ảnh thu nhận từ camera. Mã ArUco được phát triển dưới dạng các hình vuông chứa những ô nhị phân màu đen và trắng, cho phép hệ thống nhận dạng từng mã thông qua một bộ từ điển được định nghĩa trước
 \subsubsection{Cấu trúc và từ điển mã ArUco}
 
-ArUco là một mã có dạng hình vuông, gồm đường viền đen và một ma trận bit nhị phân ở bên trong. 
+\textbf{a)} ArUco là một mã có dạng hình vuông, gồm đường viền đen và một ma trận bit nhị phân ở bên trong. 
 Đường biên màu đen giúp phát hiện marker nhanh hơn vì nó tương phản với môi trường xung quanh, 
 bằng các thuật toán thị giác máy tính cơ bản (như tạo ngưỡng phân đoạn - thresholding, hay tìm đường viền - contour extraction) có thể ngay lập tức phát hiện ra hình vuông đen này với tốc độ cực nhanh (real-time). Máy tính chỉ việc tìm ra 4 góc của viền đen là đã hoàn thành xong bước xác định vị trí.
 
@@ -52,14 +52,62 @@ Sau đó việc mã hóa nhị phân phần bên trong cho phép nhận dạng I
 Hình \ref{fig:vi-du-anh-marker} minh họa một ví dụ về ảnh marker ArUco. 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.4\textwidth]{images/02-aruco-ex.png}
+  \includegraphics[width=0.3\textwidth]{images/02-aruco-ex.png}
   \caption{Ví dụ về ảnh marker}
   \label{fig:vi-du-anh-marker}
 \end{figure}
 
-Kích thức của marker được quyết định bởi ma trận bên trong, ví dụ marker size 4x4 được tạo thành từ 16 bits.
-\subsubsection{Nguyên lý phát hiện marker}
+Kích thước của marker được quyết định bởi ma trận bên trong, ví dụ marker size 4x4 được tạo thành từ 16 bits.
+Marker còn xác định chính xác góc quay gốc của nó trong môi trường, 
+đảm bảo các góc được nhận diện một cách duy nhất và không sai lệch.
 
+\textbf{b)} Từ điển mã ArUco là tập các mã ArUco dùng trong các ứng dụng cụ thể, đơn giản là một tập mã hóa nhị phân của mỗi marker.
+
+Hai đặc tính của mã ArUco:
+\begin{itemize}
+  \item Kích thước từ điển là số lượng marker chứa trong nó
+  \item Kích thước marker là số lượng bit nhị phân trong ma trận bên trong của marker
+\end{itemize}
+ID marker không phải giá trị thập phân chuyển từ binary qua, vì marker size lớn
+sẽ tạo các số lớn phi thực tế, do đó ID marker là index của marker trong từ điển. 
+Ví dụ 5 marker đầu là ID 0,1,2,3,4.
+\subsubsection{Nguyên lý nhận diện mã ArUco}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.6\textwidth]{images/02-image-process-aruco.png}
+  \caption{Quy trình phát hiện marker ArUco trong ảnh 
+  (a) Original Image. 
+  (b) Result of applying local thresholding. 
+  (c) Contour detection. 
+  (d) Polygonal approximation and removal of irrelevant contours. 
+  (e) Example of marker after perspective transformation. 
+  (f) Bit assignment for each cell.}
+  \label{fig:tu-dong-phat-hien-marker}
+\end{figure}
+Hình \ref{fig:tu-dong-phat-hien-marker} minh họa quy trình phát hiện marker ArUco trong ảnh. Quy trình này bao gồm các bước chính:
+\begin{enumerate}
+  \item \textbf{Phân đoạn ảnh:} ảnh từ camera được chuyển sang ảnh mức xám, sau đó áp dụng local adaptive
+thresholding để tạo ảnh nhị phân. 
+Cách xử lý này làm nổi bật vùng sáng - tối và giúp hệ thống hoạt động tốt hơn khi độ sáng không đồng đều.
+  \item \textbf{Trích xuất và lọc đường viền:} từ ảnh nhị phân, hệ thống tìm các đường viền và lần lượt loại bỏ những vùng không có đặc trưng hình học của mã ArUco. Quá trình này gồm các tiểu bước sau:
+  \begin{enumerate}[a)]
+    \item \textbf{Trích xuất đường viền:} thuật toán Suzuki--Abe được sử dụng để tìm đường biên của các vùng liên thông trên ảnh nhị phân. Kết quả ban đầu có thể chứa nhiều đường viền không liên quan, chẳng hạn đường biên của vật thể hoặc hoa văn trong môi trường.
+    \item \textbf{Xấp xỉ đa giác:} thuật toán Douglas--Peucker đơn giản hóa mỗi đường viền thành một đa giác có ít đỉnh hơn nhưng vẫn bảo toàn hình dạng chính.
+    \item \textbf{Lọc tứ giác:} do mã ArUco có dạng hình vuông, chỉ những đa giác lồi có bốn đỉnh và thỏa mãn các điều kiện về kích thước, khoảng cách giữa các đỉnh mới được giữ lại làm ứng viên.
+    \item \textbf{Loại bỏ ứng viên trùng hoặc lồng nhau:} các đường viền quá gần nhau hoặc cùng biểu diễn một vùng marker được loại bỏ nhằm tránh phát hiện lặp. Sau bước này, hệ thống thu được tập các vùng tứ giác ứng viên để tiếp tục giải mã.
+  \end{enumerate}
+  \item \textbf{Trích xuất mã nhị phân:} mỗi vùng tứ giác ứng viên được chuẩn hóa và chuyển thành một ma trận bit để phục vụ quá trình nhận dạng. Quá trình này gồm các tiểu bước sau:
+  \begin{enumerate}[a)]
+    \item \textbf{Nắn phẳng ảnh bằng phép biến đổi phối cảnh:} khi camera quan sát marker ở góc nghiêng, hình vuông có thể bị biến dạng thành hình thang hoặc hình tứ giác. Từ bốn góc đã phát hiện, hệ thống tính ma trận homography và ánh xạ vùng ứng viên về một hình vuông chuẩn nhìn trực diện.
+    \item \textbf{Nhị phân hóa bằng phương pháp Otsu:} ảnh marker đã chuẩn hóa được chuyển thành ảnh đen--trắng. Phương pháp Otsu tự động chọn ngưỡng nhằm cực đại hóa sự phân tách giữa hai lớp điểm ảnh sáng và tối, nhờ đó hạn chế ảnh hưởng của bóng đổ hoặc độ sáng không đồng đều trong vùng marker.
+    \item \textbf{Chia lưới và xác định giá trị bit:} vùng ảnh được chia thành một lưới tương ứng với số ô dữ liệu và phần viền của marker. Trong mỗi ô, số điểm ảnh đen và trắng được thống kê; giá trị chiếm đa số quyết định bit $0$ hoặc $1$. Kết quả là một ma trận nhị phân biểu diễn nội dung marker.
+    \item \textbf{Kiểm tra viền đen:} các ô thuộc đường viền ngoài của mã ArUco phải có màu đen. Ứng viên sẽ bị loại nếu số bit viền sai vượt quá ngưỡng cho phép; nhờ đó, các vùng tứ giác ngẫu nhiên trong môi trường được loại bỏ trước khi so sánh với từ điển.
+  \end{enumerate}
+  \item \textbf{Nhận dạng và hiệu chỉnh lỗi:} ma trận bit được so sánh với các mẫu trong từ điển ArUco ở bốn hướng xoay. Khoảng cách Hamming được dùng để chọn ID phù hợp và cho phép hiệu chỉnh một số bit lỗi trong giới hạn của từ điển.
+  \item \textbf{Xác định các góc marker:} sau khi nhận dạng thành công, thuật toán trả về ID và tọa độ bốn góc của marker; các tọa độ này có thể được tinh chỉnh để nâng cao độ chính xác.
+\end{enumerate}
+
+Kết quả nhận diện gồm ID và bốn điểm góc trên mặt phẳng ảnh. Từ các dữ liệu này, hệ thống xác định tâm marker; khi kết hợp với kích thước thật của marker và thông số hiệu chuẩn camera, hệ thống có thể ước lượng vị trí và tư thế tương đối bằng phương pháp PnP. Trong bài toán hạ cánh tự động, pose của marker được dùng để tính sai lệch vị trí và cung cấp tín hiệu phản hồi cho bộ điều khiển UAV.
 
 \subsection{Camera và hiệu chuẩn}
 
