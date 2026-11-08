@@ -1,0 +1,9 @@
+% Abstract của đồ án 2
+\clearpage
+\section*{Tóm tắt (Abstract)}
+\addcontentsline{toc}{section}{Tóm tắt}
+
+\noindent\textbf{Tóm tắt:} Đồ án trình bày việc thiết kế và triển khai một hệ thống thị giác trên UAV nhằm thực hiện hạ cánh tự động và gắp hàng bằng một phương tiện bay bốn cánh chi phí thấp. Camera hướng xuống được sử dụng để phát hiện mã ArUco đặt trên bãi đáp và ước lượng vị trí, hướng tương đối giữa UAV với mục tiêu thông qua mô hình camera đã hiệu chuẩn và bài toán Perspective-n-Point (PnP). Dữ liệu thị giác được xử lý trên Raspberry Pi 5 bằng một chuỗi xử lý dựa trên ROS 2, sau đó được sử dụng làm tín hiệu phản hồi cho bộ điều khiển hạ cánh PID. Các lệnh điều khiển được truyền đến bộ điều khiển bay PX4 thông qua uXRCE-DDS ở chế độ Offboard, giúp UAV căn chỉnh với marker và hạ xuống đúng vị trí yêu cầu. Sau khi xác nhận UAV đã hạ cánh ổn định, cơ cấu gắp điều khiển bằng servo được kích hoạt để gắp kiện hàng có khối lượng tối đa 1 kg. Một máy trạng thái điều phối toàn bộ nhiệm vụ Landing--Pickup--Takeoff, bao gồm tiếp cận marker, căn chỉnh vị trí, hạ cánh, xác nhận trạng thái, gắp hàng, cất cánh và xử lý lỗi. Hệ thống được đánh giá thông qua độ chính xác hạ cánh, độ tin cậy của quá trình phát hiện marker, tỷ lệ gắp hàng thành công, thời gian hoàn thành nhiệm vụ và độ ổn định khi bay. Đồ án là cơ sở để phát triển các hệ thống UAV vận chuyển hàng tự động chi phí thấp dựa trên phản hồi thị giác được xử lý trực tiếp trên thiết bị bay.
+
+\vspace{2mm}
+\noindent\textbf{Từ khóa:} UAV bốn cánh; hạ cánh chính xác; mã ArUco; ước lượng pose; PnP; điều khiển PID; ROS 2; PX4; Raspberry Pi 5; cơ cấu gắp hàng.

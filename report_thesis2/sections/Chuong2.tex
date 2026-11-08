@@ -1,1 +1,234 @@
-\section{Noi dung 1}
+\section{Kiến thức nền tảng và nghiên cứu liên quan}
+
+Chương này trình bày các kiến thức cần thiết để xây dựng hệ thống UAV tự động hạ cánh bằng thị giác máy tính, gắp hàng và cất cánh trở lại. Nội dung được sắp xếp theo chuỗi xử lý của hệ thống: mô hình UAV, camera, phát hiện ArUco, ước lượng pose, điều khiển, giao tiếp với PX4 và cơ cấu gripper.
+
+\subsection{Tổng quan về UAV }
+
+UAV quadrotor là phương tiện bay sử dụng bốn cụm động 
+cơ - cánh quạt để tạo lực nâng và điều khiển chuyển 
+động. Bốn rotor thường được bố trí theo hình chữ X 
+hoặc hình dấu cộng trên cùng một mặt phẳng. 
+Mô hình uav S500 mà đồ án sử dụng là dạng chữ X.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.6\textwidth]{images/02-uav-model-and-coordinate.png}
+  \caption{Mô hình UAV S500 và hệ trục tọa độ liên quan.}
+  \label{fig:model-and-coordinate-uav}
+\end{figure}
+
+Hình \ref{fig:model-and-coordinate-uav} mô tả hệ trục body của UAV được chọn theo FRD-front\_right\_down và hệ trục world được chọn theo NED-north\_east\_down. Hai rotor quay theo chiều kim đồng hồ và hai 
+rotor quay ngược chiều kim đồng hồ nhằm triệt 
+tiêu mô-men phản lực tổng cộng khi UAV bay ổn định.
+
+Hình \ref{fig:nguyen-ly-dieu-khien-uav} minh họa nguyên lý điều khiển chuyển động của UAV quadrotor thông qua việc thay đổi tốc độ quay của bốn rotor.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1.0\textwidth]{images/02-propeller-direction.png}
+  \caption{Nguyên lý điều khiển độ cao và các chuyển động Roll, Pitch, Yaw của UAV quadrotor.}
+  \label{fig:nguyen-ly-dieu-khien-uav}
+\end{figure}
+
+Khi tốc độ quay của các rotor tăng hoặc giảm đồng thời, tổng lực nâng thay đổi, giúp UAV điều chỉnh độ cao. Bên cạnh đó, sự chênh lệch lực nâng giữa các rotor tạo ra mô-men điều khiển chuyển động Roll và Pitch, trong khi sự chênh lệch mô-men phản lực giữa các cặp rotor quay ngược chiều tạo ra chuyển động Yaw.
+
+Trong bài toán hạ cánh, 
+chuyển động theo phương ngang được sử dụng để đưa 
+tâm UAV về phía trên tâm marker, trong khi chuyển 
+động theo phương đứng được sử dụng để giảm độ cao. 
+Sai số yaw cũng cần được xem xét vì hướng của UAV 
+ảnh hưởng đến phép biến đổi giữa hệ tọa độ camera, 
+thân UAV và hệ tọa độ world.
+
+\subsection{Mã ArUco}
+ArUco (Augmented Reality University of Cordoba) là một loại mã đánh dấu thị giác (fiducial marker) được sử dụng phổ biến trong các hệ thống thị giác máy tính nhằm nhận dạng và xác định vị trí tương đối của đối tượng thông qua hình ảnh thu nhận từ camera. Mã ArUco được phát triển dưới dạng các hình vuông chứa những ô nhị phân màu đen và trắng, cho phép hệ thống nhận dạng từng mã thông qua một bộ từ điển được định nghĩa trước
+\subsubsection{Cấu trúc và từ điển mã ArUco}
+
+ArUco là một mã có dạng hình vuông, gồm đường viền đen và một ma trận bit nhị phân ở bên trong. 
+Đường biên màu đen giúp phát hiện marker nhanh hơn vì nó tương phản với môi trường xung quanh, 
+bằng các thuật toán thị giác máy tính cơ bản (như tạo ngưỡng phân đoạn - thresholding, hay tìm đường viền - contour extraction) có thể ngay lập tức phát hiện ra hình vuông đen này với tốc độ cực nhanh (real-time). Máy tính chỉ việc tìm ra 4 góc của viền đen là đã hoàn thành xong bước xác định vị trí.
+
+Sau đó việc mã hóa nhị phân phần bên trong cho phép nhận dạng ID cũng như áp dụng các kỹ thuật phát hiện và sửa lỗi. 
+
+Hình \ref{fig:vi-du-anh-marker} minh họa một ví dụ về ảnh marker ArUco. 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.4\textwidth]{images/02-aruco-ex.png}
+  \caption{Ví dụ về ảnh marker}
+  \label{fig:vi-du-anh-marker}
+\end{figure}
+
+Kích thức của marker được quyết định bởi ma trận bên trong, ví dụ marker size 4x4 được tạo thành từ 16 bits.
+\subsubsection{Nguyên lý phát hiện marker}
+
+
+\subsection{Camera và hiệu chuẩn}
+
+Camera đơn cung cấp ảnh màu từ môi trường xung quanh. Trong đề tài này, camera được lắp hướng xuống để quan sát bãi đáp và marker trong quá trình tiếp cận, căn chỉnh và hạ cánh. Chất lượng của phép ước lượng pose phụ thuộc vào độ phân giải, trường nhìn, độ méo ống kính, độ rung và góc lắp camera.
+
+\subsubsection{Mô hình camera lỗ kim}
+
+Với mô hình camera lỗ kim, một điểm trong hệ tọa độ camera được chiếu lên mặt phẳng ảnh thông qua ma trận nội tại:
+\begin{equation}
+  \mathbf{K}=\begin{bmatrix}f_x & 0 & c_x\\ 0 & f_y & c_y\\ 0 & 0 & 1\end{bmatrix},
+\end{equation}
+trong đó $f_x$ và $f_y$ là tiêu cự theo hai phương ảnh, còn $(c_x,c_y)$ là tọa độ tâm ảnh. Với điểm không gian $\mathbf{P}_c=[X_c,Y_c,Z_c]^T$, tọa độ ảnh lý tưởng được xác định bởi:
+\begin{equation}
+  s\begin{bmatrix}u\\v\\1\end{bmatrix}=\mathbf{K}\begin{bmatrix}X_c\\Y_c\\Z_c\end{bmatrix},
+\end{equation}
+trong đó $(u,v)$ là tọa độ điểm ảnh và $s$ là hệ số tỉ lệ.
+
+Ống kính thực tế gây ra méo xuyên tâm và méo tiếp tuyến. Vì vậy, ma trận nội tại và các hệ số méo cần được xác định trước khi dùng ảnh để ước lượng pose marker.
+
+\subsubsection{Quy trình hiệu chuẩn}
+
+Quy trình hiệu chuẩn camera gồm các bước chính:
+\begin{enumerate}
+  \item In bàn cờ hoặc bảng chuẩn có kích thước ô đã biết.
+  \item Chụp nhiều ảnh ở các vị trí, khoảng cách và góc nghiêng khác nhau.
+  \item Phát hiện các góc của bàn cờ trong từng ảnh.
+  \item Tối ưu ma trận nội tại và hệ số méo dựa trên các điểm tương ứng.
+  \item Đánh giá sai số chiếu lại và lưu thông số hiệu chuẩn để sử dụng trong chương trình xử lý ảnh.
+\end{enumerate}
+
+Camera cần được cố định chắc chắn sau khi hiệu chuẩn. Nếu vị trí hoặc góc lắp camera thay đổi, phép biến đổi giữa hệ camera và hệ thân UAV phải được xác định lại.
+
+% TODO: Chèn ảnh bàn cờ ở nhiều góc và ảnh so sánh trước/sau hiệu chỉnh méo.
+\noindent\textit{[Hình cần chèn: Bộ ảnh hiệu chuẩn camera và kết quả hiệu chỉnh méo.]}\par\vspace{18mm}
+
+\subsection{Các hệ tọa độ}
+Để kết hợp dữ liệu camera với bộ điều khiển bay, hệ thống cần thống nhất các hệ tọa độ. Các hệ thường được sử dụng gồm:
+\begin{itemize}
+  \item \textbf{Hệ tọa độ thế giới hoặc hệ tọa độ dẫn đường:} mô tả vị trí của UAV trong môi trường thử nghiệm.
+  \item \textbf{Hệ tọa độ thân UAV:} gắn với khung máy bay, thường gồm trục trước--sau, trái--phải và trên--dưới.
+  \item \textbf{Hệ tọa độ camera:} có gốc tại tâm quang học, với trục quang học hướng theo hướng nhìn của camera.
+  \item \textbf{Hệ tọa độ marker:} có gốc tại tâm mã ArUco và mặt phẳng marker làm mặt phẳng tham chiếu.
+\end{itemize}
+
+Phép biến đổi giữa các hệ tọa độ được biểu diễn bằng ma trận biến đổi đồng nhất:
+\begin{equation}
+  {}^{A}\mathbf{T}_{B}=\begin{bmatrix}{}^{A}\mathbf{R}_{B} & {}^{A}\mathbf{t}_{B}\\ \mathbf{0}^{T} & 1\end{bmatrix},
+\end{equation}
+trong đó ${}^{A}\mathbf{R}_{B}$ là ma trận quay và ${}^{A}\mathbf{t}_{B}$ là vector tịnh tiến của hệ $B$ biểu diễn trong hệ $A$.
+
+% TODO: Chèn hình các hệ tọa độ, chỉ rõ chiều các trục và phép biến đổi giữa các hệ.
+\noindent\textit{[Hình cần chèn: Các hệ tọa độ thế giới, thân UAV, camera và marker.]}\par\vspace{18mm}
+
+\subsection{Ước lượng pose bằng PnP}
+
+Phát hiện marker chỉ cung cấp ID và bốn điểm góc trên mặt phẳng ảnh. Để điều khiển UAV, cần ước lượng vị trí và hướng của marker trong hệ tọa độ camera. Bài toán Perspective-n-Point (PnP) giải quyết việc tìm phép quay $\mathbf{R}$ và phép tịnh tiến $\mathbf{t}$ sao cho các điểm 3D đã biết trên marker khi chiếu qua camera sẽ khớp với các điểm 2D quan sát được trên ảnh:
+\begin{equation}
+  s_i\mathbf{p}_i=\mathbf{K}\left(\mathbf{R}\mathbf{P}_i+\mathbf{t}\right),
+\end{equation}
+trong đó $\mathbf{P}_i$ là điểm 3D trên marker, $\mathbf{p}_i$ là điểm ảnh tương ứng, $\mathbf{K}$ là ma trận nội tại và $(\mathbf{R},\mathbf{t})$ là pose cần tìm.
+
+Với marker hình vuông nằm trên một mặt phẳng, bốn góc marker được dùng làm các điểm tương ứng. Kích thước thật của marker và thông số hiệu chuẩn camera phải được cung cấp cho thuật toán. Kết quả thường gồm vector tịnh tiến theo ba trục camera và vector quay hoặc ma trận quay. Từ đó, hệ thống có thể tính các đại lượng phục vụ điều khiển như sai số trái--phải, sai số trước--sau, khoảng cách đến marker và sai số hướng.
+
+Kết quả PnP cần được chuyển từ hệ tọa độ camera sang hệ tọa độ thân UAV. Phép biến đổi này phụ thuộc vào vị trí lắp camera và hướng của camera trên khung S500. Nếu camera không được lắp vuông góc hoặc bị lệch, việc bỏ qua phép biến đổi sẽ tạo ra sai số có hệ thống trong quá trình căn chỉnh.
+
+% TODO: Chèn sơ đồ hình học của bài toán PnP.
+\noindent\textit{[Hình cần chèn: Bốn góc marker, mặt phẳng ảnh, tâm camera và vector pose.]}\par\vspace{18mm}
+
+\subsection{Điều khiển PID và visual servoing}
+
+Visual servoing là phương pháp sử dụng thông tin thu được từ camera làm tín hiệu phản hồi cho bộ điều khiển. Trong bài toán này, các sai số thị giác được tạo từ pose của marker và được dùng để điều khiển vận tốc hoặc vị trí đặt của UAV.
+
+Với sai số $e(t)$ và tín hiệu điều khiển $u(t)$, bộ điều khiển PID có dạng:
+\begin{equation}
+  u(t)=K_p e(t)+K_i\int_0^t e(\tau)\,d\tau+K_d\frac{de(t)}{dt}.
+\end{equation}
+Trong đó, thành phần tỉ lệ tạo phản ứng theo sai số hiện tại, thành phần tích phân loại bỏ sai số tĩnh và thành phần vi phân giúp giảm dao động khi sai số thay đổi nhanh. Đối với UAV, các thành phần điều khiển có thể được thiết kế riêng cho sai số ngang, độ cao và góc yaw.
+
+Một chu trình hạ cánh có thể được chia thành các giai đoạn:
+\begin{enumerate}
+  \item \textbf{Tìm marker:} UAV di chuyển đến vùng mà marker có thể xuất hiện trong trường nhìn.
+  \item \textbf{Căn chỉnh ngang:} giữ độ cao tương đối ổn định và giảm sai số vị trí trên mặt phẳng bãi đáp.
+  \item \textbf{Hạ độ cao:} khi sai số ngang đủ nhỏ và marker được phát hiện ổn định, UAV giảm độ cao theo giới hạn an toàn.
+  \item \textbf{Xác nhận hạ cánh:} kiểm tra độ cao, vận tốc và thời gian ổn định trước khi kích hoạt gripper.
+\end{enumerate}
+
+Khi dữ liệu marker bị mất, hệ thống không nên tiếp tục điều khiển dựa trên dữ liệu cũ vô hạn. Cần đặt thời gian timeout, giới hạn vận tốc và trạng thái dừng hoặc bay lên lại để giảm nguy cơ va chạm. Bộ điều khiển cũng cần có giới hạn tích phân để tránh hiện tượng tích lũy sai số khi UAV chưa nhìn thấy marker.
+
+% TODO: Chèn sơ đồ khối vòng điều khiển hạ cánh.
+\noindent\textit{[Hình cần chèn: Camera/ArUco $\rightarrow$ sai số pose $\rightarrow$ PID $\rightarrow$ setpoint UAV $\rightarrow$ PX4.]}\par\vspace{18mm}
+
+\subsection{PX4, ROS 2 và chế độ Offboard}
+
+PX4 là firmware điều khiển bay đảm nhiệm các chức năng ổn định attitude, điều khiển vị trí và quản lý trạng thái bay. Raspberry Pi 5 chạy các node ROS 2 để thu nhận ảnh, xử lý ArUco, tính toán pose và tạo lệnh điều khiển cấp cao.
+
+Trong cấu hình đề xuất, các thành phần chính gồm:
+\begin{itemize}
+  \item \textbf{Camera node:} thu ảnh và công bố dữ liệu hình ảnh.
+  \item \textbf{ArUco node:} phát hiện marker, ước lượng pose và công bố kết quả.
+  \item \textbf{Landing controller node:} tính sai số, chạy PID và tạo setpoint vận tốc hoặc vị trí.
+  \item \textbf{Mission/state machine node:} quản lý các trạng thái tìm marker, hạ cánh, gắp hàng và cất cánh.
+  \item \textbf{Gripper node:} phát lệnh servo và nhận trạng thái xác nhận cơ cấu gắp.
+  \item \textbf{PX4 flight controller:} nhận setpoint, ổn định UAV và gửi trạng thái bay về máy tính đồng hành.
+\end{itemize}
+
+Giao tiếp giữa ROS 2 và PX4 có thể được thực hiện qua uXRCE-DDS. Ở chế độ Offboard, máy tính đồng hành gửi liên tục các setpoint và tín hiệu duy trì chế độ điều khiển. Trước khi chuyển sang Offboard, hệ thống cần kiểm tra kết nối, trạng thái định vị, nguồn pin, trạng thái arm và tần số gửi setpoint. Nếu mất kết nối hoặc không còn setpoint hợp lệ, PX4 phải chuyển sang hành vi an toàn được cấu hình trước.
+
+% TODO: Chèn sơ đồ node ROS 2 và đường truyền dữ liệu tới PX4.
+\noindent\textit{[Hình cần chèn: Kiến trúc ROS 2--uXRCE-DDS--PX4--UAV.]}\par\vspace{18mm}
+
+\subsection{Cơ cấu gripper}
+
+Cơ cấu gripper có nhiệm vụ giữ kiện hàng trong quá trình UAV cất cánh và bay. Khi thiết kế gripper, cần xem xét khối lượng cơ cấu, tải trọng 1 kg, kích thước kiện hàng, hành trình đóng mở, lực giữ và vị trí lắp đặt trên thân UAV.
+
+Việc treo tải bên dưới UAV làm thay đổi vị trí trọng tâm và mô-men quán tính của hệ thống. Vì vậy, cơ cấu cần được lắp chắc chắn, hạn chế dao động của kiện hàng và không che khuất camera. Khối lượng của gripper và kiện hàng cũng phải nằm trong khả năng tạo lực nâng của bốn rotor.
+
+Servo có thể được điều khiển bằng góc quay hoặc độ rộng xung PWM. Máy trạng thái không nên chỉ dựa vào lệnh đóng servo để kết luận gắp thành công; cần có điều kiện xác nhận, chẳng hạn như vị trí servo, công tắc hành trình, cảm biến lực hoặc kiểm tra tải sau khi UAV bắt đầu cất cánh. Nếu không có cảm biến riêng, hệ thống có thể sử dụng một khoảng thời gian giữ và kiểm tra trạng thái ổn định của UAV, đồng thời ghi nhận đây là một giới hạn của thiết kế.
+
+% TODO: Chèn bản vẽ CAD hoặc ảnh thực tế của gripper.
+\noindent\textit{[Hình cần chèn: Cơ cấu gripper, vị trí lắp trên UAV và trạng thái mở/đóng.]}\par\vspace{18mm}
+
+\subsection{Máy trạng thái Landing--Pickup--Takeoff}
+
+Máy trạng thái giúp chia nhiệm vụ phức tạp thành các trạng thái có điều kiện chuyển rõ ràng. Một phiên bản cơ bản có thể gồm:
+\begin{enumerate}
+  \item \textbf{SEARCH\_MARKER:} tìm marker trong ảnh và giữ UAV ở vùng an toàn.
+  \item \textbf{ALIGN:} điều chỉnh vị trí ngang và hướng của UAV so với marker.
+  \item \textbf{DESCEND:} hạ độ cao khi marker được phát hiện ổn định và sai số nằm trong giới hạn.
+  \item \textbf{LANDED:} xác nhận UAV đã tiếp xúc hoặc đã ổn định trên bãi đáp.
+  \item \textbf{GRAB:} đóng gripper và kiểm tra điều kiện gắp.
+  \item \textbf{TAKEOFF:} tăng độ cao đến mức an toàn và tiếp tục nhiệm vụ.
+  \item \textbf{ABORT/FAILSAFE:} dừng, bay lên hoặc chuyển sang điều khiển thủ công khi mất marker, mất kết nối hoặc phát hiện điều kiện không an toàn.
+\end{enumerate}
+
+Mỗi trạng thái cần quy định rõ điều kiện vào, điều kiện thoát, timeout và hành vi khi lỗi. Cách tổ chức này giúp tránh việc các node điều khiển gửi lệnh mâu thuẫn, đồng thời tạo log rõ ràng để phân tích khi thử nghiệm thất bại.
+
+% TODO: Chèn sơ đồ máy trạng thái toàn bộ nhiệm vụ.
+\noindent\textit{[Hình cần chèn: SEARCH--ALIGN--DESCEND--LANDED--GRAB--TAKEOFF và nhánh ABORT.]}\par\vspace{18mm}
+
+\subsection{Các công trình liên quan}
+
+Các nghiên cứu về hạ cánh UAV bằng thị giác thường tập trung vào ba nội dung: thiết kế marker có thể nhận dạng ở nhiều khoảng cách, ước lượng pose tương đối từ camera đơn và xây dựng bộ điều khiển dựa trên thông tin thị giác. Một số công trình sử dụng một marker duy nhất, trong khi các công trình khác sử dụng marker nhiều lớp hoặc nhiều kích thước để duy trì khả năng nhận dạng khi UAV thay đổi độ cao.
+
+Một hướng phổ biến là dùng các góc của ArUco marker kết hợp với thông số hiệu chuẩn camera để giải bài toán PnP. Pose thu được được đưa vào bộ điều khiển PID hoặc bộ điều khiển visual servoing nhằm giảm sai số ngang trước khi hạ độ cao. Các kết quả nghiên cứu cho thấy độ chính xác không chỉ phụ thuộc vào thuật toán điều khiển mà còn phụ thuộc mạnh vào kích thước marker, trường nhìn camera, độ trễ xử lý, ánh sáng và rung động của UAV.
+
+Trong các hệ thống giao hàng, ngoài bài toán hạ cánh còn có bài toán giữ và thả kiện hàng. Cơ cấu gripper phải nhẹ, đủ lực giữ và không làm mất ổn định UAV. Một số hệ thống bổ sung cảm biến để xác nhận đã gắp được vật thể; các hệ thống đơn giản hơn sử dụng máy trạng thái và điều kiện thời gian để điều phối servo.
+
+So với các công trình chỉ xét hạ cánh hoặc chỉ xét cơ cấu gắp, đồ án này hướng đến việc tích hợp cả hai nhiệm vụ trên cùng một nền tảng Raspberry Pi 5, ROS 2 và PX4. Trọng tâm của đồ án là xây dựng một quy trình có thể kiểm thử từng module và đánh giá định lượng toàn bộ chuỗi hạ cánh--gắp hàng--cất cánh.
+
+% TODO: Bổ sung bảng so sánh các công trình liên quan.
+% Nên có các cột: tài liệu, loại marker, camera, nền tảng bay,
+% phương pháp điều khiển, có gắp hàng hay không, mô phỏng/thực nghiệm.
+\begin{table}[H]
+  \centering
+  \caption{Gợi ý bảng so sánh các công trình liên quan}
+  \label{tab:so-sanh-cong-trinh}
+  \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.0cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}X|}
+    \hline
+    \textbf{Công trình} & \textbf{Marker/cảm biến} & \textbf{Điều khiển} & \textbf{Phạm vi đánh giá}\\
+    \hline
+    Công trình 1 & Bổ sung sau & Bổ sung sau & Bổ sung sau\\
+    \hline
+    Công trình 2 & Bổ sung sau & Bổ sung sau & Bổ sung sau\\
+    \hline
+    Đồ án này & ArUco + camera đơn & PID + máy trạng thái & Hạ cánh, gắp hàng, cất cánh\\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsection{Tóm tắt chương}
+
+Chương này đã trình bày các cơ sở về UAV quadrotor, hệ tọa độ, camera, hiệu chuẩn, phát hiện ArUco, ước lượng pose bằng PnP, điều khiển PID, visual servoing, PX4, ROS 2, Offboard và cơ cấu gripper. Đây là cơ sở để xây dựng kiến trúc phần cứng, kiến trúc phần mềm và các thuật toán của hệ thống trong Chương 3.
