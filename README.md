@@ -78,6 +78,34 @@ Terminal 2 chọn một profile:
 Ba profile này không tạo PX4 adapter, không request Offboard và không cần cắm
 UART. `Ctrl+C` dừng profile, sau đó dừng camera server ở terminal 1.
 
+## Profile ArUco-only cho Đồ án 2
+
+Khi chỉ lắp một IMX500 tại CAM0, không cần IMX219 hoặc model ZipDepth. Terminal
+1 chạy đúng một camera host server:
+
+```bash
+cd ~/ros2_ws
+./uavcup aruco-camera
+```
+
+Để xem ID/rvec/tvec và debug image mà không kết nối PX4, Terminal 2 chạy:
+
+```bash
+./uavcup aruco-debug
+```
+
+Khi bench-test với FC, chạy XRCE Agent rồi khởi động stack landing tối giản:
+
+```bash
+./uavcup agent
+./uavcup agent-logs       # tùy chọn, để xem log UART
+./uavcup aruco-vehicle
+```
+
+`aruco-vehicle` chỉ chạy detector, landing PID và PX4 bridge. PID và bridge
+đều disabled lúc khởi động; profile không tự arm hoặc request Offboard. Nó
+không kiểm tra và không nạp model ZipDepth.
+
 ## Kết nối PX4
 
 Sau khi bench-test, khởi động agent và stack xe:

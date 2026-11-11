@@ -20,7 +20,10 @@ Commands:
   setup             Initialize px4_msgs, build both Docker targets and ROS.
   doctor            Check Docker, cameras, model, UART and Pi health.
   cameras           Run CAM0 IMX219 + CAM1 IMX500 host frame servers.
+  aruco-camera      Run one CAM0 IMX500 host frame server for ArUco.
   aruco-test        Run only the ArUco detector (no PX4/control nodes).
+  aruco-debug       Alias for ArUco detector with debug topics/image enabled.
+  aruco-vehicle     Run ArUco + landing PID + PX4 adapter; no ZipDepth.
   zipdepth-test     Run only ZipDepth (no PX4/control nodes).
   perception-test   Run ArUco and ZipDepth together (no PX4/control nodes).
   vehicle           Run the full perception/control/PX4 ROS stack.
@@ -119,9 +122,39 @@ case "$command" in
       src/px4_uavcup_perception/scripts/picamera2_dual_server.py
     ;;
 
+  aruco-camera)
+    if ! /usr/bin/python3 -c 'import picamera2' >/dev/null 2>&1; then
+      echo "ERROR: Picamera2 is not available on the Raspberry Pi host." >&2
+      exit 1
+    fi
+    aruco_camera_index="${ARUCO_CAMERA_INDEX:-0}"
+    aruco_camera_model="${ARUCO_CAMERA_MODEL:-imx500}"
+    aruco_camera_fps="${ARUCO_CAMERA_FPS:-15}"
+    export PYTHONPATH="$WORKSPACE_DIR/src/px4_uavcup_perception${PYTHONPATH:+:$PYTHONPATH}"
+    exec /usr/bin/python3 \
+      src/px4_uavcup_perception/scripts/picamera2_frame_server.py \
+      --camera-index "$aruco_camera_index" \
+      --camera-model "$aruco_camera_model" \
+      --socket "$WORKSPACE_DIR/run/down_camera.sock" \
+      --width 640 \
+      --height 480 \
+      --fps "$aruco_camera_fps"
+    ;;
+
   aruco-test)
     require_workspace_build
     ros_run ros2 launch px4_uavcup_bringup aruco_test.launch.py
+    ;;
+
+  aruco-debug)
+    require_workspace_build
+    ros_run ros2 launch px4_uavcup_bringup aruco_test.launch.py \
+      publish_debug_topics:=true publish_debug_image:=true
+    ;;
+
+  aruco-vehicle)
+    require_workspace_build
+    ros_run ros2 launch px4_uavcup_bringup pi_aruco_vehicle.launch.py
     ;;
 
   zipdepth-test)
