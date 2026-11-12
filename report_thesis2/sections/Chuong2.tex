@@ -1,3 +1,4 @@
+% !TeX root = ../Baocao.tex
 \section{Tính toán, lựa chọn và thiết kế phần cứng UAV}
 \subsection{Yêu cầu thiết kế}
 Bảng \ref{tab:yeu-cau-phan-cung} tóm tắt các tiêu chí thiết kế
@@ -66,8 +67,14 @@ Khối lượng thực sẽ được cân trực tiếp sau khi lắp ráp thay 
   \end{tabularx}
 \end{table}
 
-% TODO: Chèn ảnh phân rã các cụm phần cứng và vị trí lắp trên khung S500.
-\noindent\textit{[Hình cần chèn: Phân rã khối lượng và bố trí các cụm phần cứng trên UAV.]}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.6\textwidth]{images/02-uav-model-and-coordinate.png}
+  \caption{Cấu tạo phần cứng UAV}
+  \label{fig:cau-tao-phan-cung-uav}
+\end{figure}
+
+Hình \ref{fig:cau-tao-phan-cung-uav}
 
 \subsection{Tính toán lực đẩy yêu cầu}
 
@@ -75,112 +82,162 @@ Theo Bảng~\ref{tab:ngan-sach-khoi-luong}, khối lượng cất cánh lớn nh
 \begin{equation}
   m_{\mathrm{total}}=2918~\mathrm{g}=2{,}918~\mathrm{kg}.
 \end{equation}
-
-Ở trạng thái bay treo, tổng lực đẩy của bốn động cơ phải cân bằng trọng lượng UAV:
+\indent Ở trạng thái bay treo, tổng lực đẩy của bốn động cơ phải cân bằng trọng lượng UAV:
 \begin{equation}
   T_{\mathrm{hover}}=m_{\mathrm{total}}g
   =2{,}918\times9{,}81
   \approx28{,}63~\mathrm{N}.
 \end{equation}
-Lực đẩy trung bình của mỗi động cơ khi bay treo là:
+\indent Lực đẩy trung bình của mỗi động cơ khi bay treo là:
 \begin{equation}
   T_{\mathrm{hover,motor}}
   =\frac{28{,}63}{4}
   \approx7{,}16~\mathrm{N}
-  \approx729{,}5~\mathrm{gf}.
 \end{equation}
-
-Nếu hệ động lực chỉ tạo lực đẩy xấp xỉ trọng lượng, UAV sẽ phải hoạt động gần mức ga cực đại và không còn đủ dự trữ để tăng độ cao hoặc hiệu chỉnh tư thế. Trong thiết kế này chọn hệ số lực đẩy dự trữ $k_T=1{,}5$, tương ứng tỷ số lực đẩy trên trọng lượng bằng 1,5. Tổng lực đẩy cực đại yêu cầu là:
+\indent Nếu hệ động lực chỉ tạo lực đẩy xấp xỉ trọng lượng, UAV sẽ phải hoạt động gần mức ga cực đại và không còn đủ dự trữ để tăng độ cao hoặc hiệu chỉnh tư thế. Trong thiết kế này chọn hệ số lực đẩy dự trữ $k_T=1{,}5$, tương ứng tỷ số lực đẩy trên trọng lượng bằng 1,5. Tổng lực đẩy cực đại yêu cầu là:
 \begin{equation}
   T_{\mathrm{max,total}}
   \geq k_Tm_{\mathrm{total}}g
   =1{,}5\times28{,}63
-  \approx42{,}94~\mathrm{N}.
+  \approx42{,}94~\mathrm{N}
 \end{equation}
-Do đó, lực đẩy cực đại yêu cầu của mỗi động cơ là:
+\indent Do đó, lực đẩy cực đại yêu cầu của mỗi động cơ là:
 \begin{equation}
   T_{\mathrm{max,motor}}
   \geq\frac{42{,}94}{4}
   \approx10{,}73~\mathrm{N}
-  \approx1094~\mathrm{gf}.
+    \approx1094{,}25~\mathrm{gf}.
   \label{eq:luc-day-moi-dong-co}
 \end{equation}
-
-Như vậy, mỗi tổ hợp động cơ--cánh quạt phải tạo được ít nhất khoảng 1.100~gf tại điện áp pin sử dụng. Giá trị này là điều kiện tối thiểu để lựa chọn hệ động lực và cần được kiểm chứng bằng bảng thử lực đẩy của nhà sản xuất hoặc phép đo lực đẩy tĩnh. Trong trạng thái bay treo đầy tải, mỗi động cơ cung cấp khoảng 729,5~gf, tương đương khoảng $66{,}7\%$ mức lực đẩy thiết kế cực đại.
+\indent Như vậy, mỗi tổ hợp động cơ - 
+cánh quạt phải tạo được ít nhất khoảng 
+10,73 N tại điện áp pin sử dụng. 
+Giá trị này là điều kiện tối thiểu để 
+lựa chọn hệ động lực và trong trạng 
+thái bay treo đầy tải, mỗi động cơ 
+cung cấp khoảng 7,16 N, tương đương khoảng $66{,}7\%$ mức lực đẩy thiết kế cực đại.
 
 \subsection{Lựa chọn động cơ, cánh quạt và ESC}
 
-Động cơ và cánh quạt phải được lựa chọn như một tổ hợp vì lực đẩy, dòng điện và hiệu suất phụ thuộc đồng thời vào hệ số $K_V$, kích thước cánh và điện áp pin. Hệ số $K_V$ cho biết tốc độ quay không tải xấp xỉ trên mỗi volt:
-\begin{equation}
-  n_0\approx K_VV,
-\end{equation}
-trong đó $V$ là điện áp nguồn. Quan hệ này chỉ dùng để tham khảo vì tốc độ thực tế giảm khi động cơ mang tải.
+Động cơ và cánh quạt là hai thành phần quyết định khả năng tạo lực nâng của UAV. Việc lựa chọn cần dựa trên lực đẩy, dòng điện, công suất và khả năng đáp ứng tải trọng của tổ hợp động cơ--cánh quạt.
 
-Với khung S500 và khối lượng cất cánh 2,918~kg, động cơ có $K_V$ quá cao thường phù hợp với cánh nhỏ và tốc độ quay lớn, không thuận lợi cho yêu cầu tạo lực nâng lớn ở tốc độ thấp. Ngược lại, động cơ có $K_V$ thấp hơn cho phép sử dụng cánh đường kính lớn hơn nhưng có thể làm hệ thống nặng và giảm độ linh hoạt. Dải xấp xỉ 900--1000KV là phương án cân bằng giữa lực đẩy, kích thước cánh và khả năng đáp ứng của UAV S500. Vì vậy, động cơ brushless 950KV được chọn cho hệ thống.
+\noindent\textbf{a) Lựa chọn động cơ}
 
-Cánh 1045 có đường kính 10~inch và bước cánh 4,5~inch. So với cánh có đường kính nhỏ hơn, cánh 1045 quét một diện tích lớn hơn và tạo lực đẩy phù hợp với UAV mang tải, trong khi đường kính 10~inch vẫn phù hợp với khoảng cách giữa các động cơ trên khung S500. Cánh có bước quá lớn có thể làm dòng điện tăng và gây quá tải động cơ; do đó cấu hình 1045 được chọn như một phương án cân bằng giữa lực đẩy và công suất tiêu thụ.
+Từ kết quả tính toán tại mục 2.3, với khối lượng cất cánh lớn nhất 2,918~kg, lực đẩy yêu cầu của mỗi động cơ khi bay treo là 7,16~N, tương đương 729,5~gf. Khi xét hệ số dự trữ lực đẩy $k_T=1{,}5$, mỗi động cơ cần có khả năng tạo lực đẩy cực đại tối thiểu 10,73~N, tương đương khoảng 1.094~gf.
 
-Từ kết quả mục 2.3, tổ hợp động cơ 950KV và cánh 1045 chỉ được chấp nhận khi dữ liệu thử nghiệm tại đúng điện áp pin xác nhận lực đẩy cực đại của mỗi động cơ không nhỏ hơn 1.100~gf. Đồng thời, dòng điện cực đại đo được phải nằm trong giới hạn của động cơ, pin và ESC. Hai cánh quay thuận và hai cánh quay nghịch được bố trí xen kẽ để triệt tiêu mô-men phản lực tổng cộng.
+Trên cơ sở đó, đồ án lựa chọn động cơ không chổi than SunnySky X2216-III 950KV. Động cơ sử dụng stator kích thước $22\times16$~mm, có khối lượng danh định 69~g, hỗ trợ nguồn LiPo 3S--4S và công suất cực đại công bố 450~W. Dòng điện cực đại theo thông số kỹ thuật là 32~A trong 30~giây.
 
-Các tiêu chí lựa chọn gồm:
-\begin{itemize}
-  \item lực đẩy của mỗi động cơ đáp ứng phương trình~\eqref{eq:luc-day-moi-dong-co};
-  \item đường kính cánh quạt phù hợp khung S500 và các cánh không giao nhau;
-  \item dòng điện, công suất không vượt giới hạn của động cơ, ESC và pin;
-  \item điểm bay treo nằm trong vùng làm việc có hiệu suất phù hợp;
-  \item hai cặp động cơ--cánh quạt quay ngược chiều nhau để cân bằng mô-men phản lực.
-\end{itemize}
-
-Dòng định mức của ESC được chọn lớn hơn dòng cực đại của động cơ một khoảng dự trữ:
-\begin{equation}
-  I_{\mathrm{ESC,rated}}\geq k_I I_{\mathrm{motor,max}},
-\end{equation}
-Trong thiết kế này chọn ESC 4-in-1 có bốn kênh, dòng định mức 50~A cho mỗi kênh. Với hệ số dự trữ dòng $k_I=1{,}2$, dòng cực đại cho phép của mỗi động cơ theo tiêu chí thiết kế là:
-\begin{equation}
-  I_{\mathrm{motor,max}}
-  \leq\frac{I_{\mathrm{ESC,rated}}}{k_I}
-  =\frac{50}{1{,}2}
-  \approx41{,}7~\mathrm{A}.
-\end{equation}
-Do đó, ESC đáp ứng yêu cầu nếu dòng cực đại của tổ hợp động cơ 950KV--cánh 1045 tại điện áp pin sử dụng không vượt quá 41,7~A trên mỗi động cơ. Cấu trúc 4-in-1 giúp giảm dây dẫn và bố trí gọn tại tâm khung, nhưng cần đặt ở vị trí thông thoáng để tản nhiệt. Ngoài giới hạn 50~A của từng kênh, tổng dòng và khả năng tản nhiệt của toàn bo mạch cũng phải được kiểm tra theo tài liệu nhà sản xuất.
-
-\begin{table}[H]
+Để đánh giá khả năng đáp ứng lực đẩy yêu cầu khi sử dụng pin LiPo 4S, dữ liệu thử nghiệm của nhà cung cấp đối với động cơ SunnySky X2216-III 950KV kết hợp cánh APC 1047 tại điện áp 14,8~V được sử dụng làm cơ sở tham khảo. 
+\begin{figure}[H]
   \centering
-  \caption{Thông số tổ hợp động cơ--cánh quạt--ESC được lựa chọn}
-  \label{tab:lua-chon-he-dong-luc}
-  \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{4.3cm}|>{\raggedright\arraybackslash}X|}
-    \hline
-    \textbf{Thông số} & \textbf{Giá trị} \\
-    \hline
-    Động cơ và hệ số $K_V$ & Động cơ brushless 950KV; [bổ sung mã động cơ] \\
-    \hline
-    Cánh quạt & 1045, đường kính 10~inch, bước cánh 4,5~inch; hai cánh thuận và hai cánh nghịch \\
-    \hline
-    Điện áp thử nghiệm & [Điền số cell và điện áp] \\
-    \hline
-    Lực đẩy cực đại mỗi động cơ & Yêu cầu tối thiểu 1.100~gf; [bổ sung kết quả datasheet hoặc phép đo] \\
-    \hline
-    Dòng cực đại mỗi động cơ & Yêu cầu không vượt quá 41,7~A với hệ số dự trữ 1,2 \\
-    \hline
-    ESC & ESC 4-in-1, 50~A$\times4$; [bổ sung mã và điện áp hỗ trợ] \\
-    \hline
-  \end{tabularx}
-\end{table}
+  \includegraphics[width=0.8\textwidth]{images/02-specs-sunnysky.png}
+  \caption{Dữ liệu thực nghiệm từ nhà cung cấp}
+  \label{fig:specs-sunnysky}
+\end{figure}
+Theo bảng thử nghiệm, tại lực đẩy 800~gf, mỗi động cơ tiêu thụ dòng điện 9,3~A với công suất 137,64~W. Điểm đo này được chọn làm điểm vận hành tham khảo vì lực đẩy 800~gf lớn hơn lực đẩy bay treo yêu cầu 729,5~gf. Khi cả bốn động cơ cùng tạo lực đẩy 800~gf, tổng lực đẩy đạt 3.200~gf, lớn hơn trọng lượng UAV 2.918~gf khoảng 282~gf. Tổng dòng điện và công suất của bốn động cơ tại điểm này lần lượt được ước tính:
+\begin{equation}
+  I_{\mathrm{total,800}}=4\times9{,}3=37{,}2~\mathrm{A},
+\end{equation}
+\begin{equation}
+  P_{\mathrm{total,800}}=4\times137{,}64=550{,}56~\mathrm{W}.
+\end{equation}
+\indent Đối với điều kiện lực đẩy lớn, bảng thử nghiệm 4S ghi nhận động cơ đạt 1.100~gf với dòng điện 14,9~A và công suất 220,52~W. Mức lực đẩy này xấp xỉ yêu cầu tối thiểu 1.094~gf đã tính toán tại mục 2.3. Khi biểu diễn cả lực đẩy và trọng lượng theo đơn vị gf, tỷ số lực đẩy trên trọng lượng UAV tại điểm 1.100~gf là:
+\begin{equation}
+  k_{T,1100}
+  =\frac{4T_{1100}}{W_{\mathrm{total}}}
+  =\frac{4\times1100}{2918}
+  \approx1{,}51.
+\end{equation}
+Kết quả cho thấy tổ hợp SunnySky X2216-III 950KV và cánh APC 1047 sử dụng pin 4S đáp ứng yêu cầu thiết kế $k_T=1{,}5$ tại điểm thử 1.100~gf.
 
+Bảng thử nghiệm còn ghi nhận lực đẩy lớn nhất 1.860~gf tại 34,5~A và 510,6~W. Khi đó, tỷ số lực đẩy cực đại trên trọng lượng có thể đạt:
+\begin{equation}
+  k_{T,\max}
+  =\frac{4\times1860}{2918}
+  \approx2{,}55.
+\end{equation}
+Tuy nhiên, điểm thử này vượt dòng điện 32~A và công suất 450~W do nhà sản xuất công bố, vì vậy không được xem là chế độ vận hành liên tục an toàn. Đồng thời, tải trọng khuyến nghị cho ứng dụng multirotor thấp hơn mức 729,5~g trên mỗi động cơ của đồ án. Do đó, dòng điện, nhiệt độ và độ ổn định của hệ thống khi bay treo đầy tải với pin 4S cần được kiểm tra bằng thực nghiệm.
+
+\noindent\textbf{b) Lựa chọn cánh quạt}
+
+Bên cạnh dữ liệu của nhà cung cấp, thực nghiệm 
+ đối với động cơ SunnySky X2216-III 950KV ghi nhận lực đẩy 1.865~gf với cánh 1045 MR, 
+ tương ứng dòng điện 29~A và công suất 455~W. 
+ Kết quả này cung cấp bằng chứng thực nghiệm về khả năng tạo lực đẩy lớn của động cơ khi sử dụng cánh 1045.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.6\textwidth]{images/02-ex-sunnysky.png}
+  \caption{Thực nghiệm đo lực đẩy của SunnySky X2216-III 950KV với cánh 1045 MR}
+  \label{fig:ex-sunnysky}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.6\textwidth]{images/02-ex-data-sunny.png}
+  \caption{Thực nghiệm đo lực đẩy của SunnySky X2216-III 950KV với cánh 1045 MR}
+  \label{fig:ex-data-sunnysky}
+\end{figure}
+Từ các dữ liệu khảo sát, tổ hợp động cơ SunnySky X2216-III 950KV và cánh 1045 được lựa chọn làm cấu hình triển khai của đồ án. Lực đẩy, dòng điện và nhiệt độ vận hành cần được kiểm chứng tại điện áp pin sử dụng thực tế nhằm xác nhận khả năng đáp ứng yêu cầu nâng tải 1~kg.
+
+\noindent\textbf{c) Lựa chọn ESC}
+
+Theo thông số kỹ thuật của SunnySky, dòng điện cực đại công bố của động cơ X2216-III 950KV là 32~A trong 30~giây. Với hệ số dự trữ dòng điện $k_I=1{,}2$, dòng định mức tối thiểu của mỗi kênh ESC được xác định:
+\begin{equation}
+  I_{\mathrm{ESC,rated}}
+  \geq k_I\,I_{\mathrm{motor,max}}
+  =1{,}2\times32
+  =38{,}4~\mathrm{A}.
+\end{equation}
+Do đó, ESC 4-in-1 có dòng định mức 50~A trên mỗi kênh được lựa chọn nhằm đáp ứng dòng điện của động cơ và tạo khoảng dự trữ trong quá trình tăng lực đẩy khi điều khiển UAV. Bộ ESC phải hỗ trợ điện áp pin sử dụng, đồng thời bảo đảm khả năng tản nhiệt và chịu được tổng dòng điện khi bốn động cơ hoạt động đồng thời.
 \subsection{Lựa chọn pin và ước lượng thời gian bay}
 
-Pin được lựa chọn theo điện áp, dung lượng, khả năng xả và khối lượng. Với dung lượng $C_{\mathrm{Ah}}$ và hệ số xả $C_{\mathrm{rate}}$, dòng xả lý thuyết cực đại là:
-\begin{equation}
-  I_{\mathrm{battery,max}}=C_{\mathrm{rate}}C_{\mathrm{Ah}}.
-\end{equation}
-Giá trị này phải lớn hơn tổng dòng cực đại dự kiến của hệ thống và vẫn cần một khoảng dự trữ an toàn.
+Pin được lựa chọn dựa trên điện áp làm việc của hệ động lực, dòng điện yêu cầu, dung lượng và khối lượng. Trong mục 2.4, đặc tính của tổ hợp động cơ SunnySky X2216-III 950KV và cánh APC 1047 được đánh giá tại điện áp 14,8~V. Vì vậy, pin LiPo 4S có điện áp danh định 14,8~V được lựa chọn để bảo đảm điều kiện vận hành phù hợp với dữ liệu tính toán. Điện áp của pin khi sạc đầy có thể đạt 16,8~V, do đó ESC và các bộ chuyển đổi nguồn phải chịu được mức điện áp này.
 
-Nếu dòng điện trung bình khi thực hiện nhiệm vụ là $I_{\mathrm{avg}}$, thời gian bay ước lượng được tính bởi:
+Tại điểm lực đẩy tham khảo 800~gf trên mỗi động cơ, dòng điện của một động cơ là 9,3~A. Tổng dòng điện của bốn động cơ được xác định:
 \begin{equation}
-  t_{\mathrm{flight}}\approx 60\frac{\eta_CC_{\mathrm{Ah}}}{I_{\mathrm{avg}}}\quad\text{(phút)},
+  I_{\mathrm{hover,ref}}=4\times9{,}3=37{,}2~\mathrm{A}.
+\end{equation}
+Trong trường hợp bốn động cơ đồng thời đạt dòng điện cực đại công bố 32~A, tổng dòng điện cực đại của hệ động lực là:
+\begin{equation}
+  I_{\mathrm{propulsion,max}}=4\times32=128~\mathrm{A}.
+\end{equation}
+
+Từ các yêu cầu trên, đồ án lựa chọn pin LiPo Ovonic 4S1P có dung lượng 5.300~mAh và hệ số xả 75C. Đổi dung lượng pin sang đơn vị ampere-giờ:
+\begin{equation}
+  C_{\mathrm{Ah}}=5300~\mathrm{mAh}=5{,}3~\mathrm{Ah}.
+\end{equation}
+Với hệ số xả $C_{\mathrm{rate}}=75C$, dòng xả lý thuyết cực đại của pin là:
+\begin{equation}
+  I_{\mathrm{battery,max}}
+  =C_{\mathrm{rate}}C_{\mathrm{Ah}}
+  =75\times5{,}3
+  =397{,}5~\mathrm{A}.
+\end{equation}
+Giá trị này lớn hơn dòng điện cực đại 128~A của bốn động cơ. Hệ số xả tối thiểu cần thiết của pin trong trường hợp cực đại là:
+\begin{equation}
+  C_{\mathrm{min}}
+  =\frac{I_{\mathrm{propulsion,max}}}{C_{\mathrm{Ah}}}
+  =\frac{128}{5{,}3}
+  \approx24{,}15C.
+\end{equation}
+Do đó, mức 75C tạo ra khoảng dự trữ dòng điện lớn so với yêu cầu tính toán. Tuy nhiên, giá trị 397,5~A là giá trị lý thuyết theo hệ số C; khả năng chịu dòng thực tế còn phụ thuộc vào đầu nối, dây dẫn, nhiệt độ và giới hạn dòng xả liên tục do nhà sản xuất quy định.
+
+Năng lượng danh định của pin được tính bởi:
+\begin{equation}
+  E_{\mathrm{battery}}
+  =V_{\mathrm{nominal}}C_{\mathrm{Ah}}
+  =14{,}8\times5{,}3
+  =78{,}44~\mathrm{Wh}.
+\end{equation}
+
+Để hạn chế xả sâu, giả sử chỉ sử dụng $\eta_C=80\%$ dung lượng danh định. Lấy dòng điện 37,2~A tại điểm lực đẩy 800~gf làm giá trị tham khảo, thời gian bay lý thuyết được ước lượng:
+\begin{equation}
+  t_{\mathrm{flight}}
+  \approx60\frac{\eta_CC_{\mathrm{Ah}}}{I_{\mathrm{hover,ref}}}
+  =60\frac{0{,}8\times5{,}3}{37{,}2}
+  \approx6{,}84~\text{phút}.
   \label{eq:thoi-gian-bay}
 \end{equation}
-trong đó $\eta_C$ là tỷ lệ dung lượng cho phép sử dụng nhằm tránh xả pin quá sâu. $I_{\mathrm{avg}}$ nên được đo trong chuyến bay thực tế vì thay đổi theo tải, cánh quạt và chế độ bay. Pin dung lượng lớn kéo dài thời gian cấp điện nhưng cũng làm tăng khối lượng; vì vậy phép chọn pin phải được lặp lại cùng với tính toán khối lượng và lực đẩy.
+Thời gian trên là giá trị ước lượng từ dòng điện của bốn động cơ. Trong thực tế, Raspberry Pi 5, flight controller, camera, servo và tổn hao trên các bộ chuyển đổi nguồn cũng tiêu thụ năng lượng; ngoài ra dòng điện thay đổi theo tải và chế độ bay. Vì vậy, thời gian bay thực tế dự kiến thấp hơn và cần được xác định bằng thử nghiệm. Từ các phân tích về điện áp, khả năng cấp dòng và dung lượng, pin Ovonic 5300~mAh 75C 4S được lựa chọn cho hệ thống.
 
 \subsection{Thiết kế hệ thống cấp và phân phối nguồn}
 
