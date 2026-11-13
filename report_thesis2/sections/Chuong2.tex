@@ -69,12 +69,12 @@ Khối lượng thực sẽ được cân trực tiếp sau khi lắp ráp thay 
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.6\textwidth]{images/02-uav-model-and-coordinate.png}
+  \includegraphics[width=0.6\textwidth]{images/01-uav-components.png}
   \caption{Cấu tạo phần cứng UAV}
   \label{fig:cau-tao-phan-cung-uav}
 \end{figure}
 
-Hình \ref{fig:cau-tao-phan-cung-uav}
+Hình \ref{fig:cau-tao-phan-cung-uav} minh họa các cụm phần cứng chính của UAV. Khối lượng của từng thành phần được cân trực tiếp và ghi lại trong Bảng~\ref{tab:ngan-sach-khoi-luong}. Tổng khối lượng cất cánh ước tính là 2.918~g, tương đương 2,918~kg.
 
 \subsection{Tính toán lực đẩy yêu cầu}
 
@@ -160,7 +160,7 @@ Tuy nhiên, điểm thử này vượt dòng điện 32~A và công suất 450~W
 
 \noindent\textbf{b) Lựa chọn cánh quạt}
 
-Bên cạnh dữ liệu của nhà cung cấp, thực nghiệm 
+Bên cạnh dữ liệu của nhà cung cấp, hình \ref{fig:ex-sunnysky} và hình \ref{fig:ex-data-sunnysky} thể hiện kết quả thực nghiệm 
  đối với động cơ SunnySky X2216-III 950KV ghi nhận lực đẩy 1.865~gf với cánh 1045 MR, 
  tương ứng dòng điện 29~A và công suất 455~W. 
  Kết quả này cung cấp bằng chứng thực nghiệm về khả năng tạo lực đẩy lớn của động cơ khi sử dụng cánh 1045.
@@ -237,46 +237,29 @@ Năng lượng danh định của pin được tính bởi:
   \approx6{,}84~\text{phút}.
   \label{eq:thoi-gian-bay}
 \end{equation}
-Thời gian trên là giá trị ước lượng từ dòng điện của bốn động cơ. Trong thực tế, Raspberry Pi 5, flight controller, camera, servo và tổn hao trên các bộ chuyển đổi nguồn cũng tiêu thụ năng lượng; ngoài ra dòng điện thay đổi theo tải và chế độ bay. Vì vậy, thời gian bay thực tế dự kiến thấp hơn và cần được xác định bằng thử nghiệm. Từ các phân tích về điện áp, khả năng cấp dòng và dung lượng, pin Ovonic 5300~mAh 75C 4S được lựa chọn cho hệ thống.
+Thời gian trên là giá trị ước lượng từ dòng điện của bốn động cơ. Trong thực tế, Raspberry Pi 5, flight controller, camera, servo và tổn hao trên các bộ chuyển đổi nguồn cũng tiêu thụ năng lượng; ngoài ra dòng điện thay đổi theo tải và chế độ bay. Vì vậy, thời gian bay thực tế dự kiến thấp hơn và cần được xác định bằng thử nghiệm. Từ các phân tích về điện áp, khả năng cấp dòng và dung lượng, pin Ovonic 5300~mAh 75C 4S được lựa chọn cho hệ thống được minh họa như hình \ref{fig:pin-lipo}.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.3\textwidth]{images/01-pin.png}
+  \caption{Pin Lipo 5300mah 4S 75C}
+  \label{fig:pin-lipo}
+\end{figure}
 
 \subsection{Thiết kế hệ thống cấp và phân phối nguồn}
 
-Hệ thống sử dụng nguồn động lực cho bốn ESC, nguồn ổn định cho flight controller và nguồn phù hợp cho Raspberry Pi 5 cùng servo. Sơ đồ nguồn cần bảo đảm:
+Hệ thống phân phối nguồn từ pin LiPo 16.8V được chia thành ba nhánh độc lập để đảm bảo an toàn và chống sụt áp:
 \begin{itemize}
-  \item dây dẫn, đầu nối và mạch phân phối chịu được dòng cực đại;
-  \item bộ DC--DC cấp đủ điện áp và dòng cho Raspberry Pi 5 khi tải tính toán cao;
-  \item servo không làm sụt áp hoặc gây khởi động lại Raspberry Pi và flight controller khi hoạt động;
-  \item các thiết bị dùng chung mốc điện áp tham chiếu khi truyền tín hiệu;
-  \item dây nguồn động lực được bố trí hợp lý với đường tín hiệu và camera để giảm nhiễu.
+\item Nhánh động lực: Cấp trực tiếp 16.8V cho mạch ESC 50A để điều khiển 4 động cơ.
+\item Nhánh máy tính nhúng: Sử dụng mạch Buck XL4015 hạ áp xuống mức 5V/5A, cấp đủ dòng cho Raspberry Pi 5 khi tải tính toán cao.
+\item Nhánh điều khiển và Servo: Dùng mạch BEC 5V/2.5A cấp nguồn ổn định cho mạch điều khiển; từ đó phân phối tiếp nguồn 5V và tín hiệu PWM cho servo SG90, tránh tình trạng servo gây sụt áp hoặc khởi động lại hệ thống.
 \end{itemize}
 
-% TODO: Chèn sơ đồ điện, điện áp và dòng định mức của từng nhánh.
-\noindent\textit{[Hình cần chèn: Sơ đồ phân phối nguồn từ pin đến ESC, flight controller, Raspberry Pi 5, camera và servo.]}
-
-\subsection{Lựa chọn bộ điều khiển bay và máy tính đồng hành}
-
-Flight controller đảm nhiệm đọc cảm biến quán tính, ước lượng trạng thái và điều khiển ổn định vòng trong. Linh kiện được chọn phải hỗ trợ PX4, có đủ cổng giao tiếp với Raspberry Pi 5 và đủ ngõ ra cho bốn ESC. Sau khi chốt linh kiện, cần ghi rõ mã flight controller, cảm biến, cổng telemetry, giao diện uXRCE--DDS và phương án cấp nguồn.
-
-Raspberry Pi 5 đảm nhiệm thu nhận ảnh, phát hiện ArUco, ước lượng pose, tính lệnh điều khiển cấp cao và điều phối nhiệm vụ. Khi tích hợp cần kiểm tra công suất nguồn, tản nhiệt, bộ nhớ lưu trữ và độ chắc chắn của đầu nối. Giá đỡ nên giảm rung nhưng không được tạo chuyển động tương đối lớn giữa camera và thân UAV.
-
-\begin{table}[H]
+\begin{figure}[H]
   \centering
-  \caption{Các thành phần điện tử và chức năng trong hệ thống}
-  \label{tab:thanh-phan-dien-tu}
-  \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.7cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}p{3.1cm}|}
-    \hline
-    \textbf{Thành phần} & \textbf{Chức năng} & \textbf{Giao tiếp/nguồn} \\
-    \hline
-    Flight controller [mã] & Ổn định bay, đọc cảm biến, điều khiển ESC & [Điền] \\
-    \hline
-    Raspberry Pi 5 & Xử lý ảnh, điều khiển Offboard, máy trạng thái & [Điền] \\
-    \hline
-    Raspberry Pi Camera [mã] & Thu ảnh bãi đáp và mã ArUco & CSI; [điền nguồn] \\
-    \hline
-    Servo [mã] & Đóng/mở cơ cấu gắp & PWM; [điền nguồn] \\
-    \hline
-  \end{tabularx}
-\end{table}
+  \includegraphics[width=0.8\textwidth]{images/02-pdb.png}
+  \caption{Sơ đồ phân phối nguồn}
+  \label{fig:pdb}
+\end{figure}
 
 \subsection{Lựa chọn và bố trí camera}
 
