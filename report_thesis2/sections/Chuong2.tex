@@ -263,103 +263,214 @@ Hệ thống phân phối nguồn từ pin LiPo 16.8V được chia thành ba nh
 
 \subsection{Lựa chọn và bố trí camera}
 
-Camera được lắp hướng xuống để quan sát marker trong giai đoạn tiếp cận và hạ cánh. Các tiêu chí lựa chọn gồm độ phân giải, tốc độ khung hình, trường nhìn, độ méo ống kính, giao tiếp với Raspberry Pi 5 và khối lượng. Độ phân giải và tốc độ khung hình phải đủ cho phát hiện marker nhưng không làm thời gian xử lý vượt quá chu kỳ điều khiển.
+Hệ thống sử dụng Raspberry Pi AI Camera với cảm biến
+Sony IMX500 để thu nhận hình ảnh và nhận diện mã ArUco
+trong quá trình hạ cánh tự động. Các thông số kỹ thuật
+chính được trình bày trong Bảng~\ref{tab:imx500}.
 
-Camera cần được cố định sao cho trục quang học gần vuông góc với mặt phẳng khung UAV và không bị gripper, kiện hàng hoặc càng đáp che khuất. Sau khi lắp đặt, camera phải được hiệu chuẩn tại đúng độ phân giải sử dụng và xác định phép biến đổi giữa hệ tọa độ camera với hệ tọa độ thân UAV.
+\begin{table}[htbp]
+    \centering
+    \caption{Thông số kỹ thuật camera IMX500}
+    \label{tab:imx500}
+    \begin{tabular}{|l|c|}
+        \hline
+        \textbf{Thông số} & \textbf{Giá trị} \\ \hline
+        Độ phân giải & $4056 \times 3040$ pixel (12,3 MP) \\ \hline
+        Kích thước module & $25 \times 24 \times 11{,}9$ mm \\ \hline
+        Góc nhìn ngang & $66^\circ \pm 3^\circ$ \\ \hline
+        Góc nhìn dọc & $52{,}3^\circ \pm 3^\circ$ \\ \hline
+        Khối lượng & Khoảng 6 g \\ \hline
+    \end{tabular}
+\end{table}
 
-% TODO: Chèn ảnh trường nhìn thực tế tại các độ cao thử nghiệm.
-\noindent\textit{[Hình cần chèn: Vị trí camera, trục quang học và vùng quan sát marker.]}
+Với camera được lắp hướng thẳng xuống, giả sử mặt đất
+phẳng và trục quang học vuông góc với mặt đất,
+kích thước vùng quan sát lý tưởng tại độ cao $h$
+được xác định dựa trên góc nhìn danh định như sau:
+
+Chiều rộng vùng quan sát:
+
+\begin{equation}
+    W = 2h\tan\left(\frac{66^\circ}{2}\right)
+    \approx 1{,}30h
+    \label{eq:camera_width}
+\end{equation}
+
+Chiều dài vùng quan sát:
+
+\begin{equation}
+    L = 2h\tan\left(\frac{52{,}3^\circ}{2}\right)
+    \approx 0{,}98h
+    \label{eq:camera_length}
+\end{equation}
+
+Trong đó, $h$ là độ cao camera so với mặt đất (m);
+$W$ và $L$ lần lượt là chiều rộng và chiều dài
+vùng quan sát (m).
+
+Ví dụ, tại độ cao $h = 1$ m, vùng quan sát có
+kích thước xấp xỉ $1{,}30 \times 0{,}98$ m.
+Kết quả cho thấy vùng quan sát thu hẹp khi UAV
+giảm độ cao, do đó cần điều chỉnh vị trí UAV
+để duy trì mã ArUco trong khung hình trong
+suốt quá trình hạ cánh.
+
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{images/02-imx500.png}
+  \caption{Sơ đồ phân phối nguồn}
+  \label{fig:imx219}
+\end{figure}
 
 \subsection{Tính toán và thiết kế cơ cấu gripper}
 
-Gripper được thiết kế theo kiện hàng $15\times10\times10$~cm, khối lượng tối đa 1~kg. Trước hết cần xác định kiểu giữ vật, hành trình đóng--mở, chiều dài tay kẹp và hệ số ma sát tại bề mặt tiếp xúc.
+Cơ cấu gripper được thiết kế nhằm thực hiện nhiệm vụ
+gắp và giữ kiện hàng có kích thước
+$15 \times 10 \times 10$ cm, với khối lượng thiết kế
+tối đa 1 kg. Hệ thống sử dụng động cơ servo SG90
+kết hợp với cơ cấu truyền động bánh răng - thanh răng
+để chuyển đổi chuyển động quay của servo thành chuyển
+động tịnh tiến của bộ phận gắp.
 
-Đối với cơ cấu kẹp hai phía bằng ma sát, giả sử mỗi má kẹp tác dụng lực pháp tuyến $N$ và hệ số ma sát là $\mu$, điều kiện giữ vật theo phương thẳng đứng là:
-\begin{equation}
-  2\mu N\geq k_Gm_{\mathrm{payload}}g,
-\end{equation}
-suy ra lực kẹp tối thiểu trên mỗi má:
-\begin{equation}
-  N_{\mathrm{min}}=\frac{k_Gm_{\mathrm{payload}}g}{2\mu},
-  \label{eq:luc-kep-toi-thieu}
-\end{equation}
-trong đó $k_G>1$ là hệ số an toàn xét đến rung động và gia tốc khi UAV cất cánh.
+Khi servo quay, bánh răng gắn trên trục đầu ra
+tác động lên thanh răng, làm thay đổi vị trí của
+bộ phận gắp để thực hiện quá trình đóng hoặc mở.
+Cơ cấu này có ưu điểm là kết cấu đơn giản,
+khối lượng nhỏ và dễ dàng điều khiển thông qua
+tín hiệu PWM.
 
-Nếu lực từ servo truyền qua tay đòn có chiều dài hiệu dụng $l$, mô-men đầu ra tối thiểu được ước lượng bởi:
-\begin{equation}
-  \tau_{\mathrm{servo,min}}\geq \frac{N_{\mathrm{req}}l}{\eta_M},
-  \label{eq:moment-servo}
-\end{equation}
-trong đó $\eta_M$ là hiệu suất cơ cấu truyền lực. Nếu dùng bánh răng, thanh truyền hoặc nhiều khớp, cần thay biểu thức trên bằng quan hệ hình học tại vị trí bất lợi nhất của hành trình.
+\subsubsection{Tính toán lực giữ kiện hàng}
 
-Servo phải đáp ứng mô-men, hành trình, điện áp, tốc độ và khả năng giữ tải. Kết cấu nên có chặn hành trình để tránh kẹt servo, bề mặt tăng ma sát tại má kẹp và phương án xác nhận trạng thái đóng. Khối lượng gripper sau thiết kế phải được cập nhật trở lại bảng ngân sách khối lượng.
+Đối với trường hợp kiện hàng được giữ bằng lực
+ma sát tại hai mặt tiếp xúc, điều kiện để kiện
+hàng không bị trượt theo phương thẳng đứng là:
+
+\begin{equation}
+    2\mu N \geq k_G mg
+    \label{eq:gripper_force}
+\end{equation}
+
+Trong đó:
+\begin{itemize}
+    \item $m$: khối lượng kiện hàng (kg).
+    \item $g = 9{,}81$ m/s$^2$: gia tốc trọng trường.
+    \item $\mu$: hệ số ma sát giữa má kẹp và kiện hàng.
+    \item $N$: lực pháp tuyến tại mỗi mặt tiếp xúc (N).
+    \item $k_G$: hệ số an toàn.
+\end{itemize}
+
+Từ đó, lực kẹp tối thiểu tại mỗi mặt tiếp xúc
+được xác định:
+
+\begin{equation}
+    N_{\min} = \frac{k_G mg}{2\mu}
+    \label{eq:gripper_normal_force}
+\end{equation}
+
+Giả sử hệ số ma sát $\mu = 0{,}5$ và hệ số
+an toàn $k_G = 1{,}5$, đối với kiện hàng
+có khối lượng $m = 1$ kg:
+
+\begin{equation}
+    N_{\min}
+    = \frac{1{,}5 \times 1 \times 9{,}81}
+    {2 \times 0{,}5}
+    \approx 14{,}72 \ \text{N}
+\end{equation}
+
+Như vậy, trong mô hình kẹp bằng ma sát,
+mỗi mặt tiếp xúc cần tạo lực pháp tuyến
+tối thiểu khoảng $14{,}72$ N.
+
+\subsubsection{Tính toán mô-men servo}
+
+Đối với cơ cấu truyền động bánh răng--thanh răng,
+mô-men cần thiết tại trục servo được ước lượng
+theo biểu thức:
+
+\begin{equation}
+    \tau_{\mathrm{req}}
+    = \frac{F_r r}{\eta_M}
+    \label{eq:gripper_torque}
+\end{equation}
+
+Trong đó:
+\begin{itemize}
+    \item $F_r$: lực tiếp tuyến yêu cầu tại
+    bánh răng (N).
+    \item $r$: bán kính vòng chia bánh răng (m).
+    \item $\eta_M$: hiệu suất truyền động.
+    \item $\tau_{\mathrm{req}}$: mô-men yêu cầu (N.m).
+\end{itemize}
+
+Để đánh giá sơ bộ, xét trường hợp một thanh răng
+dẫn động một má kẹp chuyển động và má còn lại
+đóng vai trò phản lực. Khi bỏ qua lực cản phụ,
+có thể lấy $F_r \approx N_{\min}$.
+
+Giả sử bán kính vòng chia bánh răng
+$r = 0{,}01$ m và hiệu suất
+$\eta_M = 0{,}7$, ta có:
+
+\begin{equation}
+    \tau_{\mathrm{req}}
+    = \frac{14{,}72 \times 0{,}01}{0{,}7}
+    \approx 0{,}210 \ \text{N.m}
+\end{equation}
+
+Quy đổi sang đơn vị kgf.cm:
+
+\begin{equation}
+    \tau_{\mathrm{req}}
+    \approx 2{,}14 \ \text{kgf.cm}
+\end{equation}
+
+Servo SG90 có mô-men cực đại khoảng
+$1{,}8$ kgf.cm tại điện áp 4,8 V,
+tương đương $0{,}176$ N.m.
+
+Kết quả tính toán sơ bộ cho thấy mô-men
+yêu cầu lớn hơn mô-men cực đại của SG90
+trong trường hợp giả thiết nêu trên.
+Do đó, khả năng giữ kiện hàng 1 kg
+chỉ bằng ma sát chưa được bảo đảm.
+
+Đối với cơ cấu thực tế, lực truyền qua
+thanh răng còn phụ thuộc bán kính bánh răng,
+hình học các khớp và lực cản chuyển động.
+Nếu kiện hàng được đỡ từ phía dưới,
+tải trọng sẽ được truyền một phần qua kết cấu
+chịu lực, giúp giảm yêu cầu lực kẹp bằng ma sát.
+Khả năng giữ tải cần được kiểm chứng bằng
+thực nghiệm trước khi đưa vào vận hành.
 
 \begin{table}[H]
-  \centering
-  \caption{Các thông số tính toán cơ cấu gripper}
-  \label{tab:thong-so-gripper}
-  \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{4.5cm}|>{\raggedright\arraybackslash}X|}
-    \hline
-    \textbf{Thông số} & \textbf{Giá trị} \\
-    \hline
-    Kiện hàng & 1~kg; $15\times10\times10$~cm \\
-    \hline
-    Hệ số ma sát $\mu$ và hệ số an toàn $k_G$ & [Điền theo vật liệu và yêu cầu] \\
-    \hline
-    Lực kẹp yêu cầu & [Tính theo phương trình~\eqref{eq:luc-kep-toi-thieu}] \\
-    \hline
-    Chiều dài tay đòn hiệu dụng & [Điền] \\
-    \hline
-    Mô-men servo yêu cầu & [Tính theo phương trình~\eqref{eq:moment-servo}] \\
-    \hline
-    Servo được lựa chọn & [Điền mã, mô-men, tốc độ và điện áp] \\
-    \hline
-  \end{tabularx}
-\end{table}
-
-% TODO: Chèn bản vẽ CAD có kích thước và ảnh gripper mở/đóng.
-\noindent\textit{[Hình cần chèn: Cơ cấu gripper, tay đòn, điểm đặt lực và hành trình kẹp.]}
-
-\subsection{Bố trí phần cứng và kiểm tra trọng tâm}
-
-Các linh kiện nặng như pin, Raspberry Pi 5 và gripper cần được bố trí gần tâm hình học của khung. Tọa độ trọng tâm toàn hệ được xác định từ:
-\begin{equation}
-  \mathbf{r}_{\mathrm{CG}}=\frac{\sum_i m_i\mathbf{r}_i}{\sum_i m_i},
-\end{equation}
-trong đó $m_i$ và $\mathbf{r}_i$ là khối lượng và vị trí của thành phần thứ $i$. Độ lệch trọng tâm theo phương ngang cần được giảm nhỏ để bốn động cơ có mức tải gần nhau khi bay treo.
-
-Kiện hàng nên được giữ gần trục đứng qua tâm UAV. Nếu tải treo thấp hoặc dao động, mô-men quán tính và nhiễu tư thế tăng; do đó cần rút ngắn khoảng cách treo, tăng độ cứng liên kết và kiểm tra khoảng hở với mặt đất. Camera vẫn phải quan sát được marker trong toàn bộ hành trình hạ cánh và gắp hàng.
-
-% TODO: Chèn bản vẽ lắp tổng thể nhìn từ trên và nhìn bên.
-\noindent\textit{[Hình cần chèn: Bố trí phần cứng trên S500 và trọng tâm khi có/không có tải.]}
-
-\subsection{Cấu hình phần cứng và quy trình kiểm tra}
-
-Sau khi lựa chọn linh kiện, cấu hình cuối cùng cần được tổng hợp trong một bảng thông số duy nhất. Trước khi bay, hệ thống được kiểm tra theo từng cấp: kết cấu và chiều quay cánh; nguồn khi chưa lắp cánh; giao tiếp flight controller--Raspberry Pi; camera và servo; động cơ khi cố định khung; bay treo không tải; sau đó tăng tải theo từng mức trước khi thử với 1~kg. Mỗi bước cần ghi lại dòng điện, điện áp pin, nhiệt độ linh kiện và độ ổn định của UAV.
-
-\begin{table}[H]
-  \centering
-  \caption{Cấu hình phần cứng hoàn chỉnh của UAV}
-  \label{tab:cau-hinh-phan-cung-cuoi}
-  \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.8cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}p{3.0cm}|}
-    \hline
-    \textbf{Cụm} & \textbf{Linh kiện/thông số được chọn} & \textbf{Khối lượng} \\
-    \hline
-    Khung và càng đáp & S500; [bổ sung chi tiết] & [Điền] \\
-    \hline
-    Hệ động lực & [Động cơ, cánh quạt, ESC] & [Điền] \\
-    \hline
-    Nguồn & [Pin, PDB, DC--DC] & [Điền] \\
-    \hline
-    Điều khiển bay & [Flight controller và cảm biến] & [Điền] \\
-    \hline
-    Xử lý và thị giác & Raspberry Pi 5; [mã camera] & [Điền] \\
-    \hline
-    Cơ cấu gắp & [Servo và gripper] & [Điền] \\
-    \hline
-  \end{tabularx}
+    \centering
+    \caption{Thông số thiết kế và tính toán cơ cấu gripper}
+    \label{tab:gripper_parameters}
+    \begin{tabular}{|l|c|}
+        \hline
+        \textbf{Thông số} & \textbf{Giá trị} \\ \hline
+        Kích thước kiện hàng
+        & $15 \times 10 \times 10$ cm \\ \hline
+        Khối lượng thiết kế & 1 kg \\ \hline
+        Servo sử dụng & SG90 \\ \hline
+        Mô-men cực đại servo
+        & 1,8 kgf.cm (4,8 V) \\ \hline
+        Hệ số ma sát giả thiết & 0,5 \\ \hline
+        Hệ số an toàn giả thiết & 1,5 \\ \hline
+        Lực pháp tuyến tối thiểu
+        & 14,72 N/má \\ \hline
+        Bán kính bánh răng giả thiết
+        & 10 mm \\ \hline
+        Hiệu suất giả thiết & 0,7 \\ \hline
+        Mô-men yêu cầu sơ bộ
+        & 2,14 kgf.cm \\ \hline
+    \end{tabular}
 \end{table}
 
 \subsection{Tóm tắt chương}
 
-Chương này đã xây dựng quy trình tính toán và lựa chọn phần cứng cho UAV S500 mang tải 1~kg, gồm ngân sách khối lượng, lực đẩy, hệ động lực, pin, phân phối nguồn, flight controller, Raspberry Pi 5, camera và gripper. Các bảng còn để trống sẽ được hoàn thiện bằng dữ liệu linh kiện và kết quả đo thực tế. Đây là cơ sở phần cứng để triển khai các phương pháp thị giác và điều khiển trong Chương 3.
+Chương này đã trình bày quá trình tính toán, thiết kế và lựa chọn các thành phần phần cứng cho UAV S500 nhằm đáp ứng yêu cầu mang tải tối đa 1 kg. Nội dung bao gồm tính toán khối lượng, lựa chọn hệ động lực, nguồn cấp, bộ điều khiển bay, bộ xử lý Raspberry Pi 5, camera và cơ cấu gắp hàng. Các thành phần được lựa chọn nhằm bảo đảm khả năng mang tải, tính ổn định và đáp ứng yêu cầu hoạt động của hệ thống. Đây là cơ sở để triển khai các thuật toán xử lý ảnh, nhận diện ArUco và điều khiển UAV tự động trong Chương 3.
