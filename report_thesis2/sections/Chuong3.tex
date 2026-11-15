@@ -1,4 +1,4 @@
-\section{Kiến thức nền tảng và nghiên cứu liên quan}
+\section{Kiến thức nền tảng}
 
 Chương này trình bày các kiến thức cần thiết để xây dựng hệ thống UAV tự động hạ cánh bằng thị giác máy tính, gắp hàng và cất cánh trở lại. Nội dung được sắp xếp theo chuỗi xử lý của hệ thống: mô hình UAV, camera, phát hiện ArUco, ước lượng pose, điều khiển, giao tiếp với PX4 và cơ cấu gripper.
 
@@ -39,6 +39,16 @@ tâm UAV về phía trên tâm marker, trong khi chuyển
 Sai số yaw cũng cần được xem xét vì hướng của UAV 
 ảnh hưởng đến phép biến đổi giữa hệ tọa độ camera, 
 thân UAV và hệ tọa độ world.
+
+Hình \ref{fig:sys-connect-uav} minh họa sơ đồ kết nối phần cứng của hệ thống UAV S500, bao gồm bộ điều khiển bay, hệ động lực, các cảm biến, Raspberry Pi 5 và trạm điều khiển mặt đất. Bộ điều khiển bay PX4 điều khiển các động cơ thông qua ESC, đồng thời tiếp nhận dữ liệu từ GPS, optical flow và bộ thu điều khiển từ xa. Raspberry Pi 5 kết nối với camera IMX500 để xử lý ảnh và nhận diện ArUco, sau đó trao đổi dữ liệu điều khiển với PX4 qua UART sử dụng giao thức uXRCE-DDS. Hệ thống ESP-NOW được sử dụng để truyền dữ liệu giữa UAV và trạm mặt đất chạy QGroundControl.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1.0\textwidth]{images/03-sys-connect-uav.png}
+  \caption{Tổng quan hệ thống UAV.}
+  \label{fig:sys-connect-uav}
+\end{figure}
+
+
 
 \subsection{Mã ArUco}
 ArUco (Augmented Reality University of Cordoba) là một loại mã đánh dấu thị giác (fiducial marker) được sử dụng phổ biến trong các hệ thống thị giác máy tính nhằm nhận dạng và xác định vị trí tương đối của đối tượng thông qua hình ảnh thu nhận từ camera. Mã ArUco được phát triển dưới dạng các hình vuông chứa những ô nhị phân màu đen và trắng, cho phép hệ thống nhận dạng từng mã thông qua một bộ từ điển được định nghĩa trước \cite{garrido2014aruco}.
