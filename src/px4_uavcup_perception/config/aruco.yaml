@@ -5,14 +5,16 @@ aruco_detector_node:
     camera_width: 640
     camera_height: 480
     camera_frame_id: down_camera_optical_frame
-    camera_matrix: [487.76491400626776, 0.0, 317.8826078015716,
-                    0.0, 485.24249180352854, 236.19716196114075,
+    # IMX500 640x480 calibration, 2026-11-15. Robust fit retained 36/45
+    # checkerboard views after rejecting outliers; reprojection RMS=0.531 px.
+    camera_matrix: [480.125104, 0.0, 320.272190,
+                    0.0, 480.224260, 228.696135,
                     0.0, 0.0, 1.0]
-    distortion_coefficients: [0.008339856410228082,
-                              0.3759390919362346,
-                              -0.000904355208686214,
-                              0.0025204350383155627,
-                              -0.7787931736237144]
+    distortion_coefficients: [-0.015577,
+                              0.160202,
+                              -0.005259,
+                              0.002837,
+                              0.0]
     # These topics are used only when input_mode is changed to ros_topic.
     image_topic: /camera/down/image_raw
     camera_info_topic: /camera/down/camera_info
