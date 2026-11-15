@@ -1,0 +1,46 @@
+% !TeX root = ../Baocao.tex
+\section{Kết luận và hướng phát triển}
+
+\subsection{Kết quả đạt được}
+
+Đồ án đã xây dựng nền tảng phần cứng và phần mềm cho bài toán UAV tự động tiếp cận và hạ cánh theo mã ArUco. Camera IMX500 được lắp hướng xuống dưới UAV và đã được hiệu chuẩn để xác định ma trận nội tại cùng hệ số méo. ArUco detector sử dụng các thông số này để nhận marker ID~0 và publish pose mục tiêu trong ROS~2. Thử nghiệm tĩnh đã xác nhận detector hoạt động, nhận đúng ID mục tiêu và cung cấp trạng thái quan sát thông qua các topic chẩn đoán.
+
+Chuỗi điều khiển đã được tổ chức thành các thành phần độc lập gồm bộ phát hiện ArUco, bộ điều khiển PID hạ cánh, PX4 bridge và launch package. Bộ điều khiển thực hiện chuyển đổi pose từ hệ camera sang hệ thân UAV, tạo lệnh vận tốc ngang và quản lý trình tự tiếp cận bằng máy trạng thái. Khi UAV xuống gần marker, hệ thống được thiết kế để chốt vị trí ngang và chuyển sang pha hạ cuối, nhờ đó không phụ thuộc vào việc marker tiếp tục nằm trọn trong ảnh ở độ cao thấp.
+
+Giao tiếp giữa Raspberry Pi~5 và NxtPx4V2 được xây dựng bằng ROS~2, \texttt{px4\_msgs} và Micro XRCE-DDS qua UART. Các topic hai chiều giữa ROS~2 và PX4 đã xuất hiện trong quá trình kiểm tra tích hợp. PX4 bridge có các khóa an toàn như mặc định vô hiệu, không tự arm, không tự chuyển Offboard và từ chối hoạt động khi local position hoặc attitude không hợp lệ. Đây là nền tảng cần thiết để tiến hành các thử nghiệm bay vòng kín theo quy trình của Chương~4.
+
+Tại thời điểm hoàn thiện bản thảo này, các kết quả đã xác nhận chủ yếu nằm ở tầng hiệu chuẩn camera, phát hiện marker, ROS graph và tích hợp truyền thông. Các kết luận định lượng về sai số hạ cánh, tỷ lệ thành công và độ ổn định khi bay phải được cập nhật sau khi hoàn thành toàn bộ thử nghiệm trong Chương~4.
+
+\subsection{Hạn chế của hệ thống}
+
+Hệ thống hiện tại vẫn tồn tại một số hạn chế cần được xem xét khi đánh giá kết quả:
+\begin{itemize}
+    \item Detector phụ thuộc vào điều kiện ánh sáng, độ tương phản, góc quan sát và mức độ che khuất của marker.
+    \item Một marker đơn có thể ra khỏi khung hình hoặc không còn đủ góc để nhận dạng khi UAV xuống quá gần.
+    \item Pose từ một camera đơn có thể dao động do nhiễu ảnh, rung động, nhòe chuyển động và sai số hiệu chuẩn.
+    \item Bộ PID sử dụng một nhóm hệ số trong miền hoạt động rộng nên có thể chưa tối ưu đồng thời cho cả độ cao lớn và độ cao thấp.
+    \item Pha hạ cuối phụ thuộc vào độ tin cậy của local position PX4 sau khi ngừng sử dụng pose ArUco.
+    \item Raspberry Pi~5 yêu cầu nguồn điện và tản nhiệt ổn định; sụt áp hoặc quá nhiệt có thể làm giảm FPS, tăng độ trễ hoặc khiến hệ thống dừng hoạt động.
+    \item Phiên bản hiện tại chưa sử dụng cảm biến khoảng cách gần mặt đất để xác nhận độc lập độ cao chuyển pha và tiếp xúc.
+    \item Việc hạ cánh chính xác và gắp hàng hoàn chỉnh vẫn cần được đánh giá qua nhiều lần bay lặp lại trước khi có thể kết luận về độ tin cậy của toàn hệ thống.
+\end{itemize}
+
+\subsection{Hướng phát triển}
+
+Các hướng phát triển tiếp theo được đề xuất như sau:
+\begin{itemize}
+    \item Hoàn thành bộ thử nghiệm định lượng trong Chương~4, ghi rosbag và xây dựng công cụ tự động tính sai số, thời gian hạ cánh và tỷ lệ thành công.
+    \item Bổ sung bộ lọc pose như bộ lọc Kalman hoặc bộ lọc thích nghi để giảm nhiễu trước khi đưa dữ liệu vào PID.
+    \item Sử dụng ArUco board hoặc nhiều marker có kích thước khác nhau để mở rộng vùng phát hiện và giảm khả năng mất mục tiêu ở độ cao thấp.
+    \item Kết hợp cảm biến khoảng cách, optical flow hoặc VIO để cải thiện độ cao và local position trong pha hạ cuối.
+    \item Điều chỉnh hệ số điều khiển theo độ cao hoặc sử dụng bộ điều khiển có khả năng bù độ trễ và nhiễu pose tốt hơn.
+    \item Hoàn thiện giao diện vận hành để hiển thị trạng thái PX4, trạng thái detector, marker đang khóa, landing state và các nút Landing/Abort.
+    \item Thiết kế lại nguồn cấp và giám sát undervoltage, đồng thời tối ưu tản nhiệt Raspberry Pi cho thời gian hoạt động dài.
+    \item Tích hợp cảm biến tránh vật cản như camera độ sâu hoặc LiDAR sau khi pipeline hạ cánh ArUco đã được kiểm chứng ổn định.
+    \item Hoàn thiện cơ cấu gắp, cảm biến xác nhận đã giữ kiện hàng và mở rộng máy trạng thái thành chu trình Landing--Pickup--Takeoff hoàn chỉnh.
+\end{itemize}
+
+\subsection{Kết luận chung}
+
+Kết quả hiện tại cho thấy kiến trúc camera IMX500--Raspberry Pi~5--ROS~2--PX4 có khả năng cung cấp đường dữ liệu thống nhất từ quan sát marker đến setpoint điều khiển, đồng thời vẫn giữ PX4 là tầng quyết định cuối cùng về trạng thái bay và an toàn. Việc tách quá trình hạ cánh thành pha tiếp cận bằng thị giác và pha hạ cuối theo vị trí đã chốt phù hợp với hạn chế quan sát marker ở cự ly gần. Tuy nhiên, mức độ hoàn thành của hệ thống phải được đánh giá bằng số liệu thực nghiệm bay, đặc biệt là sai số hạ cánh, tỷ lệ thành công và độ ổn định nguồn của Raspberry Pi. Sau khi các kết quả trong Chương~4 được bổ sung, phần kết luận này cần được cập nhật bằng các giá trị định lượng tương ứng.
+
