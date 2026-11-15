@@ -1142,7 +1142,22 @@ thị giác được trình bày trong
 \cite{sani2017aruco}, quá trình hạ cánh
 của UAV được tổ chức thành các giai đoạn
 nhằm bảo đảm khả năng căn chỉnh và hạn chế
-rủi ro khi tiếp cận mặt đất.
+rủi ro khi tiếp cận mặt đất, nguyên lí được mô tả như hình \ref{fig:visual_servoing_control}.
+
+%==================================================
+% HINH: SO DO KHOI DIEU KHIEN HA CANH
+%==================================================
+\begin{figure}[htbp]
+    \centering
+
+    \includegraphics[width=0.95\linewidth]
+    {images/03-visual-servoing-control.png}
+    \caption{Sơ đồ nguyên lý điều khiển hạ cánh
+    tự động dựa trên thông tin thị giác
+    và bộ điều khiển PID.}
+    \label{fig:visual_servoing_control}
+\end{figure}
+%==================================================
 
 \begin{enumerate}
     \item \textbf{Tìm kiếm marker (Search):}
@@ -1170,7 +1185,7 @@ rủi ro khi tiếp cận mặt đất.
     hệ thống đồng thời điều khiển giảm
     độ cao với tốc độ giới hạn.
 
-    \item \textbf{Hạ cánh cuối (Final Descent):}
+    \item \textbf{Hạ cánh (Final Descent):}
     Khi UAV đạt độ cao chuyển tiếp và
     sai lệch ngang đủ nhỏ trong một số
     khung hình liên tiếp, hệ thống chuyển
@@ -1207,100 +1222,85 @@ quan sát marker. Tuy nhiên, quá trình
 giảm độ cao vẫn phải được giới hạn
 về vận tốc và thời gian thực hiện.
 
-%==================================================
-% HINH: SO DO KHOI DIEU KHIEN HA CANH
-%==================================================
-\begin{figure}[htbp]
-    \centering
-
-    % \includegraphics[width=0.95\linewidth]
-    % {images/03-visual-servoing-control.png}
-
-    \fbox{
-        \parbox[c][42mm][c]{0.90\linewidth}{
-            \centering
-            \textit{Camera IMX500 / ArUco Detection}\\[2mm]
-            $\downarrow$\\[2mm]
-            \textit{PnP Pose Estimation}\\[2mm]
-            $\downarrow$\\[2mm]
-            \textit{Coordinate Transformation}\\[2mm]
-            $\downarrow$\\[2mm]
-            \textit{PID Controller / Landing State Machine}\\[2mm]
-            $\downarrow$\\[2mm]
-            \textit{PX4 Offboard Control}
-        }
-    }
-
-    \caption{Sơ đồ nguyên lý điều khiển hạ cánh
-    tự động dựa trên thông tin thị giác
-    và bộ điều khiển PID.}
-    \label{fig:visual_servoing_control}
-\end{figure}
-%==================================================
-
-
 \subsection{PX4, ROS 2 và chế độ Offboard}
 
-Trong hệ thống UAV được xây dựng, bộ điều khiển
-bay sử dụng firmware PX4 v1.17, có nhiệm vụ
-ổn định tư thế, điều khiển chuyển động và
-giám sát các trạng thái an toàn của UAV.
-Máy tính đồng hành Raspberry Pi 5 đảm nhiệm
-các tác vụ thu nhận hình ảnh, nhận diện
-ArUco, ước lượng vị trí tương đối và
-tính toán tín hiệu điều khiển hạ cánh.
+Hệ thống sử dụng bộ điều khiển bay NxtPx4V2 chạy PX4 v1.17 để thực hiện các vòng điều khiển tư thế, vận tốc và vị trí ở tầng thấp. Raspberry Pi 5 đóng vai trò máy tính đồng hành, đảm nhiệm thu nhận ảnh, phát hiện ArUco, ước lượng pose, thực thi máy trạng thái hạ cánh và tạo setpoint Offboard. Cấu hình triển khai thực tế được tổ chức thành ba process trên Raspberry Pi và một process điều khiển trên flight controller như minh họa trong Hình~\ref{fig:sys_architecture_01} và Hình~\ref{fig:sys_architecture_02}.
 
-Để kết nối các thành phần xử lý và điều
-khiển, hệ thống sử dụng ROS 2 với kiến
-trúc các node trao đổi thông tin thông
-qua topic và service.
+\subsubsection{Phân tích các process trên Raspberry Pi 5}
 
-Các thành phần chính của hệ thống gồm:
+Process thứ nhất phải chạy trực tiếp trên Raspberry Pi OS vì Picamera2 và libcamera cần truy cập pipeline camera CSI/PiSP của hệ điều hành. Script \texttt{picamera2\_frame\_server.py} mở camera IMX500, cấu hình ảnh RGB kích thước $640\times480$ ở tần số đặt trước và truyền từng frame qua Unix domain socket \texttt{run/down\_camera.sock}. Mỗi frame gồm header 12 byte chứa mã nhận dạng \texttt{P2CF}, chiều rộng, chiều cao và kích thước payload, theo sau bởi dữ liệu RGB. Cách truyền này giữ ảnh thô trong nội bộ Raspberry Pi, không publish ảnh qua DDS và do đó giảm lặp lại dữ liệu cũng như tải truyền thông khi vận hành.
 
-\begin{itemize}
-    \item \textbf{Camera interface:}
-    Thu nhận hình ảnh từ camera IMX500 và
-    cung cấp dữ liệu ảnh cho quá trình
-    nhận diện ArUco.
+Các module lựa chọn camera và định dạng ảnh được tách
+riêng trong \texttt{cameras/picamera2\_selection.py} và
+\texttt{cameras/picamera2\_protocol.py}.
+Luồng dữ liệu ảnh ArUco từ camera IMX500 hiện tại gọi trực
+tiếp qua \texttt{scripts/picamera2\_frame\_server.py}.
+Luồng dữ liệu quá trình thu ảnh bằng Picamera2 trên Pi OS và truyền frame qua Unix socket được trình bày ở Hình~\ref{fig:sys_architecture_01}(a).
 
-    \item \textbf{ArUco detection node:}
-    Phát hiện marker mục tiêu và sử dụng
-    mô hình camera đã hiệu chuẩn để
-    ước lượng vector quay và vector tịnh
-    tiến của marker trong hệ camera.
-    Kết quả được công bố dưới dạng
-    thông tin pose.
+Process thứ hai là container ROS 2 Humble, luồng dữ liệu trong container được trình bày ở Hình~\ref{fig:sys_architecture_01}(b).
 
-    \item \textbf{Landing controller node:}
-    Nhận thông tin pose của marker,
-    thực hiện phép biến đổi tọa độ và
-    tính toán sai lệch vị trí. Các bộ
-    điều khiển PID tạo tín hiệu vận tốc
-    phục vụ quá trình căn chỉnh và
-    tiếp cận vị trí hạ cánh.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{images/03-sys-architecture_01.png}
+    \caption{Kiến trúc phần mềm xử lý ArUco trên Raspberry Pi 5:
+    (a) quá trình thu ảnh bằng Picamera2 trên Pi OS và truyền frame qua Unix socket;
+    (b) các node ArUco, PID hạ cánh và PX4 bridge trong container ROS 2 Humble.}
+    \label{fig:sys_architecture_01}
+\end{figure}
 
-    \item \textbf{PX4 bridge node:}
-    Chuyển đổi các lệnh vận tốc từ hệ
-    tọa độ thân UAV được sử dụng trong
-    ROS 2 sang hệ tọa độ NED của PX4,
-    sau đó tạo và công bố các setpoint
-    điều khiển Offboard.
+Ba node ROS 2 và giao diện dữ liệu chính được tổng hợp trong Bảng~\ref{tab:aruco_ros_nodes}.
 
-    \item \textbf{PX4 flight controller:}
-    Tiếp nhận các setpoint từ máy tính
-    đồng hành, thực hiện điều khiển
-    chuyển động của UAV và cung cấp
-    thông tin phản hồi về vị trí,
-    tư thế và trạng thái hạ cánh.
-\end{itemize}
+\begin{table}[H]
+\centering
+\small
+\caption{Các node ROS 2 trong profile hạ cánh bằng ArUco}
+\label{tab:aruco_ros_nodes}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.24\textwidth} >{\raggedright\arraybackslash}p{0.32\textwidth} X}
+\toprule
+\textbf{Node} & \textbf{Dữ liệu vào/ra chính} & \textbf{Chức năng} \\
+\midrule
+\texttt{aruco\_detector\_node}
+& Socket \texttt{down\_camera.sock};
+\texttt{/uav/aruco/target\_pose},
+\texttt{/uav/aruco/status}
+& Phát hiện marker, sử dụng thông số nội tại IMX500 đã hiệu chuẩn để publish pose trong \texttt{down\_camera\_optical\_frame}. \\
+\addlinespace
+\texttt{aruco\_landing\_pid}
+& \texttt{/uav/aruco/target\_pose};
+\texttt{/aruco\_land/cmd\_vel},
+\texttt{/uav/aruco/landing\_state}
+& Đổi pose từ hệ camera sang hệ body FLU, xác nhận marker, tính PID ngang và điều chỉnh hai luồng tiếp cận bằng thị giác và hạ cánh. \\
+\addlinespace
+\texttt{cmd\_vel\_to\_px4}
+& \texttt{/aruco\_land/cmd\_vel}, trạng thái PX4;
+\texttt{/fmu/in/offboard\_control\_mode},
+\texttt{/fmu/in/trajectory\_setpoint},
+\texttt{/fmu/in/vehicle\_command}
+& Giới hạn lệnh, đổi vận tốc body-FLU sang NED, tạo heartbeat và setpoint Offboard, đồng thời thực thi các service chuyển mode, chọn XY/yaw và disarm có điều kiện. \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-Trong chương trình điều khiển, node
-nhận diện ArUco công bố pose của marker
-qua topic \texttt{/uav/aruco/target\_pose}.
-Node điều khiển hạ cánh sử dụng thông tin
-này để tạo lệnh vận tốc dưới dạng
-\texttt{geometry\_msgs/Twist} trên topic
-\texttt{/aruco\_land/cmd\_vel}.
+Trong quá trình bay, detector chỉ publish pose của marker mục tiêu và trạng thái bay. Các topic ID, \texttt{rvec}, \texttt{tvec} và ảnh debug mặc định bị tắt để giảm tải CPU. Node PID và PX4 bridge cũng mặc định ở trạng thái vô hiệu; launch file không tự arm và không tự chuyển PX4 sang Offboard. Việc kích hoạt bộ điều khiển, bridge và yêu cầu Offboard được tách thành các service độc lập nhằm tránh UAV nhận lệnh chuyển động ngay khi khởi động phần mềm.
+
+\subsubsection{Lớp giao tiếp trung gian uXRCE-DDS giữa ROS 2 và PX4}
+
+Process thứ ba là container Micro XRCE-DDS Agent v2.4.2. Agent và container ROS 2 cùng tham gia DDS domain~0; agent mở UART0 của Raspberry Pi tại \texttt{/dev/ttyAMA0} với baudrate $921600$ để trao đổi XRCE frame với module \texttt{uxrce\_dds\_client} trong firmware PX4. Kiến trúc client--agent này cho phép ánh xạ một tập uORB topic được biên dịch từ \texttt{dds\_topics.yaml} thành các topic ROS 2 hai chiều \cite{px4v117uxrcedds}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{images/03-sys-architecture_02.png}
+    \caption{Luồng giao tiếp từ ROS 2 đến bộ điều khiển bay:
+    (a) trao đổi \texttt{px4\_msgs} qua DDS, Micro XRCE-DDS Agent và UART;
+    (b) chuỗi xử lý rút gọn từ ảnh camera đến PX4 trên NxtPx4V2.}
+    \label{fig:sys_architecture_02}
+\end{figure}
+
+Theo chiều từ Raspberry Pi đến flight controller, bridge publish ba loại tín hiệu là \texttt{OffboardControlMode}, \texttt{TrajectorySetpoint} và \texttt{VehicleCommand} trên nhóm topic \texttt{/fmu/in/*}. Theo chiều ngược lại, nhóm \texttt{/fmu/out/*} cung cấp lần lượt vị trí cục bộ, attitude, trạng thái bay, trạng thái tiếp đất và phản hồi lệnh thông qua các thông điệp \texttt{px4\_msgs} tương ứng. Trên NxtPx4V2, các setpoint được chuyển thành uORB message và đi qua chuỗi điều khiển vị trí/vận tốc, attitude, tốc độ góc, mixer, sau đó mới tạo tín hiệu PWM hoặc DShot cho bốn động cơ.
+
+Cần lưu ý rằng thông điệp \texttt{geometry\_msgs/Twist} trên \texttt{/aruco\_land/cmd\_vel} chỉ tồn tại trong container ROS 2. Node \texttt{cmd\_vel\_to\_px4} chuyển lệnh này thành \texttt{px4\_msgs} trước khi dữ liệu đi qua DDS và UART; Micro XRCE-DDS Agent không truyền trực tiếp \texttt{cmd\_vel} vào PX4.
+
+\subsubsection{Chuyển đổi setpoint và điều kiện an toàn Offboard}
 
 Các lệnh vận tốc được biểu diễn trong hệ
 tọa độ thân FLU. Trong khi đó, PX4 sử
@@ -1341,134 +1341,77 @@ theo phương trước và trái của UAV.
 trục $Z$ của FLU hướng lên còn trục
 $Z$ của NED hướng xuống, hai vận tốc
 liên hệ với nhau theo:
-
 \begin{equation}
 v_D=-v_z^{B_{\mathrm{FLU}}}.
 \label{eq:vertical_velocity_conversion}
 \end{equation}
+\indent Bridge publish \texttt{OffboardControlMode} và \texttt{TrajectorySetpoint} ở $20$~Hz. Trong pha tiếp cận bằng thị giác, setpoint sử dụng vận tốc theo hai trục $N,E$ và vị trí theo trục $D$. Thành phần vận tốc đi lên từ ROS được tích phân thành mục tiêu độ cao NED có giới hạn; khi lệnh \texttt{cmd\_vel} mất quá $0{,}40$~s, vận tốc ngang và yaw được đưa về không trong khi mục tiêu độ cao vẫn được giữ.
 
-Trong chế độ Offboard, PX4 tiếp nhận
-các thông tin điều khiển thông qua
-\texttt{OffboardControlMode} và
-\texttt{TrajectorySetpoint}.
+Khi khoảng cách từ điểm tiếp xúc gripper đến marker giảm còn khoảng $0{,}30$~m, sai số ngang nhỏ hơn $0{,}08$~m trong năm frame liên tiếp và dữ liệu độ cao hợp lệ, node PID gọi service chốt vị trí $X,Y$ và yaw hiện tại. Trong pha hạ cuối, \texttt{TrajectorySetpoint} giữ $X,Y,$ yaw bằng điều khiển vị trí nhưng dùng vận tốc theo trục $D$ để hạ thẳng đứng. Marker không còn là đầu vào bắt buộc; vận tốc hạ danh định là $0{,}10$~m/s và giảm còn $0{,}05$~m/s khi PX4 báo tiếp xúc gần mặt đất. Nếu PX4 xác nhận \texttt{landed}, node mới yêu cầu disarm; nếu pha mù vượt quá $12$~s, hệ thống chuyển sang \texttt{ABORT} và giữ XY/yaw đã chốt.
 
-Ở giai đoạn tiếp cận bằng thị giác,
-hệ thống có thể sử dụng setpoint vận
-tốc theo hai phương ngang và setpoint
-vị trí theo phương thẳng đứng. Lệnh
-vận tốc thẳng đứng được tích phân
-để cập nhật vị trí độ cao mong muốn,
-giúp duy trì độ cao khi không có lệnh
-di chuyển mới.
+Các giới hạn an toàn được thực hiện ở cả hai node điều khiển. PID giới hạn độ lớn vận tốc ngang ở $0{,}35$~m/s và vận tốc hạ trong pha thị giác ở $0{,}20$~m/s. Bridge tiếp tục giới hạn vận tốc, gia tốc và yaw rate trước khi tạo setpoint. Bridge chỉ được enable khi PX4 báo vị trí cục bộ $X,Y,Z$ và attitude hợp lệ; yêu cầu Offboard bị từ chối khi PX4 đang failsafe hoặc chưa vượt qua preflight check. Node không tự arm UAV, còn yêu cầu Offboard được thực hiện riêng sau khi heartbeat và setpoint đã được phát. Cách phân tách này bảo đảm thuật toán thị giác không có đường lệnh trực tiếp tới cơ cấu chấp hành và PX4 vẫn giữ vai trò quyết định cuối cùng đối với trạng thái bay.
 
-Khi chuyển sang giai đoạn hạ cánh cuối,
-hệ thống giữ các giá trị vị trí ngang
-và góc Yaw đã xác nhận, đồng thời
-chuyển sang điều khiển vận tốc giảm
-độ cao với giới hạn phù hợp.
+\subsubsection{Kiểm tra tích hợp ROS 2, PX4 bridge và ArUco}
 
-Trong suốt quá trình điều khiển Offboard,
-máy tính đồng hành phải duy trì việc
-công bố tín hiệu điều khiển với tần
-số đáp ứng yêu cầu của PX4.
-Hệ thống cũng cần kiểm tra tính hợp lệ
-của dữ liệu vị trí, tư thế và trạng
-thái bay trước khi kích hoạt chế độ
-điều khiển tự động.
+Sau khi khởi động các container, hệ thống được kiểm tra trực tiếp từ terminal trên Raspberry Pi qua kết nối SSH. Trước hết, lệnh \texttt{ros2 node list} được dùng để xác nhận các node xử lý chính đã tham gia ROS graph. Kết quả trong Hình~\ref{fig:offboard_test_graph}(a) cho thấy các node \texttt{aruco\_detector\_node}, \texttt{aruco\_landing\_pid} và \texttt{cmd\_vel\_to\_px4} đều hoạt động. Ảnh được ghi nhận trong lần kiểm tra profile tích hợp nên còn xuất hiện \texttt{zipdepth\_node}; đối với profile ArUco rút gọn, node này không được khởi chạy.
 
-Việc phân tách chức năng giữa Raspberry
-Pi 5 và bộ điều khiển bay cho phép
-các thuật toán thị giác và điều khiển
-cấp cao hoạt động trên máy tính đồng
-hành, trong khi các vòng điều khiển
-tư thế và ổn định bay được thực hiện
-trực tiếp bởi PX4.
+Danh sách topic trong Hình~\ref{fig:offboard_test_graph}(b) cho thấy ba nhóm giao diện cùng xuất hiện. Topic lệnh hạ cánh nội bộ là \texttt{/aruco\_land/cmd\_vel}; dữ liệu ArUco nằm trong nhóm \texttt{/uav/aruco/*}; còn các topic PX4 hai chiều thuộc hai nhóm \texttt{/fmu/in/*} và \texttt{/fmu/out/*}. Sự xuất hiện của các endpoint PX4 chứng minh ROS 2 đã nhận được ánh xạ topic do Micro XRCE-DDS Agent tạo ra. Tuy nhiên, bước này chỉ xác nhận lớp truyền thông; trạng thái vị trí hợp lệ và việc PX4 chấp nhận chuyển sang Offboard vẫn phải được kiểm tra qua dữ liệu \texttt{/fmu/out/*} và phản hồi lệnh trước mỗi lần bay.
 
-Đây là cơ sở để tích hợp các chức năng
-cao hơn như tiếp cận mục tiêu, hạ cánh
-chính xác và điều khiển cơ cấu gắp
-hàng trong hệ thống UAV tự động.
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/03-offboard-test-05.png}
+        \caption{Kiểm tra các node đang hoạt động.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/03-offboard-test-02.png}
+        \caption{Kiểm tra các topic ROS 2 và PX4.}
+    \end{subfigure}
+    \caption{Kết quả kiểm tra ROS graph của pipeline hạ cánh ArUco.}
+    \label{fig:offboard_test_graph}
+\end{figure}
 
-% TODO: Chèn sơ đồ khối vòng điều khiển hạ cánh.
-\noindent\textit{[Hình cần chèn: Camera/ArUco $\rightarrow$ sai số pose $\rightarrow$ PID $\rightarrow$ setpoint UAV $\rightarrow$ PX4.]}\par\vspace{18mm}
+Các topic liên quan đến ArUco được kiểm tra riêng như Hình~\ref{fig:offboard_test_aruco_topics}(a). Node detector cung cấp pose mục tiêu trên \texttt{/uav/aruco/target\_pose} và dữ liệu giám sát trên \texttt{/uav/aruco/status}; node PID cung cấp trạng thái máy trạng thái hạ cánh. Khi đọc \texttt{/uav/aruco/status}, gói \texttt{DiagnosticArray} trả về tên detector, frame camera, số marker, ID mục tiêu, cờ quan sát mục tiêu và độ trễ xử lý. Trong ảnh chụp tại Hình~\ref{fig:offboard_test_aruco_topics}(b), \texttt{target\_marker\_id} đã được cấu hình bằng 0, còn \texttt{marker\_count=0} và \texttt{target\_visible=false} cho biết marker đang ở ngoài vùng nhìn tại đúng thời điểm lấy mẫu. Nhờ đó, cùng một topic có thể dùng để phân biệt rõ ``detector đang chạy'' với ``marker mục tiêu đang được quan sát'', tránh kích hoạt PID từ dữ liệu không hợp lệ.
 
-\subsection{PX4, ROS 2 và chế độ Offboard}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/03-offboard-test-03.png}
+        \caption{Nhóm topic phục vụ phát hiện và hạ cánh ArUco.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.47\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/03-offboard-test-04.png}
+        \caption{Dữ liệu chẩn đoán trên \texttt{/uav/aruco/status}.}
+    \end{subfigure}
+    \caption{Kiểm tra topic và trạng thái trực tuyến của ArUco detector.}
+    \label{fig:offboard_test_aruco_topics}
+\end{figure}
 
-PX4 là firmware điều khiển bay đảm nhiệm các chức năng ổn định attitude, điều khiển vị trí và quản lý trạng thái bay. Raspberry Pi 5 chạy các node ROS 2 để thu nhận ảnh, xử lý ArUco, tính toán pose và tạo lệnh điều khiển cấp cao.
+Cuối cùng, UAV được đặt phía trên marker ID~0 để đưa marker vào vùng quan sát của camera hướng xuống, như Hình~\ref{fig:offboard_test_marker}(b). Terminal trong Hình~\ref{fig:offboard_test_marker}(a) minh họa thao tác đọc liên tục topic trạng thái sau khi đã kiểm tra danh sách topic. Trong quy trình thử nghiệm, marker chỉ được xem là đã khóa hợp lệ khi \texttt{marker\_count} lớn hơn 0, \texttt{target\_visible=true} và \texttt{target\_pose} được cập nhật liên tục; việc chỉ nhìn thấy tên topic trong ROS graph chưa đủ để cho phép bộ điều khiển phát lệnh chuyển động.
 
-Trong cấu hình đề xuất, các thành phần chính gồm:
-\begin{itemize}
-  \item \textbf{Camera node:} thu ảnh và công bố dữ liệu hình ảnh.
-  \item \textbf{ArUco node:} phát hiện marker, ước lượng pose và công bố kết quả.
-  \item \textbf{Landing controller node:} tính sai số, chạy PID và tạo setpoint vận tốc hoặc vị trí.
-  \item \textbf{Mission/state machine node:} quản lý các trạng thái tìm marker, hạ cánh, gắp hàng và cất cánh.
-  \item \textbf{Gripper node:} phát lệnh servo và nhận trạng thái xác nhận cơ cấu gắp.
-  \item \textbf{PX4 flight controller:} nhận setpoint, ổn định UAV và gửi trạng thái bay về máy tính đồng hành.
-\end{itemize}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.62\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/03-offboard-test-01.png}
+        \caption{Thao tác đọc topic trạng thái ArUco từ terminal.}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.28\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/03-offboard-test-marker-id0.jpg}
+        \caption{Bố trí UAV phía trên marker ID~0.}
+    \end{subfigure}
+    \caption{Kiểm tra thực tế nhận dạng marker mục tiêu trước khi thử nghiệm Offboard.}
+    \label{fig:offboard_test_marker}
+\end{figure}
 
-Giao tiếp giữa ROS 2 và PX4 có thể được thực hiện qua uXRCE-DDS. Ở chế độ Offboard, máy tính đồng hành gửi liên tục các setpoint và tín hiệu duy trì chế độ điều khiển. Trước khi chuyển sang Offboard, hệ thống cần kiểm tra kết nối, trạng thái định vị, nguồn pin, trạng thái arm và tần số gửi setpoint. Nếu mất kết nối hoặc không còn setpoint hợp lệ, PX4 phải chuyển sang hành vi an toàn được cấu hình trước.
-
-% TODO: Chèn sơ đồ node ROS 2 và đường truyền dữ liệu tới PX4.
-\noindent\textit{[Hình cần chèn: Kiến trúc ROS 2--uXRCE-DDS--PX4--UAV.]}\par\vspace{18mm}
-
-\subsection{Cơ cấu gripper}
-
-Cơ cấu gripper có nhiệm vụ giữ kiện hàng trong quá trình UAV cất cánh và bay. Khi thiết kế gripper, cần xem xét khối lượng cơ cấu, tải trọng 1 kg, kích thước kiện hàng, hành trình đóng mở, lực giữ và vị trí lắp đặt trên thân UAV.
-
-Việc treo tải bên dưới UAV làm thay đổi vị trí trọng tâm và mô-men quán tính của hệ thống. Vì vậy, cơ cấu cần được lắp chắc chắn, hạn chế dao động của kiện hàng và không che khuất camera. Khối lượng của gripper và kiện hàng cũng phải nằm trong khả năng tạo lực nâng của bốn rotor.
-
-Servo có thể được điều khiển bằng góc quay hoặc độ rộng xung PWM. Máy trạng thái không nên chỉ dựa vào lệnh đóng servo để kết luận gắp thành công; cần có điều kiện xác nhận, chẳng hạn như vị trí servo, công tắc hành trình, cảm biến lực hoặc kiểm tra tải sau khi UAV bắt đầu cất cánh. Nếu không có cảm biến riêng, hệ thống có thể sử dụng một khoảng thời gian giữ và kiểm tra trạng thái ổn định của UAV, đồng thời ghi nhận đây là một giới hạn của thiết kế.
-
-% TODO: Chèn bản vẽ CAD hoặc ảnh thực tế của gripper.
-\noindent\textit{[Hình cần chèn: Cơ cấu gripper, vị trí lắp trên UAV và trạng thái mở/đóng.]}\par\vspace{18mm}
-
-\subsection{Máy trạng thái Landing--Pickup--Takeoff}
-
-Máy trạng thái giúp chia nhiệm vụ phức tạp thành các trạng thái có điều kiện chuyển rõ ràng. Một phiên bản cơ bản có thể gồm:
-\begin{enumerate}
-  \item \textbf{SEARCH\_MARKER:} tìm marker trong ảnh và giữ UAV ở vùng an toàn.
-  \item \textbf{ALIGN:} điều chỉnh vị trí ngang và hướng của UAV so với marker.
-  \item \textbf{DESCEND:} hạ độ cao khi marker được phát hiện ổn định và sai số nằm trong giới hạn.
-  \item \textbf{LANDED:} xác nhận UAV đã tiếp xúc hoặc đã ổn định trên bãi đáp.
-  \item \textbf{GRAB:} đóng gripper và kiểm tra điều kiện gắp.
-  \item \textbf{TAKEOFF:} tăng độ cao đến mức an toàn và tiếp tục nhiệm vụ.
-  \item \textbf{ABORT/FAILSAFE:} dừng, bay lên hoặc chuyển sang điều khiển thủ công khi mất marker, mất kết nối hoặc phát hiện điều kiện không an toàn.
-\end{enumerate}
-
-Mỗi trạng thái cần quy định rõ điều kiện vào, điều kiện thoát, timeout và hành vi khi lỗi. Cách tổ chức này giúp tránh việc các node điều khiển gửi lệnh mâu thuẫn, đồng thời tạo log rõ ràng để phân tích khi thử nghiệm thất bại.
-
-% TODO: Chèn sơ đồ máy trạng thái toàn bộ nhiệm vụ.
-\noindent\textit{[Hình cần chèn: SEARCH--ALIGN--DESCEND--LANDED--GRAB--TAKEOFF và nhánh ABORT.]}\par\vspace{18mm}
-
-\subsection{Các công trình liên quan}
-
-Các nghiên cứu về hạ cánh UAV bằng thị giác thường tập trung vào ba nội dung: thiết kế marker có thể nhận dạng ở nhiều khoảng cách, ước lượng pose tương đối từ camera đơn và xây dựng bộ điều khiển dựa trên thông tin thị giác. Một số công trình sử dụng một marker duy nhất, trong khi các công trình khác sử dụng marker nhiều lớp hoặc nhiều kích thước để duy trì khả năng nhận dạng khi UAV thay đổi độ cao.
-
-Một hướng phổ biến là dùng các góc của ArUco marker kết hợp với thông số hiệu chuẩn camera để giải bài toán PnP. Pose thu được được đưa vào bộ điều khiển PID hoặc bộ điều khiển visual servoing nhằm giảm sai số ngang trước khi hạ độ cao. Các kết quả nghiên cứu cho thấy độ chính xác không chỉ phụ thuộc vào thuật toán điều khiển mà còn phụ thuộc mạnh vào kích thước marker, trường nhìn camera, độ trễ xử lý, ánh sáng và rung động của UAV.
-
-Trong các hệ thống giao hàng, ngoài bài toán hạ cánh còn có bài toán giữ và thả kiện hàng. Cơ cấu gripper phải nhẹ, đủ lực giữ và không làm mất ổn định UAV. Một số hệ thống bổ sung cảm biến để xác nhận đã gắp được vật thể; các hệ thống đơn giản hơn sử dụng máy trạng thái và điều kiện thời gian để điều phối servo.
-
-So với các công trình chỉ xét hạ cánh hoặc chỉ xét cơ cấu gắp, đồ án này hướng đến việc tích hợp cả hai nhiệm vụ trên cùng một nền tảng Raspberry Pi 5, ROS 2 và PX4. Trọng tâm của đồ án là xây dựng một quy trình có thể kiểm thử từng module và đánh giá định lượng toàn bộ chuỗi hạ cánh--gắp hàng--cất cánh.
-
-% TODO: Bổ sung bảng so sánh các công trình liên quan.
-% Nên có các cột: tài liệu, loại marker, camera, nền tảng bay,
-% phương pháp điều khiển, có gắp hàng hay không, mô phỏng/thực nghiệm.
-\begin{table}[H]
-  \centering
-  \caption{Gợi ý bảng so sánh các công trình liên quan}
-  \label{tab:so-sanh-cong-trinh}
-  \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.0cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}X|}
-    \hline
-    \textbf{Công trình} & \textbf{Marker/cảm biến} & \textbf{Điều khiển} & \textbf{Phạm vi đánh giá}\\
-    \hline
-    Công trình 1 & Bổ sung sau & Bổ sung sau & Bổ sung sau\\
-    \hline
-    Công trình 2 & Bổ sung sau & Bổ sung sau & Bổ sung sau\\
-    \hline
-    Đồ án này & ArUco + camera đơn & PID + máy trạng thái & Hạ cánh, gắp hàng, cất cánh\\
-    \hline
-  \end{tabularx}
-\end{table}
 
 \subsection{Tóm tắt chương}
 
