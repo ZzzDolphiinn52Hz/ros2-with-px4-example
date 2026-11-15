@@ -12,8 +12,8 @@ PX4 setpoint do `px4_uavcup_px4_bridge` đảm nhiệm.
 
 Config duy nhất của landing là `config/landing.yaml`. Gá hiện tại:
 
-- IMX500 yaw 180 độ so với đầu drone.
-- Camera nằm sau tâm cơ cấu gắp 0.10 m.
+- IMX500 nhìn xuống, mép trên ảnh hướng về mũi drone.
+- Camera nằm cùng tâm XY với cơ cấu gắp.
 - Camera cao hơn điểm tiếp xúc cơ cấu gắp 0.15 m.
 - Chuyển blind descent ở gripper AGL xấp xỉ 0.30 m khi sai số XY đủ nhỏ.
 

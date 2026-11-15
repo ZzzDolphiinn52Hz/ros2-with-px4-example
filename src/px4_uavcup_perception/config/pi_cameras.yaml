@@ -1,8 +1,9 @@
 down_picamera:
   ros__parameters:
-    # Frames are captured from CAM1/IMX500 by Picamera2 on Raspberry Pi OS
-    # and transferred locally into the ROS container. These intrinsics came from
-    # ~/Aruco/live_calib at the same 640x480 IMX500 preview mode.
+    # Frames are captured from the down-facing IMX500 by Picamera2 on the
+    # Raspberry Pi OS host and transferred locally into the ROS container.
+    # Keep these intrinsics synchronized with config/aruco.yaml after running
+    # docs/IMX500_CALIBRATION.md at the same 640x480 preview mode.
     socket_path: /ros2_ws/run/down_camera.sock
     width: 640
     height: 480

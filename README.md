@@ -94,6 +94,10 @@ cd ~/ros2_ws
 ./uavcup aruco-debug
 ```
 
+Khi thay camera hoặc thay gá lắp, hiệu chuẩn lại IMX500 theo
+`docs/IMX500_CALIBRATION.md`. Lệnh `./uavcup aruco-calibrate` lưu riêng log,
+ảnh minh chứng và `ost.yaml` của từng phiên trong `artifacts/`.
+
 Khi bench-test với FC, chạy XRCE Agent rồi khởi động stack landing tối giản:
 
 ```bash
@@ -128,9 +132,10 @@ quạt trong bench test.
 
 ## Camera và gá lắp đã cấu hình
 
-- CAM0: IMX219 phía trước, ảnh bị roll 180 độ; ZipDepth xoay lại trước inference.
-- CAM1: IMX500 nhìn xuống, yaw 180 độ so với đầu drone.
-- IMX500 nằm sau tâm cơ cấu gắp 0.10 m.
+- Profile ArUco-only: một IMX500 tại CAM0.
+- Profile hai camera: CAM0 IMX219 cho ZipDepth và CAM1 IMX500 cho ArUco.
+- IMX500 nhìn xuống, mép trên ảnh hướng về mũi drone.
+- IMX500 nằm cùng tâm XY với cơ cấu gắp.
 - Camera cao hơn điểm tiếp xúc cơ cấu gắp 0.15 m.
 - ArUco marker mặc định: ID 0, cạnh đen ngoài 0.16 m.
 

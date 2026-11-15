@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-WORKSPACE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+WORKSPACE_DIR="$(unset CDPATH; cd -- "$(dirname -- "$0")" && pwd)"
 cd "$WORKSPACE_DIR"
 
 ROS_PACKAGES=(
@@ -21,6 +21,7 @@ Commands:
   doctor            Check Docker, cameras, model, UART and Pi health.
   cameras           Run CAM0 IMX219 + CAM1 IMX500 host frame servers.
   aruco-camera      Run one CAM0 IMX500 host frame server for ArUco.
+  aruco-calibrate   Open the IMX500 calibration GUI and save report evidence.
   aruco-test        Run only the ArUco detector (no PX4/control nodes).
   aruco-debug       Alias for ArUco detector with debug topics/image enabled.
   aruco-vehicle     Run ArUco + landing PID + PX4 adapter; no ZipDepth.
@@ -139,6 +140,12 @@ case "$command" in
       --width 640 \
       --height 480 \
       --fps "$aruco_camera_fps"
+    ;;
+
+  aruco-calibrate)
+    require_workspace_build
+    exec bash \
+      src/px4_uavcup_perception/scripts/calibrate_imx500_intrinsics.sh
     ;;
 
   aruco-test)

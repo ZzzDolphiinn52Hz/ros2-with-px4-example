@@ -32,12 +32,12 @@ aruco_landing_pid:
     release_xy_yaw_service: /cmd_vel_to_px4/release_xy_yaw
     disarm_service: /cmd_vel_to_px4/request_disarm
 
-    # Confirmed on the installed down camera (2026-09-18): the IMX500 is
-    # yawed 180 degrees relative to the vehicle nose. Therefore image-bottom
-    # points vehicle-forward and image-right points vehicle-left.
-    camera_to_body_flu_rotation: [0.0, 1.0, 0.0,
-                                  1.0, 0.0, 0.0,
+    # The down-facing IMX500 is aligned with the vehicle nose: image-top
+    # points vehicle-forward and image-right points vehicle-right. Camera
+    # optical coordinates are x-right, y-down in the image and z-forward.
+    camera_to_body_flu_rotation: [0.0, -1.0, 0.0,
+                                  -1.0, 0.0, 0.0,
                                   0.0, 0.0, -1.0]
-    # Camera is 10 cm behind the body-centred gripper. Vertical offset is
-    # configured separately above because it is used as an AGL correction.
-    camera_position_body_flu_m: [-0.10, 0.0, 0.0]
+    # Camera and gripper are centred on the same body XY. Their confirmed
+    # 15 cm vertical separation is configured separately above for AGL.
+    camera_position_body_flu_m: [0.0, 0.0, 0.0]

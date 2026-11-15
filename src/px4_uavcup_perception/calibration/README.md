@@ -14,3 +14,10 @@ printing.
 After printing, verify one checker square and both dimensions of an ArUco
 marker with a ruler. The physical marker size used by pose estimation is the
 outer black-square dimension, not the page or white margin.
+
+The complete IMX500 GUI workflow and report-evidence checklist are documented
+in `docs/IMX500_CALIBRATION.md` at the workspace root. Run it through:
+
+```bash
+./uavcup aruco-calibrate
+```

@@ -18,31 +18,22 @@ from px4_uavcup_control.landing.pid import (
 )
 
 
-def test_down_camera_axes_match_rear_facing_mounting():
-    # The installed camera is yawed 180 degrees: image-bottom is ahead and
-    # image-right is vehicle-left.
+def test_down_camera_axes_match_nose_aligned_mounting():
+    # Image-top is vehicle-forward and image-right is vehicle-right.
     ahead = camera_target_to_body_flu(
-        [0.0, 0.2, 1.0], DOWN_CAMERA_OPTICAL_TO_BODY_FLU)
+        [0.0, -0.2, 1.0], DOWN_CAMERA_OPTICAL_TO_BODY_FLU)
     right = camera_target_to_body_flu(
-        [-0.2, 0.0, 1.0], DOWN_CAMERA_OPTICAL_TO_BODY_FLU)
+        [0.2, 0.0, 1.0], DOWN_CAMERA_OPTICAL_TO_BODY_FLU)
     np.testing.assert_allclose(ahead, [0.2, 0.0, -1.0])
     np.testing.assert_allclose(right, [0.0, -0.2, -1.0])
 
 
-def test_rear_camera_lever_arm_centres_marker_under_gripper():
-    camera_position = [-0.10, 0.0, 0.0]
-
+def test_centred_camera_has_no_horizontal_lever_arm():
     camera_over_marker = camera_target_to_body_flu(
         [0.0, 0.0, 1.0],
-        DOWN_CAMERA_OPTICAL_TO_BODY_FLU,
-        camera_position)
-    gripper_over_marker = camera_target_to_body_flu(
-        [0.0, 0.10, 1.0],
-        DOWN_CAMERA_OPTICAL_TO_BODY_FLU,
-        camera_position)
+        DOWN_CAMERA_OPTICAL_TO_BODY_FLU)
 
-    np.testing.assert_allclose(camera_over_marker, [-0.10, 0.0, -1.0])
-    np.testing.assert_allclose(gripper_over_marker, [0.0, 0.0, -1.0])
+    np.testing.assert_allclose(camera_over_marker, [0.0, 0.0, -1.0])
 
 
 def test_gripper_clearance_subtracts_vertical_camera_offset():

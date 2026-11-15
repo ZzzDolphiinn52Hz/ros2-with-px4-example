@@ -8,8 +8,8 @@ import numpy as np
 
 
 DOWN_CAMERA_OPTICAL_TO_BODY_FLU = np.array([
-    [0.0, 1.0, 0.0],
-    [1.0, 0.0, 0.0],
+    [0.0, -1.0, 0.0],
+    [-1.0, 0.0, 0.0],
     [0.0, 0.0, -1.0],
 ], dtype=np.float64)
 

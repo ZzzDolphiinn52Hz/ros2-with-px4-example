@@ -32,7 +32,7 @@ def generate_launch_description() -> LaunchDescription:
         Node(
             package='camera_calibration',
             executable='cameracalibrator',
-            name='front_camera_calibrator',
+            name='imx500_camera_calibrator',
             output='screen',
             arguments=[
                 '--size', board_size,
