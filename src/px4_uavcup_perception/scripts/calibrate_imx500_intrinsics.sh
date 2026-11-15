@@ -47,9 +47,10 @@ docker compose run --rm \
   -e HOST_UID="$(id -u)" \
   -e HOST_GID="$(id -g)" \
   ros bash -lc '
-    set -uo pipefail
+    set -o pipefail
     source /opt/ros/humble/setup.bash
     source install/setup.bash
+    set -u
 
     collect_calibration_artifacts() {
       mkdir -p "$CALIBRATION_SESSION_DIR/screenshots"
