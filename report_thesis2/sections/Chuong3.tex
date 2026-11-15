@@ -1401,26 +1401,26 @@ Các topic liên quan đến ArUco được kiểm tra riêng như Hình~\ref{fi
     \label{fig:offboard_test_aruco_topics}
 \end{figure}
 
-Cuối cùng, UAV được đặt phía trên marker ID~0 để đưa marker vào vùng quan sát của camera hướng xuống, như Hình~\ref{fig:offboard_test_marker}(b). Terminal trong Hình~\ref{fig:offboard_test_marker}(a) minh họa thao tác đọc liên tục topic trạng thái sau khi đã kiểm tra danh sách topic. Trong quy trình thử nghiệm, marker chỉ được xem là đã khóa hợp lệ khi \texttt{marker\_count} lớn hơn 0, \texttt{target\_visible=true} và \texttt{target\_pose} được cập nhật liên tục; việc chỉ nhìn thấy tên topic trong ROS graph chưa đủ để cho phép bộ điều khiển phát lệnh chuyển động.
+Cuối cùng, UAV được đặt phía trên marker ID~0 để đưa marker vào vùng quan sát của camera hướng xuống, như Hình~\ref{fig:offboard_test_marker}(a). Sau khi bố trí, dữ liệu chẩn đoán trong Hình~\ref{fig:offboard_test_marker}(b) cho thấy \texttt{marker\_count=1}, \texttt{target\_marker\_id=0}, \texttt{target\_visible=true} và detector trả về trạng thái \texttt{ok}. Kết quả này xác nhận camera đã quan sát và detector đã chọn đúng marker mục tiêu ID~0. Trong quy trình thử nghiệm, marker chỉ được xem là đã khóa hợp lệ khi các điều kiện trên được duy trì và \texttt{target\_pose} được cập nhật liên tục; việc chỉ nhìn thấy tên topic trong ROS graph chưa đủ để cho phép bộ điều khiển phát lệnh chuyển động.
 
 \begin{figure}[H]
     \centering
 
-    \begin{minipage}[t]{0.66\linewidth}
+    \begin{minipage}[t]{0.30\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{images/03-offboard-test-01.png}
+        \includegraphics[width=\linewidth,height=6.6cm,keepaspectratio]{images/03-offboard-test-marker-id0.jpg}
         \\[2mm]\small (a)
     \end{minipage}
     \hspace{0.01\linewidth}
-    \begin{minipage}[t]{0.30\linewidth}
+    \begin{minipage}[t]{0.48\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{images/03-offboard-test-marker-id0.jpg}
+        \includegraphics[width=\linewidth,height=6.6cm,keepaspectratio]{images/03-offboard-test-06.jpg}
         \\[2mm]\small (b)
     \end{minipage}
 
     \caption{Kiểm tra thực tế nhận dạng marker mục tiêu trước khi thử nghiệm Offboard:
-    (a) Thao tác đọc topic trạng thái ArUco từ terminal;
-    (b) Bố trí UAV phía trên marker ID~0.}
+    (a) Bố trí UAV phía trên marker ID~0;
+    (b) Trạng thái detector sau khi nhận đúng marker mục tiêu.}
     \label{fig:offboard_test_marker}
 \end{figure}
 
