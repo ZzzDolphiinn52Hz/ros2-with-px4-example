@@ -316,7 +316,7 @@ Hình~\ref{fig:camera_calibration} minh họa quá trình thu thập ảnh bàn 
 \end{figure}
 %==================================================
 
-Sau khi xác định các thông số camera, chất lượng hiệu chuẩn được đánh giá dựa trên sai số chiếu lại căn quân phương (Root Mean Square Reprojection Error), được xác định bởi:
+Sau khi xác định các thông số camera, chất lượng hiệu chuẩn được đánh giá dựa trên sai số chiếu lại căn bậc hai bình phương (Root Mean Square Reprojection Error), được xác định bởi:
 
 \begin{equation}
     e_{\mathrm{RMS}}=
@@ -334,14 +334,15 @@ trong đó $\mathbf{p}_i$ là tọa độ điểm góc được phát hiện tr�
 
 Giá trị sai số chiếu lại càng nhỏ cho thấy mức độ phù hợp giữa mô hình camera và dữ liệu quan sát càng cao. Tuy nhiên, kết quả hiệu chuẩn còn phụ thuộc vào chất lượng ảnh, độ chính xác của việc phát hiện điểm góc và sự phân bố các tư thế bàn cờ trong tập dữ liệu.
 
-Trong thực nghiệm, camera IMX500 được hiệu chuẩn ở độ phân giải $640\times480$ pixel với 45 ảnh bàn cờ. Kết quả ban đầu khi sử dụng toàn bộ ảnh có sai số $e_{\mathrm{RMS}}=2{,}349$ pixel. Sai số chiếu lại được tính riêng cho từng ảnh; chín ảnh có sai số lớn bất thường được loại khỏi phép ước lượng cuối. Các trường hợp điển hình gồm bàn cờ bị nghiêng mạnh, nằm quá xa hoặc chiếm vùng ảnh quá nhỏ. Ví dụ, ảnh \texttt{left-0029.png} và \texttt{left-0043.png} có sai số lần lượt là $6{,}235$ pixel và $6{,}612$ pixel. Sau khi lọc, 36 ảnh còn lại cho sai số $e_{\mathrm{RMS}}=0{,}531$ pixel. Hình~\ref{fig:camera_calibration_outliers} minh họa sự khác nhau giữa một ảnh được giữ lại và hai ảnh ngoại lai.
+Trong thực nghiệm, camera IMX500 được hiệu chuẩn ở độ phân giải $640\times480$ pixel với 45 ảnh bàn cờ. Kết quả ban đầu khi sử dụng toàn bộ ảnh có sai số $e_{\mathrm{RMS}}=2{,}349$ pixel. Sai số chiếu lại được tính riêng cho từng ảnh; chín ảnh có sai số lớn bất thường được loại khỏi phép ước lượng cuối.
+Các trường hợp điển hình gồm bàn cờ bị nghiêng mạnh, nằm quá xa hoặc chiếm vùng ảnh quá nhỏ. Ví dụ, ảnh \ref{fig:camera_calibration_outliers}~b) là ảnh 29 và 43 trong dataset có sai số lần lượt là $6{,}235$ pixel và $6{,}612$ pixel. Sau khi lọc, 36 ảnh còn lại cho sai số $e_{\mathrm{RMS}}=0{,}531$ pixel. Hình~\ref{fig:camera_calibration_outliers} minh họa sự khác nhau giữa một ảnh được giữ lại và hai ảnh ngoại lai.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.98\linewidth]{images/03-calibration-outliers.png}
+    \includegraphics[width=1\linewidth]{images/03-calibration-outliers.png}
     \caption{Ví dụ đánh giá ảnh hiệu chuẩn, từ trái sang phải:
-    ảnh có bàn cờ rõ và chiếm phần lớn trường nhìn được giữ lại;
-    ảnh có góc nghiêng lớn và ảnh có bàn cờ quá xa bị loại do sai số
+    (a) ảnh có bàn cờ rõ và chiếm phần lớn trường nhìn được giữ lại;
+    (b) ảnh có góc nghiêng lớn và ảnh có bàn cờ quá xa bị loại do sai số
     chiếu lại lớn.}
     \label{fig:camera_calibration_outliers}
 \end{figure}
@@ -393,6 +394,8 @@ Các thông số hiệu chuẩn có thể được sử dụng để hiệu ch�
     \label{fig:camera_undistortion}
 \end{figure}
 %==================================================
+
+Sự khác biệt trực quan giữa ảnh trước và sau hiệu chỉnh không lớn, cho thấy ống kính IMX500 có độ méo tương đối thấp tại độ phân giải khảo sát. Hiệu quả hiệu chỉnh tập trung chủ yếu tại vùng biên ảnh; các thông số hiệu chuẩn vẫn cần thiết để giảm sai số khi ước lượng pose ArUco.
 
 Sau khi hiệu chuẩn, ma trận nội tại và các hệ số méo được sử dụng trong thuật toán ước lượng vị trí và tư thế ArUco marker. Trong quá trình này, OpenCV có thể sử dụng trực tiếp ảnh gốc kết hợp với các hệ số méo để tính toán pose mà không bắt buộc phải hiệu chỉnh toàn bộ ảnh trước khi nhận diện.
 
@@ -671,116 +674,6 @@ so với camera.
 
 Do mã ArUco được đặt cố định trên mặt phẳng
 hạ cánh, có thể chọn tâm marker làm gốc tọa độ
-tham chiếu để xác định vị trí camera tương đối
-với marker.
-
-Khi đó, phép biến đổi từ hệ camera sang
-hệ marker được xác định bằng phép nghịch đảo:
-
-\begin{equation}
-{}^{M}\mathbf{T}_{C}
-=
-\left({}^{C}\mathbf{T}_{M}\right)^{-1}
-=
-\begin{bmatrix}
-\left({}^{C}\mathbf{R}_{M}\right)^T &
--\left({}^{C}\mathbf{R}_{M}\right)^T
-{}^{C}\mathbf{t}_{M}\\
-\mathbf{0}^{T} & 1
-\end{bmatrix}.
-\label{eq:camera_in_marker}
-\end{equation}
-
-Do ma trận quay của vật rắn là ma trận trực giao,
-ma trận quay nghịch đảo chính là ma trận chuyển vị.
-Từ đó, ma trận quay và vector tịnh tiến của camera
-trong hệ tọa độ marker được xác định theo:
-
-\begin{equation}
-\begin{aligned}
-{}^{M}\mathbf{R}_{C}
-&=
-\left({}^{C}\mathbf{R}_{M}\right)^T,\\
-{}^{M}\mathbf{t}_{C}
-&=
--\left({}^{C}\mathbf{R}_{M}\right)^T
-{}^{C}\mathbf{t}_{M}.
-\end{aligned}
-\label{eq:pnp_inverse_components}
-\end{equation}
-
-Vị trí tâm camera trong hệ tọa độ marker được
-biểu diễn bởi:
-
-\begin{equation}
-{}^{M}\mathbf{p}_{C}
-=
-\begin{bmatrix}
-x_C^M\\
-y_C^M\\
-z_C^M
-\end{bmatrix}
-=
-{}^{M}\mathbf{t}_{C}.
-\label{eq:camera_position_marker}
-\end{equation}
-
-Các thành phần $x_C^M$, $y_C^M$ và $z_C^M$
-biểu diễn vị trí tâm camera theo ba trục
-của hệ tọa độ marker. Khi marker được chọn
-làm gốc tham chiếu, các giá trị này cho phép
-xác định vị trí tương đối của camera so với
-khu vực hạ cánh.
-
-Tuy nhiên, do camera được lắp trên thân UAV,
-vị trí tâm camera không nhất thiết trùng với
-gốc hệ tọa độ thân UAV. Vì vậy, cần xét thêm
-phép biến đổi cố định giữa hệ tọa độ camera
-$\{C\}$ và hệ tọa độ thân UAV $\{B\}$.
-
-Vị trí marker trong hệ tọa độ thân UAV được
-xác định theo:
-
-\begin{equation}
-{}^{B}\mathbf{p}_{M}
-=
-{}^{B}\mathbf{R}_{C}
-{}^{C}\mathbf{t}_{M}
-+
-{}^{B}\mathbf{t}_{C},
-\label{eq:camera_to_body}
-\end{equation}
-
-trong đó ${}^{B}\mathbf{R}_{C}$ mô tả hướng
-lắp đặt camera và ${}^{B}\mathbf{t}_{C}$
-biểu diễn vị trí tâm camera so với gốc
-tọa độ thân UAV.
-
-Ngược lại, nếu cần xác định đầy đủ vị trí
-và hướng của thân UAV trong hệ tọa độ marker,
-phép biến đổi được biểu diễn như sau:
-
-\begin{equation}
-{}^{M}\mathbf{T}_{B}
-=
-{}^{M}\mathbf{T}_{C}
-\left({}^{B}\mathbf{T}_{C}\right)^{-1}.
-\label{eq:body_in_marker}
-\end{equation}
-
-Các phép biến đổi trên cho phép xác định
-mối quan hệ hình học giữa UAV, camera và
-marker trong không gian ba chiều. Từ đó,
-hệ thống có thể tính toán sai lệch vị trí
-theo phương trước--sau, trái--phải và
-khoảng cách đến marker để xây dựng tín
-hiệu điều khiển UAV trong quá trình
-tiếp cận, căn chỉnh và hạ cánh tự động.
-
----
-
-Do mã ArUco được đặt cố định trên mặt phẳng
-hạ cánh, có thể chọn tâm marker làm gốc tọa độ
 tham chiếu để xác định vị trí và hướng của
 camera tương đối với marker.
 
@@ -1002,7 +895,7 @@ marker trong hệ tọa độ camera.
 Để phục vụ điều khiển chuyển động, tọa độ này
 được chuyển sang hệ tọa độ thân UAV thông qua
 phép biến đổi đã trình bày trong
-phương trình~\eqref{eq:camera_to_body}.
+phương trình~\eqref{eq:body_in_marker}.
 
 Trong đó, hệ tọa độ thân UAV của PX4 tuân theo
 quy ước FRD (Forward--Right--Down), còn tín hiệu
