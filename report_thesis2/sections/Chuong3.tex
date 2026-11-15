@@ -1359,18 +1359,22 @@ Danh sách topic trong Hình~\ref{fig:offboard_test_graph}(b) cho thấy ba nhó
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[t]{0.45\textwidth}
+
+    \begin{minipage}[t]{0.47\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{images/03-offboard-test-05.png}
-        \caption{Kiểm tra các node đang hoạt động.}
-    \end{subfigure}
+        \includegraphics[width=\linewidth,height=7cm,keepaspectratio]{images/03-offboard-test-05.png}
+        \\[2mm]\small (a)
+    \end{minipage}
     \hfill
-    \begin{subfigure}[t]{0.45\textwidth}
+    \begin{minipage}[t]{0.47\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{images/03-offboard-test-02.png}
-        \caption{Kiểm tra các topic ROS 2 và PX4.}
-    \end{subfigure}
-    \caption{Kết quả kiểm tra ROS graph của pipeline hạ cánh ArUco.}
+        \includegraphics[width=\linewidth,height=7cm,keepaspectratio]{images/03-offboard-test-02.png}
+        \\[2mm]\small (b)
+    \end{minipage}
+
+    \caption{Kết quả kiểm tra ROS graph của pipeline hạ cánh ArUco:
+    (a) Các node đang hoạt động;
+    (b) Các topic ROS 2 và PX4.}
     \label{fig:offboard_test_graph}
 \end{figure}
 
@@ -1378,18 +1382,22 @@ Các topic liên quan đến ArUco được kiểm tra riêng như Hình~\ref{fi
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[t]{0.47\textwidth}
+
+    \begin{minipage}[t]{0.47\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{images/03-offboard-test-03.png}
-        \caption{Nhóm topic phục vụ phát hiện và hạ cánh ArUco.}
-    \end{subfigure}
+        \includegraphics[width=\linewidth,height=5.8cm,keepaspectratio]{images/03-offboard-test-03.png}
+        \\[2mm]\small (a)
+    \end{minipage}
     \hfill
-    \begin{subfigure}[t]{0.47\textwidth}
+    \begin{minipage}[t]{0.47\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{images/03-offboard-test-04.png}
-        \caption{Dữ liệu chẩn đoán trên \texttt{/uav/aruco/status}.}
-    \end{subfigure}
-    \caption{Kiểm tra topic và trạng thái trực tuyến của ArUco detector.}
+        \includegraphics[width=\linewidth,height=5.8cm,keepaspectratio]{images/03-offboard-test-04.png}
+        \\[2mm]\small (b)
+    \end{minipage}
+
+    \caption{Kiểm tra topic và trạng thái trực tuyến của ArUco detector:
+    (a) Nhóm topic phục vụ phát hiện và hạ cánh ArUco;
+    (b) Dữ liệu chẩn đoán trên \texttt{/uav/aruco/status}.}
     \label{fig:offboard_test_aruco_topics}
 \end{figure}
 
@@ -1397,18 +1405,22 @@ Cuối cùng, UAV được đặt phía trên marker ID~0 để đưa marker và
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[t]{0.62\textwidth}
+
+    \begin{minipage}[t]{0.66\linewidth}
         \centering
         \includegraphics[width=\linewidth]{images/03-offboard-test-01.png}
-        \caption{Thao tác đọc topic trạng thái ArUco từ terminal.}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[t]{0.28\textwidth}
+        \\[2mm]\small (a)
+    \end{minipage}
+    \hspace{0.01\linewidth}
+    \begin{minipage}[t]{0.30\linewidth}
         \centering
         \includegraphics[width=\linewidth]{images/03-offboard-test-marker-id0.jpg}
-        \caption{Bố trí UAV phía trên marker ID~0.}
-    \end{subfigure}
-    \caption{Kiểm tra thực tế nhận dạng marker mục tiêu trước khi thử nghiệm Offboard.}
+        \\[2mm]\small (b)
+    \end{minipage}
+
+    \caption{Kiểm tra thực tế nhận dạng marker mục tiêu trước khi thử nghiệm Offboard:
+    (a) Thao tác đọc topic trạng thái ArUco từ terminal;
+    (b) Bố trí UAV phía trên marker ID~0.}
     \label{fig:offboard_test_marker}
 \end{figure}
 
