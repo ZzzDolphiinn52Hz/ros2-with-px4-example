@@ -280,6 +280,8 @@ Quy trình hiệu chuẩn camera được thực hiện qua các bước chính:
     \item \textbf{Đánh giá kết quả hiệu chuẩn:}
     Độ chính xác của mô hình camera được đánh giá thông qua sai số chiếu lại (reprojection error), thể hiện độ lệch giữa các điểm góc được phát hiện trên ảnh và các điểm được chiếu lại từ mô hình camera đã hiệu chuẩn.
 
+    Các ảnh có sai số chiếu lại riêng lẻ lớn được kiểm tra lại và loại khỏi tập dữ liệu dùng để ước lượng cuối cùng. Ảnh gốc vẫn được lưu để bảo đảm khả năng truy vết và làm minh chứng cho quá trình xử lý dữ liệu.
+
     \item \textbf{Lưu và sử dụng thông số hiệu chuẩn:}
     Ma trận nội tại cùng các hệ số méo được lưu trong tệp cấu hình để sử dụng trong quá trình phát hiện và ước lượng tư thế mã ArUco.
 \end{enumerate}
@@ -294,28 +296,14 @@ Hình~\ref{fig:camera_calibration} minh họa quá trình thu thập ảnh bàn 
 
     \begin{minipage}[t]{0.47\linewidth}
         \centering
-        % \includegraphics[width=\linewidth]{images/02-calibration-views.png}
-        \fbox{
-            \parbox[c][42mm][c]{0.90\linewidth}{
-                \centering
-                \textit{(a)}\\[2mm]
-                \textit{Bộ ảnh bàn cờ}\\
-                \textit{ở nhiều góc nhìn}
-            }
-        }
+        \includegraphics[width=\linewidth]{images/03-calibration-views.png}
+        \\[2mm]\small (a)
     \end{minipage}
     \hfill
     \begin{minipage}[t]{0.47\linewidth}
         \centering
-        % \includegraphics[width=\linewidth]{images/02-chessboard-corners.png}
-        \fbox{
-            \parbox[c][42mm][c]{0.90\linewidth}{
-                \centering
-                \textit{(b)}\\[2mm]
-                \textit{Kết quả phát hiện}\\
-                \textit{các góc bàn cờ}
-            }
-        }
+        \includegraphics[width=\linewidth]{images/03-chessboard-corners.png}
+        \\[2mm]\small (b)
     \end{minipage}
 
     \caption{Quá trình hiệu chuẩn camera bằng bàn cờ:
@@ -345,6 +333,38 @@ trong đó $\mathbf{p}_i$ là tọa độ điểm góc được phát hiện tr�
 
 Giá trị sai số chiếu lại càng nhỏ cho thấy mức độ phù hợp giữa mô hình camera và dữ liệu quan sát càng cao. Tuy nhiên, kết quả hiệu chuẩn còn phụ thuộc vào chất lượng ảnh, độ chính xác của việc phát hiện điểm góc và sự phân bố các tư thế bàn cờ trong tập dữ liệu.
 
+Trong thực nghiệm, camera IMX500 được hiệu chuẩn ở độ phân giải $640\times480$ pixel với 45 ảnh bàn cờ. Kết quả ban đầu khi sử dụng toàn bộ ảnh có sai số $e_{\mathrm{RMS}}=2{,}349$ pixel. Sai số chiếu lại được tính riêng cho từng ảnh; chín ảnh có sai số lớn bất thường được loại khỏi phép ước lượng cuối. Các trường hợp điển hình gồm bàn cờ bị nghiêng mạnh, nằm quá xa hoặc chiếm vùng ảnh quá nhỏ. Ví dụ, ảnh \texttt{left-0029.png} và \texttt{left-0043.png} có sai số lần lượt là $6{,}235$ pixel và $6{,}612$ pixel. Sau khi lọc, 36 ảnh còn lại cho sai số $e_{\mathrm{RMS}}=0{,}531$ pixel. Hình~\ref{fig:camera_calibration_outliers} minh họa sự khác nhau giữa một ảnh được giữ lại và hai ảnh ngoại lai.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.98\linewidth]{images/03-calibration-outliers.png}
+    \caption{Ví dụ đánh giá ảnh hiệu chuẩn, từ trái sang phải:
+    ảnh có bàn cờ rõ và chiếm phần lớn trường nhìn được giữ lại;
+    ảnh có góc nghiêng lớn và ảnh có bàn cờ quá xa bị loại do sai số
+    chiếu lại lớn.}
+    \label{fig:camera_calibration_outliers}
+\end{figure}
+
+Ma trận nội tại và vector hệ số méo thu được từ tập dữ liệu sau khi lọc là:
+
+\begin{equation}
+\begin{aligned}
+\mathbf{K}&=
+\begin{bmatrix}
+480{,}125104 & 0 & 320{,}272190\\
+0 & 480{,}224260 & 228{,}696135\\
+0 & 0 & 1
+\end{bmatrix},\\[4pt]
+\mathbf{d}&=
+\begin{bmatrix}
+-0{,}015577 & 0{,}160202 & -0{,}005259 & 0{,}002837 & 0
+\end{bmatrix}.
+\end{aligned}
+\label{eq:imx500_calibration_result}
+\end{equation}
+
+Trong đó, vector $\mathbf{d}$ được sắp theo thứ tự $(k_1,k_2,p_1,p_2,k_3)$. Các thông số trên được lưu đồng nhất trong cấu hình camera và cấu hình bộ phát hiện ArUco.
+
 Các thông số hiệu chuẩn có thể được sử dụng để hiệu chỉnh ảnh bị méo thông qua hàm \texttt{undistort()} của OpenCV. Hình~\ref{fig:camera_undistortion} minh họa sự khác biệt giữa ảnh ban đầu và ảnh sau khi hiệu chỉnh méo ống kính.
 
 %==================================================
@@ -355,28 +375,14 @@ Các thông số hiệu chuẩn có thể được sử dụng để hiệu ch�
 
     \begin{minipage}[t]{0.47\linewidth}
         \centering
-        % \includegraphics[width=\linewidth]{images/02-before-undistort.png}
-        \fbox{
-            \parbox[c][42mm][c]{0.90\linewidth}{
-                \centering
-                \textit{(a)}\\[2mm]
-                \textit{Ảnh trước khi}\\
-                \textit{hiệu chỉnh méo}
-            }
-        }
+        \includegraphics[width=\linewidth]{images/03-before-undistort.png}
+        \\[2mm]\small (a)
     \end{minipage}
     \hfill
     \begin{minipage}[t]{0.47\linewidth}
         \centering
-        % \includegraphics[width=\linewidth]{images/02-after-undistort.png}
-        \fbox{
-            \parbox[c][42mm][c]{0.90\linewidth}{
-                \centering
-                \textit{(b)}\\[2mm]
-                \textit{Ảnh sau khi}\\
-                \textit{hiệu chỉnh méo}
-            }
-        }
+        \includegraphics[width=\linewidth]{images/03-after-undistort.png}
+        \\[2mm]\small (b)
     \end{minipage}
 
     \caption{Minh họa kết quả hiệu chỉnh méo ảnh:
