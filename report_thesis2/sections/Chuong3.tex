@@ -8,7 +8,8 @@ UAV quadrotor là phương tiện bay sử dụng bốn cụm động
 cơ - cánh quạt để tạo lực nâng và điều khiển chuyển 
 động. Bốn rotor thường được bố trí theo hình chữ X 
 hoặc hình dấu cộng trên cùng một mặt phẳng. 
-Mô hình uav S500 mà đồ án sử dụng là dạng chữ X.
+Mô hình UAV S500 mà đồ án sử dụng là dạng chữ X
+\cite{mahony2012multirotor,bouabdallah2007design}.
 
 \begin{figure}[H]
   \centering
@@ -40,7 +41,7 @@ Sai số yaw cũng cần được xem xét vì hướng của UAV
 thân UAV và hệ tọa độ world.
 
 \subsection{Mã ArUco}
-ArUco (Augmented Reality University of Cordoba) là một loại mã đánh dấu thị giác (fiducial marker) được sử dụng phổ biến trong các hệ thống thị giác máy tính nhằm nhận dạng và xác định vị trí tương đối của đối tượng thông qua hình ảnh thu nhận từ camera. Mã ArUco được phát triển dưới dạng các hình vuông chứa những ô nhị phân màu đen và trắng, cho phép hệ thống nhận dạng từng mã thông qua một bộ từ điển được định nghĩa trước
+ArUco (Augmented Reality University of Cordoba) là một loại mã đánh dấu thị giác (fiducial marker) được sử dụng phổ biến trong các hệ thống thị giác máy tính nhằm nhận dạng và xác định vị trí tương đối của đối tượng thông qua hình ảnh thu nhận từ camera. Mã ArUco được phát triển dưới dạng các hình vuông chứa những ô nhị phân màu đen và trắng, cho phép hệ thống nhận dạng từng mã thông qua một bộ từ điển được định nghĩa trước \cite{garrido2014aruco}.
 \subsubsection{Cấu trúc và từ điển mã ArUco}
 
 \textbf{a)} ArUco là một mã có dạng hình vuông, gồm đường viền đen và một ma trận bit nhị phân ở bên trong. 
@@ -260,7 +261,7 @@ Do đó, trước khi sử dụng dữ liệu hình ảnh để xác định v�
 
 Hiệu chuẩn camera (Camera Calibration) là quá trình xác định các thông số nội tại và hệ số méo ống kính thông qua tập hợp các điểm có tọa độ không gian đã biết và tọa độ ảnh tương ứng.
 
-Trong đề tài, phương pháp hiệu chuẩn sử dụng mẫu bàn cờ (chessboard) kết hợp với thư viện OpenCV được lựa chọn. Mẫu bàn cờ gồm các ô vuông có kích thước xác định, cho phép thiết lập mối quan hệ giữa tọa độ các góc trên mặt phẳng bàn cờ và tọa độ điểm ảnh quan sát được.
+Trong đề tài, phương pháp hiệu chuẩn sử dụng mẫu bàn cờ (chessboard) kết hợp với thư viện OpenCV được lựa chọn. Mẫu bàn cờ gồm các ô vuông có kích thước xác định, cho phép thiết lập mối quan hệ giữa tọa độ các góc trên mặt phẳng bàn cờ và tọa độ điểm ảnh quan sát được \cite{zhang2000calibration}.
 
 Quy trình hiệu chuẩn camera được thực hiện qua các bước chính:
 
@@ -1081,7 +1082,7 @@ hai bộ điều khiển PID được sử dụng tương ứng
 với các sai lệch $e_x$ và $e_y$.
 
 Theo nguyên lý điều khiển PID, tín hiệu điều
-khiển được xác định bởi:
+khiển được xác định bởi \cite{astrom1995pid}:
 
 \begin{equation}
 u(t)
