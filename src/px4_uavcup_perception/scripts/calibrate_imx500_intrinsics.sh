@@ -38,6 +38,7 @@ printf '%s\n' \
 
 echo "Calibration session: $host_session_dir"
 echo "Press 's' in the GUI to save report screenshots."
+echo "If 's' is not captured, run ./uavcup aruco-calib-shot in Terminal 3."
 echo "After CALIBRATE finishes, click SAVE, then press Ctrl+C here."
 
 set +e

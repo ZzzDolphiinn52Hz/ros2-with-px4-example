@@ -22,6 +22,7 @@ Commands:
   cameras           Run CAM0 IMX219 + CAM1 IMX500 host frame servers.
   aruco-camera      Run one CAM0 IMX500 host frame server for ArUco.
   aruco-calibrate   Open the IMX500 calibration GUI and save report evidence.
+  aruco-calib-shot  Select and save a calibration GUI screenshot.
   aruco-test        Run only the ArUco detector (no PX4/control nodes).
   aruco-debug       Alias for ArUco detector with debug topics/image enabled.
   aruco-vehicle     Run ArUco + landing PID + PX4 adapter; no ZipDepth.
@@ -146,6 +147,23 @@ case "$command" in
     require_workspace_build
     exec bash \
       src/px4_uavcup_perception/scripts/calibrate_imx500_intrinsics.sh
+    ;;
+
+  aruco-calib-shot)
+    require_command scrot
+    calibration_root="$WORKSPACE_DIR/artifacts/imx500_calibration"
+    latest_session="$(find "$calibration_root" -mindepth 1 -maxdepth 1 \
+      -type d -printf '%f\n' 2>/dev/null | sort | tail -n 1)"
+    if [[ -z "$latest_session" ]]; then
+      echo "ERROR: no IMX500 calibration session exists." >&2
+      exit 1
+    fi
+    screenshot_dir="$calibration_root/$latest_session/screenshots"
+    screenshot_path="$screenshot_dir/gui_$(date +%Y%m%d_%H%M%S).png"
+    mkdir -p "$screenshot_dir"
+    DISPLAY="${DISPLAY:-:0}" scrot --select --freeze --border \
+      "$screenshot_path"
+    echo "Saved screenshot: $screenshot_path"
     ;;
 
   aruco-test)

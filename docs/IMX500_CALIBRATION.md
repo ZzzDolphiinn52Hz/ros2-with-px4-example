@@ -53,6 +53,16 @@ có ít nhất các ảnh sau cho báo cáo:
 5. Bốn thanh X, Y, Size, Skew đã đủ và nút **CALIBRATE** sáng.
 6. Ảnh đã rectify sau khi calibration hoàn tất.
 
+Trên một số phiên XWayland, cửa sổ OpenCV không nhận phím `s`. Khi đó mở
+Terminal 3 và chạy lệnh sau, rồi dùng chuột chọn cửa sổ/vùng cần chụp:
+
+```bash
+cd ~/ros2_ws
+./uavcup aruco-calib-shot
+```
+
+Ảnh sẽ được lưu vào thư mục `screenshots/` của phiên calibration mới nhất.
+
 Di chuyển chậm và giữ bảng đứng yên khoảng một giây ở mỗi tư thế. Không chỉ
 xoay checkerboard trong cùng một vị trí; cần phủ đều toàn bộ trường nhìn và có
 nhiều góc nghiêng khác nhau.
