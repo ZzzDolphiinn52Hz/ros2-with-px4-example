@@ -34,7 +34,7 @@ Mở Terminal 2:
 
 ```bash
 cd ~/ros2_ws
-./uavcup aruco-calibrate
+DISPLAY=:0 ./uavcup aruco-calibrate
 ```
 
 Script tự tạo thư mục:
