@@ -113,39 +113,6 @@ Cách xử lý này làm nổi bật vùng sáng - tối và giúp hệ thống 
 
 Kết quả nhận diện gồm ID và bốn điểm góc trên mặt phẳng ảnh. Từ các dữ liệu này, hệ thống xác định tâm marker; khi kết hợp với kích thước thật của marker và thông số hiệu chuẩn camera, hệ thống có thể ước lượng vị trí và tư thế tương đối bằng phương pháp PnP. Trong bài toán hạ cánh tự động, pose của marker được dùng để tính sai lệch vị trí và cung cấp tín hiệu phản hồi cho bộ điều khiển UAV.
 
-\subsection{Camera và hiệu chuẩn}
-
-Camera đơn cung cấp ảnh màu từ môi trường xung quanh. Trong đề tài này, camera được lắp hướng xuống để quan sát bãi đáp và marker trong quá trình tiếp cận, căn chỉnh và hạ cánh. Chất lượng của phép ước lượng pose phụ thuộc vào độ phân giải, trường nhìn, độ méo ống kính, độ rung và góc lắp camera.
-
-\subsubsection{Mô hình camera lỗ kim}
-
-Với mô hình camera lỗ kim, một điểm trong hệ tọa độ camera được chiếu lên mặt phẳng ảnh thông qua ma trận nội tại:
-\begin{equation}
-  \mathbf{K}=\begin{bmatrix}f_x & 0 & c_x\\ 0 & f_y & c_y\\ 0 & 0 & 1\end{bmatrix},
-\end{equation}
-trong đó $f_x$ và $f_y$ là tiêu cự theo hai phương ảnh, còn $(c_x,c_y)$ là tọa độ tâm ảnh. Với điểm không gian $\mathbf{P}_c=[X_c,Y_c,Z_c]^T$, tọa độ ảnh lý tưởng được xác định bởi:
-\begin{equation}
-  s\begin{bmatrix}u\\v\\1\end{bmatrix}=\mathbf{K}\begin{bmatrix}X_c\\Y_c\\Z_c\end{bmatrix},
-\end{equation}
-trong đó $(u,v)$ là tọa độ điểm ảnh và $s$ là hệ số tỉ lệ.
-
-Ống kính thực tế gây ra méo xuyên tâm và méo tiếp tuyến. Vì vậy, ma trận nội tại và các hệ số méo cần được xác định trước khi dùng ảnh để ước lượng pose marker.
-
-\subsubsection{Quy trình hiệu chuẩn}
-
-Quy trình hiệu chuẩn camera gồm các bước chính:
-\begin{enumerate}
-  \item In bàn cờ hoặc bảng chuẩn có kích thước ô đã biết.
-  \item Chụp nhiều ảnh ở các vị trí, khoảng cách và góc nghiêng khác nhau.
-  \item Phát hiện các góc của bàn cờ trong từng ảnh.
-  \item Tối ưu ma trận nội tại và hệ số méo dựa trên các điểm tương ứng.
-  \item Đánh giá sai số chiếu lại và lưu thông số hiệu chuẩn để sử dụng trong chương trình xử lý ảnh.
-\end{enumerate}
-
-Camera cần được cố định chắc chắn sau khi hiệu chuẩn. Nếu vị trí hoặc góc lắp camera thay đổi, phép biến đổi giữa hệ camera và hệ thân UAV phải được xác định lại.
-
-% TODO: Chèn ảnh bàn cờ ở nhiều góc và ảnh so sánh trước/sau hiệu chỉnh méo.
-\noindent\textit{[Hình cần chèn: Bộ ảnh hiệu chuẩn camera và kết quả hiệu chỉnh méo.]}\par\vspace{18mm}
 \subsection{Các hệ tọa độ}
 
 Trong hệ thống UAV hạ cánh tự động dựa trên thị giác máy tính, việc xác định vị trí tương đối giữa UAV và mã ArUco đòi hỏi phải thống nhất quy ước các hệ tọa độ. Các hệ tọa độ được sử dụng bao gồm:
@@ -181,8 +148,9 @@ Mối quan hệ giữa hai hệ tọa độ bất kỳ được biểu diễn th
 trong đó ${}^{A}\mathbf{R}_{B}\in SO(3)$ là ma trận quay mô tả hướng của hệ $B$ so với hệ $A$, và ${}^{A}\mathbf{t}_{B}\in\mathbb{R}^{3}$ là vector tịnh tiến biểu diễn vị trí gốc hệ $B$ trong hệ $A$.
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.8\textwidth]{images/03-all-coordinate.png}
-  \caption{Các hệ trục tọa độ}
+  \includegraphics[width=1\textwidth]{images/03-all-coordinate.png}
+  \caption{(a) Các hệ trục tọa độ; 
+  (b) ánh xạ n điểm từ real world sang image plane.}
   \label{fig:all-coordinate}
 \end{figure}
 Hình \ref{fig:all-coordinate} minh họa các hệ trục tọa độ được sử dụng trong hệ thống.
@@ -198,19 +166,241 @@ Hình \ref{fig:all-coordinate} minh họa các hệ trục tọa độ được 
 \end{equation}
 \indent trong đó ${}^{C}\mathbf{T}_{M}$ được xác định thông qua quá trình nhận diện và ước lượng tư thế ArUco, ${}^{B}\mathbf{T}_{C}$ phụ thuộc vào vị trí và hướng lắp đặt camera trên UAV, còn ${}^{N}\mathbf{T}_{B}$ mô tả tư thế của UAV trong hệ tọa độ dẫn đường.
 
+\subsection{Camera và hiệu chuẩn}
+
+Trong hệ thống UAV hạ cánh tự động dựa trên thị giác máy tính, camera đóng vai trò thu nhận hình ảnh và cung cấp dữ liệu phục vụ quá trình phát hiện, xác định vị trí và tư thế của mã ArUco. Trong đề tài này, camera IMX500 được lắp hướng xuống phía dưới UAV nhằm quan sát khu vực hạ cánh và xác định vị trí tương đối giữa UAV với marker trong quá trình tiếp cận, căn chỉnh và hạ cánh.
+
+Độ chính xác của quá trình ước lượng vị trí và tư thế marker phụ thuộc vào các đặc tính của camera như độ phân giải ảnh, trường nhìn, tiêu cự, độ méo ống kính và chất lượng hình ảnh thu nhận. Vì vậy, việc xây dựng mô hình camera và xác định các thông số hiệu chuẩn là cần thiết nhằm thiết lập mối quan hệ hình học giữa tọa độ các điểm trong không gian ba chiều và tọa độ tương ứng trên mặt phẳng ảnh.
+
+\subsubsection{Mô hình camera lỗ kim}
+
+Mô hình camera lỗ kim (Pinhole Camera Model) được sử dụng để mô tả quá trình hình thành ảnh thông qua phép chiếu phối cảnh. Theo mô hình này, các tia sáng từ một điểm trong không gian đi qua tâm quang học của camera và tạo thành điểm ảnh tương ứng trên mặt phẳng ảnh.
+
+Xét điểm $\mathbf{P}_C=[X_C,Y_C,Z_C]^T$ trong hệ tọa độ camera $\{C\}$, tọa độ điểm ảnh lý tưởng được xác định bởi:
+
+\begin{equation}
+    s
+    \begin{bmatrix}
+        u\\
+        v\\
+        1
+    \end{bmatrix}
+    =
+    \mathbf{K}
+    \begin{bmatrix}
+        X_C\\
+        Y_C\\
+        Z_C
+    \end{bmatrix},
+    \label{eq:camera_projection}
+\end{equation}
+
+trong đó $(u,v)$ là tọa độ điểm ảnh, $s$ là hệ số tỷ lệ của phép chiếu phối cảnh và $\mathbf{K}$ là ma trận thông số nội tại camera, được biểu diễn dưới dạng:
+
+\begin{equation}
+    \mathbf{K} =
+    \begin{bmatrix}
+        f_x & 0 & c_x\\
+        0 & f_y & c_y\\
+        0 & 0 & 1
+    \end{bmatrix},
+    \label{eq:camera_intrinsic}
+\end{equation}
+
+với $f_x$, $f_y$ là tiêu cự theo hai phương của ảnh, biểu diễn bằng đơn vị pixel; $(c_x,c_y)$ là tọa độ điểm chính ảnh (principal point).
+
+Từ phương trình~\eqref{eq:camera_projection}, tọa độ điểm ảnh lý tưởng được xác định theo:
+
+\begin{equation}
+    \begin{cases}
+        u = f_x\dfrac{X_C}{Z_C}+c_x,\\[6pt]
+        v = f_y\dfrac{Y_C}{Z_C}+c_y.
+    \end{cases}
+    \label{eq:camera_pixel_coordinates}
+\end{equation}
+
+Các phương trình trên cho thấy vị trí điểm ảnh phụ thuộc vào tọa độ không gian của đối tượng và các thông số nội tại camera. Mối quan hệ hình học này được minh họa trong Hình~\ref{fig:pinhole_camera}.
+
+%==================================================
+% HINH 1: MO HINH CAMERA LO KIM
+%==================================================
+\begin{figure}[htbp]
+    \centering
+    % Thay khung ben duoi bang:
+    \includegraphics[width=0.68\linewidth]{images/03-pinhole-cam.png}
+    \caption{Mô hình camera lỗ kim và phép chiếu
+    điểm trong không gian ba chiều lên mặt phẳng ảnh.}
+    \label{fig:pinhole_camera}
+\end{figure}
+%==================================================
+
+Trong thực tế, hình ảnh thu nhận từ camera không hoàn toàn tuân theo mô hình chiếu lý tưởng do ảnh hưởng của độ méo ống kính. Hai dạng méo thường được xét đến là méo xuyên tâm (radial distortion) và méo tiếp tuyến (tangential distortion).
+
+Méo xuyên tâm làm các điểm ảnh bị dịch chuyển theo phương xuyên tâm so với điểm chính ảnh, trong khi méo tiếp tuyến xuất hiện khi các thành phần quang học không được căn chỉnh hoàn toàn đồng trục.
+
+Với tọa độ chuẩn hóa $x=X_C/Z_C$ và $y=Y_C/Z_C$, đặt $r^2=x^2+y^2$, mô hình méo ảnh có thể được biểu diễn như sau:
+
+\begin{equation}
+\begin{aligned}
+x_d ={}&
+x(1+k_1r^2+k_2r^4+k_3r^6)\\
+&+2p_1xy+p_2(r^2+2x^2),\\[4pt]
+y_d ={}&
+y(1+k_1r^2+k_2r^4+k_3r^6)\\
+&+p_1(r^2+2y^2)+2p_2xy,
+\end{aligned}
+\label{eq:camera_distortion}
+\end{equation}
+
+trong đó $k_1$, $k_2$, $k_3$ là các hệ số méo xuyên tâm; $p_1$, $p_2$ là các hệ số méo tiếp tuyến; $(x_d,y_d)$ là tọa độ chuẩn hóa sau khi xét ảnh hưởng của méo ống kính.
+
+Do đó, trước khi sử dụng dữ liệu hình ảnh để xác định vị trí và tư thế ArUco marker, các thông số nội tại và hệ số méo của camera cần được xác định thông qua quá trình hiệu chuẩn.
+
+\subsubsection{Quy trình hiệu chuẩn}
+
+Hiệu chuẩn camera (Camera Calibration) là quá trình xác định các thông số nội tại và hệ số méo ống kính thông qua tập hợp các điểm có tọa độ không gian đã biết và tọa độ ảnh tương ứng.
+
+Trong đề tài, phương pháp hiệu chuẩn sử dụng mẫu bàn cờ (chessboard) kết hợp với thư viện OpenCV được lựa chọn. Mẫu bàn cờ gồm các ô vuông có kích thước xác định, cho phép thiết lập mối quan hệ giữa tọa độ các góc trên mặt phẳng bàn cờ và tọa độ điểm ảnh quan sát được.
+
+Quy trình hiệu chuẩn camera được thực hiện qua các bước chính:
+
+\begin{enumerate}
+    \item \textbf{Chuẩn bị mẫu hiệu chuẩn:}
+    Sử dụng bàn cờ có $9\times6$ góc trong, với kích thước mỗi ô vuông là $25$ mm. Mẫu được in đúng tỷ lệ và cố định trên bề mặt phẳng nhằm bảo đảm kích thước hình học trong quá trình hiệu chuẩn.
+
+    \item \textbf{Thu thập dữ liệu hình ảnh:}
+    Camera IMX500 được sử dụng để chụp nhiều ảnh bàn cờ tại các vị trí, khoảng cách và góc nghiêng khác nhau. Bàn cờ được bố trí tại cả vùng trung tâm và các khu vực gần rìa ảnh nhằm thu thập dữ liệu phục vụ xác định các thông số méo ống kính.
+
+    \item \textbf{Phát hiện các điểm góc bàn cờ:}
+    Sử dụng hàm \texttt{findChessboardCorners()} của OpenCV để xác định tọa độ các góc trong bàn cờ trên ảnh. Sau đó, hàm \texttt{cornerSubPix()} được sử dụng để tinh chỉnh vị trí các điểm góc với độ chính xác dưới pixel.
+
+    \item \textbf{Ước lượng thông số camera:}
+    Từ các cặp điểm tương ứng giữa tọa độ 3D của bàn cờ và tọa độ 2D trên ảnh, hàm \texttt{calibrateCamera()} được sử dụng để ước lượng ma trận nội tại $\mathbf{K}$, các hệ số méo ống kính và tư thế của bàn cờ trong từng ảnh hiệu chuẩn.
+
+    \item \textbf{Đánh giá kết quả hiệu chuẩn:}
+    Độ chính xác của mô hình camera được đánh giá thông qua sai số chiếu lại (reprojection error), thể hiện độ lệch giữa các điểm góc được phát hiện trên ảnh và các điểm được chiếu lại từ mô hình camera đã hiệu chuẩn.
+
+    \item \textbf{Lưu và sử dụng thông số hiệu chuẩn:}
+    Ma trận nội tại cùng các hệ số méo được lưu trong tệp cấu hình để sử dụng trong quá trình phát hiện và ước lượng tư thế mã ArUco.
+\end{enumerate}
+
+Hình~\ref{fig:camera_calibration} minh họa quá trình thu thập ảnh bàn cờ tại nhiều góc nhìn và kết quả phát hiện các điểm góc phục vụ hiệu chuẩn camera.
+
+%==================================================
+% HINH 2: QUY TRINH HIEU CHUAN CAMERA
+%==================================================
+\begin{figure}[htbp]
+    \centering
+
+    \begin{minipage}[t]{0.47\linewidth}
+        \centering
+        % \includegraphics[width=\linewidth]{images/02-calibration-views.png}
+        \fbox{
+            \parbox[c][42mm][c]{0.90\linewidth}{
+                \centering
+                \textit{(a)}\\[2mm]
+                \textit{Bộ ảnh bàn cờ}\\
+                \textit{ở nhiều góc nhìn}
+            }
+        }
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.47\linewidth}
+        \centering
+        % \includegraphics[width=\linewidth]{images/02-chessboard-corners.png}
+        \fbox{
+            \parbox[c][42mm][c]{0.90\linewidth}{
+                \centering
+                \textit{(b)}\\[2mm]
+                \textit{Kết quả phát hiện}\\
+                \textit{các góc bàn cờ}
+            }
+        }
+    \end{minipage}
+
+    \caption{Quá trình hiệu chuẩn camera bằng bàn cờ:
+    (a) Các ảnh bàn cờ tại những vị trí và góc
+    quan sát khác nhau;
+    (b) Kết quả phát hiện các điểm góc bàn cờ
+    bằng OpenCV.}
+    \label{fig:camera_calibration}
+\end{figure}
+%==================================================
+
+Sau khi xác định các thông số camera, chất lượng hiệu chuẩn được đánh giá dựa trên sai số chiếu lại căn quân phương (Root Mean Square Reprojection Error), được xác định bởi:
+
+\begin{equation}
+    e_{\mathrm{RMS}}=
+    \sqrt{
+        \frac{1}{N}
+        \sum_{i=1}^{N}
+        \left\|
+            \mathbf{p}_i-\hat{\mathbf{p}}_i
+        \right\|^2
+    },
+    \label{eq:camera_reprojection_error}
+\end{equation}
+
+trong đó $\mathbf{p}_i$ là tọa độ điểm góc được phát hiện trên ảnh, $\hat{\mathbf{p}}_i$ là tọa độ điểm tương ứng được chiếu lại từ mô hình camera đã hiệu chuẩn và $N$ là tổng số điểm được sử dụng để đánh giá.
+
+Giá trị sai số chiếu lại càng nhỏ cho thấy mức độ phù hợp giữa mô hình camera và dữ liệu quan sát càng cao. Tuy nhiên, kết quả hiệu chuẩn còn phụ thuộc vào chất lượng ảnh, độ chính xác của việc phát hiện điểm góc và sự phân bố các tư thế bàn cờ trong tập dữ liệu.
+
+Các thông số hiệu chuẩn có thể được sử dụng để hiệu chỉnh ảnh bị méo thông qua hàm \texttt{undistort()} của OpenCV. Hình~\ref{fig:camera_undistortion} minh họa sự khác biệt giữa ảnh ban đầu và ảnh sau khi hiệu chỉnh méo ống kính.
+
+%==================================================
+% HINH 3: TRUOC VA SAU HIEU CHINH MEO ANH
+%==================================================
+\begin{figure}[htbp]
+    \centering
+
+    \begin{minipage}[t]{0.47\linewidth}
+        \centering
+        % \includegraphics[width=\linewidth]{images/02-before-undistort.png}
+        \fbox{
+            \parbox[c][42mm][c]{0.90\linewidth}{
+                \centering
+                \textit{(a)}\\[2mm]
+                \textit{Ảnh trước khi}\\
+                \textit{hiệu chỉnh méo}
+            }
+        }
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.47\linewidth}
+        \centering
+        % \includegraphics[width=\linewidth]{images/02-after-undistort.png}
+        \fbox{
+            \parbox[c][42mm][c]{0.90\linewidth}{
+                \centering
+                \textit{(b)}\\[2mm]
+                \textit{Ảnh sau khi}\\
+                \textit{hiệu chỉnh méo}
+            }
+        }
+    \end{minipage}
+
+    \caption{Minh họa kết quả hiệu chỉnh méo ảnh:
+    (a) Ảnh thu nhận ban đầu từ camera;
+    (b) Ảnh sau khi hiệu chỉnh bằng các thông số
+    đã xác định.}
+    \label{fig:camera_undistortion}
+\end{figure}
+%==================================================
+
+Sau khi hiệu chuẩn, ma trận nội tại và các hệ số méo được sử dụng trong thuật toán ước lượng vị trí và tư thế ArUco marker. Trong quá trình này, OpenCV có thể sử dụng trực tiếp ảnh gốc kết hợp với các hệ số méo để tính toán pose mà không bắt buộc phải hiệu chỉnh toàn bộ ảnh trước khi nhận diện.
+
+Camera cần được cố định chắc chắn trên khung UAV nhằm hạn chế ảnh hưởng của rung động và sự thay đổi hướng quan sát. Nếu vị trí hoặc góc lắp camera thay đổi, phép biến đổi giữa hệ tọa độ camera và hệ tọa độ thân UAV cần được xác định lại. Trường hợp thay đổi chế độ thu nhận ảnh, độ phân giải hoặc cấu hình quang học, cần kiểm tra lại tính phù hợp của các thông số hiệu chuẩn trước khi sử dụng.
+
+
 \subsection{Ước lượng pose bằng PnP}
 
-Sau khi phát hiện mã ArUco, thuật toán nhận diện cung cấp ID và tọa độ bốn góc marker trên mặt phẳng ảnh. Để xác định vị trí và hướng của marker trong không gian ba chiều, hệ thống sử dụng bài toán Perspective-n-Point (PnP), dựa trên mối quan hệ giữa các điểm 3D đã biết trên marker và các điểm 2D tương ứng được quan sát bởi camera.
+Sau khi phát hiện mã ArUco, thuật toán nhận diện cung cấp ID
+và tọa độ bốn góc của marker trên mặt phẳng ảnh. Để xác định
+vị trí và hướng của marker trong không gian ba chiều, hệ
+thống sử dụng bài toán Perspective-n-Point (PnP), dựa trên
+mối quan hệ giữa các điểm 3D đã biết trên marker và các điểm
+2D tương ứng được quan sát bởi camera.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=1\textwidth]{images/03-PnP.png}
-  \caption{(a) Phép chiếu phối cảnh từ không gian 3D lên
-    mặt phẳng ảnh 2D;
-    (b) Phép biến đổi tọa độ và phép chiếu phối cảnh
-    thông qua mô hình camera.}
-  \label{fig:PnP}
-\end{figure}
 Quá trình ước lượng tư thế bằng PnP được minh họa trong
 Hình~\ref{fig:PnP}. Trong đó, Hình~\ref{fig:PnP}(a)
 biểu diễn mô hình phép chiếu phối cảnh từ không gian ba chiều
@@ -220,43 +410,68 @@ ma trận quay $\mathbf{R}$ và vector tịnh tiến $\mathbf{t}$,
 sau đó được chiếu lên mặt phẳng ảnh theo mô hình camera
 lỗ kim với ma trận nội tại $\mathbf{K}$.
 
-Hình~\ref{fig:PnP}(b) minh họa chi tiết hai bước
-biến đổi hình học: (1) chuyển tọa độ điểm 3D từ hệ tham
-chiếu sang hệ camera thông qua ma trận biến đổi đồng nhất;
-(2) chiếu điểm 3D trong hệ camera lên mặt phẳng ảnh để
-thu được tọa độ pixel $(u,v)$. Thông qua các cặp điểm
-tương ứng 3D--2D, bài toán PnP cho phép ước lượng tư thế
-tương đối gồm sáu bậc tự do (6-DoF), bao gồm ba thành
-phần tịnh tiến và ba thành phần quay.
+Hình~\ref{fig:PnP}(b) minh họa chi tiết hai bước biến đổi
+hình học: (1) chuyển tọa độ điểm 3D từ hệ tham chiếu sang
+hệ camera thông qua phép biến đổi tọa độ; (2) chiếu điểm 3D
+trong hệ camera lên mặt phẳng ảnh để thu được tọa độ pixel
+$(u,v)$. Thông qua các cặp điểm tương ứng 3D--2D, bài toán
+PnP cho phép ước lượng tư thế tương đối gồm sáu bậc tự do
+(6-DoF), bao gồm ba thành phần tịnh tiến và ba thành phần
+quay.
 
-Trong bài toán nhận diện ArUco, hệ tọa độ tham chiếu
-được thay bằng hệ tọa độ marker $\{M\}$. Các điểm 3D
-là bốn góc của marker với kích thước đã biết, trong khi
-các điểm 2D tương ứng được xác định thông qua thuật
-toán phát hiện ArUco trên ảnh camera. Kết quả PnP cung
-cấp phép biến đổi ${}^{C}\mathbf{T}_{M}$, mô tả vị trí
-và hướng của marker trong hệ tọa độ camera.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/03-PnP.png}
+    \caption{Mô hình hình học của bài toán PnP:
+    (a) Phép chiếu phối cảnh từ không gian 3D lên
+    mặt phẳng ảnh 2D;
+    (b) Phép biến đổi tọa độ và phép chiếu phối cảnh
+    thông qua mô hình camera.}
+    \label{fig:PnP}
+\end{figure}
 
-Theo mô hình camera lỗ kim, quan hệ phép chiếu được biểu diễn bởi:
+Trong bài toán nhận diện ArUco, hệ tọa độ tham chiếu được
+chọn là hệ tọa độ marker $\{M\}$. Các điểm 3D là bốn góc
+của marker với kích thước đã biết, trong khi các điểm 2D
+tương ứng được xác định thông qua thuật toán phát hiện
+ArUco trên ảnh camera. Kết quả PnP cung cấp phép biến đổi
+${}^{C}\mathbf{T}_{M}$, mô tả vị trí và hướng của marker
+trong hệ tọa độ camera $\{C\}$.
+
+Theo mô hình camera lỗ kim, quan hệ phép chiếu giữa một
+điểm 3D và điểm ảnh tương ứng được biểu diễn bởi:
 
 \begin{equation}
     s_i \tilde{\mathbf{p}}_i
     =
     \mathbf{K}
     \left(
-        {}^{C}\mathbf{R}_{M}\mathbf{P}_i
+        {}^{C}\mathbf{R}_{M}\mathbf{q}_i
         +
         {}^{C}\mathbf{t}_{M}
     \right),
     \label{eq:pnp_projection}
 \end{equation}
-\indent trong đó:
+
+trong đó:
 \begin{itemize}
-    \item $\mathbf{P}_i=[X_i,Y_i,Z_i]^T$ là tọa độ điểm thứ $i$ trong hệ marker.
-    \item $\tilde{\mathbf{p}}_i=[u_i,v_i,1]^T$ là tọa độ thuần nhất của điểm ảnh tương ứng sau khi hiệu chỉnh méo.
-    \item $\mathbf{K}$ là ma trận thông số nội tại của camera.
-    \item ${}^{C}\mathbf{R}_{M}$ và ${}^{C}\mathbf{t}_{M}$ lần lượt là ma trận quay và vector tịnh tiến của hệ marker so với hệ camera.
-    \item $s_i$ là hệ số tỷ lệ của phép chiếu phối cảnh.
+    \item $\mathbf{q}_i=[X_i,Y_i,Z_i]^T$ là tọa độ
+    điểm thứ $i$ trong hệ tọa độ marker.
+    
+    \item $\tilde{\mathbf{p}}_i=[u_i,v_i,1]^T$
+    là tọa độ thuần nhất của điểm ảnh tương ứng
+    trong mô hình chiếu lý tưởng, chưa xét méo ảnh.
+    
+    \item $\mathbf{K}$ là ma trận thông số nội tại
+    của camera.
+    
+    \item ${}^{C}\mathbf{R}_{M}$ và
+    ${}^{C}\mathbf{t}_{M}$ lần lượt là ma trận quay
+    và vector tịnh tiến của hệ marker so với
+    hệ camera.
+    
+    \item $s_i$ là hệ số tỷ lệ của phép chiếu
+    phối cảnh.
 \end{itemize}
 
 Ma trận nội tại camera được biểu diễn dưới dạng:
@@ -264,78 +479,1015 @@ Ma trận nội tại camera được biểu diễn dưới dạng:
 \begin{equation}
     \mathbf{K} =
     \begin{bmatrix}
-        f_x & 0 & c_x \\
-        0 & f_y & c_y \\
+        f_x & \gamma & c_x\\
+        0 & f_y & c_y\\
         0 & 0 & 1
     \end{bmatrix},
-    \label{eq:camera_intrinsic}
+    \label{eq:pnp_intrinsic}
 \end{equation}
 
-trong đó $f_x$, $f_y$ là tiêu cự biểu diễn theo đơn vị pixel, còn $(c_x,c_y)$ là tọa độ điểm chính ảnh.
+trong đó $f_x$ và $f_y$ là tiêu cự theo hai phương ảnh,
+được biểu diễn bằng đơn vị pixel; $(c_x,c_y)$ là tọa độ
+điểm chính ảnh và $\gamma$ là hệ số độ xiên giữa hai
+trục ảnh. Trong điều kiện lý tưởng, hai trục ảnh vuông
+góc với nhau nên $\gamma=0$.
 
-Với mã ArUco hình vuông có chiều dài cạnh $L$, gốc tọa độ được đặt tại tâm marker. Theo quy ước được sử dụng, tọa độ bốn góc trong hệ marker lần lượt là:
+Khai triển phương trình~\eqref{eq:pnp_projection},
+ta thu được:
 
 \begin{equation}
 \begin{aligned}
-    \mathbf{P}_1 &= [-L/2,\; L/2,\; 0]^T,\\
-    \mathbf{P}_2 &= [ L/2,\; L/2,\; 0]^T,\\
-    \mathbf{P}_3 &= [ L/2,\;-L/2,\; 0]^T,\\
-    \mathbf{P}_4 &= [-L/2,\;-L/2,\; 0]^T.
+s_i
+\begin{bmatrix}
+u_i\\
+v_i\\
+1
+\end{bmatrix}
+&=
+\underbrace{
+\begin{bmatrix}
+f_x & \gamma & c_x\\
+0 & f_y & c_y\\
+0 & 0 & 1
+\end{bmatrix}
+}_{\text{Ma trận nội tại}}
+\\[6pt]
+&\quad \times
+\underbrace{
+\begin{bmatrix}
+r_{11} & r_{12} & r_{13} & t_x\\
+r_{21} & r_{22} & r_{23} & t_y\\
+r_{31} & r_{32} & r_{33} & t_z
+\end{bmatrix}
+}_{\text{Ma trận ngoại tại}}
+\begin{bmatrix}
+X_i\\
+Y_i\\
+Z_i\\
+1
+\end{bmatrix}.
+\end{aligned}
+\label{eq:pnp_expanded}
+\end{equation}
+
+Trong phương trình~\eqref{eq:pnp_expanded},
+$(X_i,Y_i,Z_i)$ là tọa độ của điểm 3D trong hệ tọa độ
+marker, còn $(u_i,v_i)$ là tọa độ điểm ảnh tương ứng.
+Các phần tử $r_{ij}$ thuộc ma trận quay
+${}^{C}\mathbf{R}_{M}$ và $(t_x,t_y,t_z)$ là các
+thành phần của vector tịnh tiến
+${}^{C}\mathbf{t}_{M}$.
+
+Ma trận ngoại tại
+$[{}^{C}\mathbf{R}_{M}\mid{}^{C}\mathbf{t}_{M}]$
+mô tả phép biến đổi từ hệ tọa độ marker sang hệ tọa độ
+camera. Trong khi đó, ma trận nội tại $\mathbf{K}$
+biểu diễn các đặc tính hình học của camera, bao gồm
+tiêu cự, tọa độ điểm chính ảnh và độ xiên giữa
+hai trục ảnh.
+
+Như vậy, quá trình hình thành ảnh bao gồm hai phép
+biến đổi liên tiếp. Trước tiên, điểm 3D trong hệ marker
+được chuyển sang hệ camera thông qua phép quay và phép
+tịnh tiến. Sau đó, điểm trong hệ camera được chiếu
+lên mặt phẳng ảnh thông qua ma trận nội tại để xác
+định tọa độ pixel tương ứng.
+
+Đối với ảnh thu nhận thực tế, phép chiếu còn chịu
+ảnh hưởng của méo xuyên tâm và méo tiếp tuyến.
+Vì vậy, các hệ số méo thu được từ quá trình hiệu
+chuẩn camera cần được xét đến khi ước lượng tư thế.
+
+Với mã ArUco hình vuông có chiều dài cạnh $L$,
+gốc tọa độ được đặt tại tâm marker và mặt phẳng
+marker trùng với mặt phẳng $X_MY_M$. Do đó,
+tọa độ theo trục $Z_M$ của bốn góc marker đều
+bằng không.
+
+Theo quy ước gốc tại tâm và trục $Z_M$ hướng
+ra khỏi mặt in, tọa độ bốn góc của marker được
+xác định như sau:
+
+\begin{equation}
+\begin{aligned}
+    \mathbf{q}_1 &=
+    [-L/2,\; L/2,\; 0]^T,\\
+    \mathbf{q}_2 &=
+    [ L/2,\; L/2,\; 0]^T,\\
+    \mathbf{q}_3 &=
+    [ L/2,\;-L/2,\; 0]^T,\\
+    \mathbf{q}_4 &=
+    [-L/2,\;-L/2,\; 0]^T.
 \end{aligned}
 \label{eq:marker_corners}
 \end{equation}
 
-Từ các cặp điểm tương ứng 3D--2D, thuật toán PnP ước lượng phép quay và phép tịnh tiến sao cho sai số chiếu lại giữa các điểm ảnh dự đoán và quan sát được là nhỏ nhất. Trong quá trình này, các tham số hiệu chuẩn camera và hệ số méo ống kính được sử dụng để nâng cao độ chính xác của phép ước lượng.
+Các điểm $\mathbf{q}_1,\mathbf{q}_2,\mathbf{q}_3$
+và $\mathbf{q}_4$ là tọa độ 3D của bốn góc marker
+trong hệ tọa độ $\{M\}$. Các điểm ảnh tương ứng
+$\mathbf{p}_1,\mathbf{p}_2,\mathbf{p}_3$ và
+$\mathbf{p}_4$ được xác định thông qua quá trình
+xử lý ảnh và phát hiện ArUco như mô tả trong hình Hình \ref{fig:all-coordinate}(b).
 
-Kết quả ước lượng gồm vector quay $\mathbf{rvec}$ và vector tịnh tiến $\mathbf{tvec}$. Vector quay được chuyển thành ma trận quay thông qua công thức Rodrigues, trong khi vector tịnh tiến biểu diễn vị trí tâm marker trong hệ tọa độ camera:
+Từ bốn cặp điểm tương ứng 3D--2D, bài toán PnP
+được sử dụng để xác định phép quay và phép tịnh tiến
+giữa hệ tọa độ marker và hệ tọa độ camera.
+
+Về nguyên lý, phép ước lượng hướng đến việc tìm
+các tham số sao cho sai lệch giữa tọa độ các điểm
+góc quan sát được trên ảnh và tọa độ các điểm
+được chiếu lại từ mô hình camera là nhỏ nhất.
+
+Trong thư viện OpenCV, bài toán PnP có thể được
+giải bằng hàm \texttt{solvePnP()}, với các dữ liệu
+đầu vào gồm tọa độ các điểm 3D, tọa độ điểm ảnh
+tương ứng, ma trận nội tại camera và các hệ số
+méo ống kính.
+
+Kết quả ước lượng gồm vector quay
+$\mathbf{rvec}$ và vector tịnh tiến
+$\mathbf{tvec}$. Vector quay được chuyển thành
+ma trận quay $3\times3$ thông qua công thức
+Rodrigues:
+
+\begin{equation}
+    {}^{C}\mathbf{R}_{M}
+    =
+    \operatorname{Rodrigues}(\mathbf{rvec}).
+    \label{eq:pnp_rodrigues}
+\end{equation}
+
+Trong khi đó, vector tịnh tiến biểu diễn vị trí
+gốc hệ tọa độ marker trong hệ tọa độ camera:
 
 \begin{equation}
     {}^{C}\mathbf{t}_{M}
     =
+    \mathbf{tvec}
+    =
     \begin{bmatrix}
-        x_C\\y_C\\z_C
+        x_C\\
+        y_C\\
+        z_C
     \end{bmatrix}.
     \label{eq:aruco_translation}
 \end{equation}
 
-Trong trường hợp camera hướng xuống mặt đất, thành phần $z_C$ biểu diễn khoảng cách theo trục quang học từ camera đến mặt phẳng marker. Hai thành phần $x_C$ và $y_C$ mô tả độ lệch vị trí tương đối của marker theo các trục camera.
+Đối với camera hướng xuống mặt đất, thành phần
+$z_C$ biểu diễn khoảng cách theo trục quang học
+từ camera đến tâm marker. Khi trục quang học
+vuông góc với mặt phẳng marker, giá trị này
+tương ứng với khoảng cách vuông góc từ camera
+đến mặt phẳng marker. Hai thành phần $x_C$
+và $y_C$ mô tả độ lệch tương đối của marker
+theo các trục camera.
 
-Để phục vụ quá trình điều khiển hạ cánh, tọa độ marker được chuyển từ hệ camera sang hệ thân UAV theo:
+Từ ma trận quay và vector tịnh tiến thu được,
+phép biến đổi đồng nhất từ hệ tọa độ marker
+sang hệ tọa độ camera được xác định bởi:
 
 \begin{equation}
-    {}^{B}\mathbf{p}_{M}
-    =
-    {}^{B}\mathbf{R}_{C}
-    {}^{C}\mathbf{t}_{M}
-    +
-    {}^{B}\mathbf{t}_{C},
-    \label{eq:camera_to_body}
+{}^{C}\mathbf{T}_{M}
+=
+\begin{bmatrix}
+{}^{C}\mathbf{R}_{M} &
+{}^{C}\mathbf{t}_{M}\\
+\mathbf{0}^{T} & 1
+\end{bmatrix}.
+\label{eq:marker_to_camera}
 \end{equation}
 
-trong đó ${}^{B}\mathbf{R}_{C}$ mô tả hướng lắp đặt camera và ${}^{B}\mathbf{t}_{C}$ biểu diễn vị trí tâm camera so với gốc tọa độ thân UAV.
+Trong đó, ${}^{C}\mathbf{T}_{M}$ là ma trận
+biến đổi đồng nhất kích thước $4\times4$,
+mô tả đầy đủ vị trí và hướng của marker
+so với camera.
 
-Thông qua phép biến đổi này, sai lệch vị trí giữa UAV và marker được xác định trong hệ tọa độ thân, làm cơ sở xây dựng tín hiệu điều khiển chuyển động ngang và giảm độ cao trong quá trình hạ cánh tự động.
+Do mã ArUco được đặt cố định trên mặt phẳng
+hạ cánh, có thể chọn tâm marker làm gốc tọa độ
+tham chiếu để xác định vị trí camera tương đối
+với marker.
 
+Khi đó, phép biến đổi từ hệ camera sang
+hệ marker được xác định bằng phép nghịch đảo:
+
+\begin{equation}
+{}^{M}\mathbf{T}_{C}
+=
+\left({}^{C}\mathbf{T}_{M}\right)^{-1}
+=
+\begin{bmatrix}
+\left({}^{C}\mathbf{R}_{M}\right)^T &
+-\left({}^{C}\mathbf{R}_{M}\right)^T
+{}^{C}\mathbf{t}_{M}\\
+\mathbf{0}^{T} & 1
+\end{bmatrix}.
+\label{eq:camera_in_marker}
+\end{equation}
+
+Do ma trận quay của vật rắn là ma trận trực giao,
+ma trận quay nghịch đảo chính là ma trận chuyển vị.
+Từ đó, ma trận quay và vector tịnh tiến của camera
+trong hệ tọa độ marker được xác định theo:
+
+\begin{equation}
+\begin{aligned}
+{}^{M}\mathbf{R}_{C}
+&=
+\left({}^{C}\mathbf{R}_{M}\right)^T,\\
+{}^{M}\mathbf{t}_{C}
+&=
+-\left({}^{C}\mathbf{R}_{M}\right)^T
+{}^{C}\mathbf{t}_{M}.
+\end{aligned}
+\label{eq:pnp_inverse_components}
+\end{equation}
+
+Vị trí tâm camera trong hệ tọa độ marker được
+biểu diễn bởi:
+
+\begin{equation}
+{}^{M}\mathbf{p}_{C}
+=
+\begin{bmatrix}
+x_C^M\\
+y_C^M\\
+z_C^M
+\end{bmatrix}
+=
+{}^{M}\mathbf{t}_{C}.
+\label{eq:camera_position_marker}
+\end{equation}
+
+Các thành phần $x_C^M$, $y_C^M$ và $z_C^M$
+biểu diễn vị trí tâm camera theo ba trục
+của hệ tọa độ marker. Khi marker được chọn
+làm gốc tham chiếu, các giá trị này cho phép
+xác định vị trí tương đối của camera so với
+khu vực hạ cánh.
+
+Tuy nhiên, do camera được lắp trên thân UAV,
+vị trí tâm camera không nhất thiết trùng với
+gốc hệ tọa độ thân UAV. Vì vậy, cần xét thêm
+phép biến đổi cố định giữa hệ tọa độ camera
+$\{C\}$ và hệ tọa độ thân UAV $\{B\}$.
+
+Vị trí marker trong hệ tọa độ thân UAV được
+xác định theo:
+
+\begin{equation}
+{}^{B}\mathbf{p}_{M}
+=
+{}^{B}\mathbf{R}_{C}
+{}^{C}\mathbf{t}_{M}
++
+{}^{B}\mathbf{t}_{C},
+\label{eq:camera_to_body}
+\end{equation}
+
+trong đó ${}^{B}\mathbf{R}_{C}$ mô tả hướng
+lắp đặt camera và ${}^{B}\mathbf{t}_{C}$
+biểu diễn vị trí tâm camera so với gốc
+tọa độ thân UAV.
+
+Ngược lại, nếu cần xác định đầy đủ vị trí
+và hướng của thân UAV trong hệ tọa độ marker,
+phép biến đổi được biểu diễn như sau:
+
+\begin{equation}
+{}^{M}\mathbf{T}_{B}
+=
+{}^{M}\mathbf{T}_{C}
+\left({}^{B}\mathbf{T}_{C}\right)^{-1}.
+\label{eq:body_in_marker}
+\end{equation}
+
+Các phép biến đổi trên cho phép xác định
+mối quan hệ hình học giữa UAV, camera và
+marker trong không gian ba chiều. Từ đó,
+hệ thống có thể tính toán sai lệch vị trí
+theo phương trước--sau, trái--phải và
+khoảng cách đến marker để xây dựng tín
+hiệu điều khiển UAV trong quá trình
+tiếp cận, căn chỉnh và hạ cánh tự động.
+
+---
+
+Do mã ArUco được đặt cố định trên mặt phẳng
+hạ cánh, có thể chọn tâm marker làm gốc tọa độ
+tham chiếu để xác định vị trí và hướng của
+camera tương đối với marker.
+
+Phép biến đổi từ hệ tọa độ camera sang hệ
+tọa độ marker được xác định bằng phép nghịch đảo:
+
+\begin{equation}
+{}^{M}\mathbf{T}_{C}
+=
+\left({}^{C}\mathbf{T}_{M}\right)^{-1}
+=
+\begin{bmatrix}
+({}^{C}\mathbf{R}_{M})^{T} &
+-({}^{C}\mathbf{R}_{M})^{T}
+{}^{C}\mathbf{t}_{M}\\
+\mathbf{0}^{T} & 1
+\end{bmatrix}.
+\label{eq:camera_in_marker}
+\end{equation}
+
+Do ma trận quay là ma trận trực giao, ma trận
+quay nghịch đảo chính là ma trận chuyển vị.
+Đặt:
+
+\begin{equation}
+{}^{M}\mathbf{R}_{C}
+=
+({}^{C}\mathbf{R}_{M})^{T},
+\qquad
+{}^{M}\mathbf{t}_{C}
+=
+-({}^{C}\mathbf{R}_{M})^{T}
+{}^{C}\mathbf{t}_{M}.
+\label{eq:inverse_pose_components}
+\end{equation}
+
+Khi đó, ma trận biến đổi đồng nhất có thể
+được khai triển thành:
+
+\begin{equation}
+{}^{M}\mathbf{T}_{C}
+=
+\begin{bmatrix}
+r'_{11}&r'_{12}&r'_{13}&t'_1\\
+r'_{21}&r'_{22}&r'_{23}&t'_2\\
+r'_{31}&r'_{32}&r'_{33}&t'_3\\
+0&0&0&1
+\end{bmatrix},
+\label{eq:camera_pose_expanded}
+\end{equation}
+
+trong đó $r'_{ij}$ là các phần tử của
+ma trận quay ${}^{M}\mathbf{R}_{C}$,
+còn $t'_1,t'_2,t'_3$ là các thành phần
+của vector tịnh tiến ${}^{M}\mathbf{t}_{C}$.
+
+Giả sử marker được chọn làm gốc tọa độ
+tham chiếu, vị trí tâm camera trong hệ
+tọa độ marker được biểu diễn bởi:
+
+\begin{equation}
+{}^{M}\mathbf{p}_{C}
+=
+\begin{bmatrix}
+x_C^M\\
+y_C^M\\
+z_C^M
+\end{bmatrix}
+=
+\begin{bmatrix}
+t'_1\\
+t'_2\\
+t'_3
+\end{bmatrix}.
+\label{eq:camera_position_marker}
+\end{equation}
+
+Như vậy, ba thành phần của vector tịnh tiến
+sau phép biến đổi nghịch đảo cho biết vị trí
+tương đối của tâm camera so với marker.
+Tuy nhiên, do camera được lắp trên thân UAV,
+vị trí tâm camera không nhất thiết trùng
+với gốc tọa độ thân UAV.
+
+Để xác định đầy đủ vị trí và hướng của UAV
+so với marker, cần xét thêm phép biến đổi
+cố định giữa hệ tọa độ thân UAV $\{B\}$ và
+hệ tọa độ camera $\{C\}$:
+
+\begin{equation}
+{}^{M}\mathbf{T}_{B}
+=
+{}^{M}\mathbf{T}_{C}
+\left({}^{B}\mathbf{T}_{C}\right)^{-1}.
+\label{eq:body_in_marker}
+\end{equation}
+
+Trong đó, ${}^{B}\mathbf{T}_{C}$ phụ thuộc
+vào vị trí và hướng lắp đặt camera trên
+khung UAV.
+
+Từ phép biến đổi trên, hệ thống xác định
+được ma trận quay ${}^{M}\mathbf{R}_{B}$
+và vector tịnh tiến ${}^{M}\mathbf{t}_{B}$,
+biểu diễn tư thế của thân UAV trong hệ
+tọa độ marker.
+
+Khi cần biểu diễn tư thế UAV trong hệ
+tọa độ dẫn đường NED $\{N\}$, ma trận quay
+được xác định thông qua:
+
+\begin{equation}
+{}^{N}\mathbf{R}_{B}
+=
+{}^{N}\mathbf{R}_{M}
+{}^{M}\mathbf{R}_{B},
+\label{eq:body_attitude_ned}
+\end{equation}
+
+trong đó ${}^{N}\mathbf{R}_{M}$ mô tả hướng
+của hệ tọa độ marker so với hệ tọa độ NED.
+
+Đặt ma trận quay của thân UAV trong hệ NED là:
+
+\begin{equation}
+{}^{N}\mathbf{R}_{B}
+=
+\begin{bmatrix}
+a_{11}&a_{12}&a_{13}\\
+a_{21}&a_{22}&a_{23}\\
+a_{31}&a_{32}&a_{33}
+\end{bmatrix}.
+\label{eq:body_rotation_matrix}
+\end{equation}
+
+Theo quy ước góc Euler ZYX, ma trận quay
+được biểu diễn bởi:
+
+\begin{equation}
+{}^{N}\mathbf{R}_{B}
+=
+\mathbf{R}_z(\psi)
+\mathbf{R}_y(\theta)
+\mathbf{R}_x(\varphi),
+\label{eq:euler_zyx}
+\end{equation}
+
+trong đó $\varphi$, $\theta$ và $\psi$
+lần lượt là các góc Roll, Pitch và Yaw
+của UAV.
+
+Ngoài các trường hợp suy biến của cách
+biểu diễn Euler, ba góc này được xác định
+từ ma trận quay theo:
+
+\begin{equation}
+\begin{aligned}
+\varphi &=
+\operatorname{atan2}(a_{32},a_{33}),\\[6pt]
+\theta &=
+\operatorname{atan2}
+\left(
+-a_{31},
+\sqrt{a_{32}^{2}+a_{33}^{2}}
+\right),\\[6pt]
+\psi &=
+\operatorname{atan2}(a_{21},a_{11}).
+\end{aligned}
+\label{eq:roll_pitch_yaw}
+\end{equation}
+
+Trong đó, góc Roll $\varphi$ mô tả chuyển
+động quay quanh trục $X_B$, góc Pitch
+$\theta$ mô tả chuyển động quay quanh
+trục $Y_B$, còn góc Yaw $\psi$ mô tả
+hướng quay của UAV quanh trục $Z_B$.
+
+Các góc Roll, Pitch và Yaw được xác định
+theo quy ước hệ tọa độ thân FRD và hệ
+tọa độ dẫn đường NED của PX4.
+
+Như vậy, thông qua kết quả PnP và các
+phép biến đổi tọa độ, hệ thống có thể
+xác định vị trí và hướng tương đối giữa
+UAV và mã ArUco trong không gian ba chiều.
+Các thông tin này là cơ sở để xây dựng
+thuật toán điều khiển chuyển động ngang,
+hiệu chỉnh hướng và giảm độ cao trong
+quá trình hạ cánh tự động.
 
 \subsection{Điều khiển PID và visual servoing}
 
-Visual servoing là phương pháp sử dụng thông tin thu được từ camera làm tín hiệu phản hồi cho bộ điều khiển. Trong bài toán này, các sai số thị giác được tạo từ pose của marker và được dùng để điều khiển vận tốc hoặc vị trí đặt của UAV.
+Visual servoing là phương pháp điều khiển sử dụng thông tin
+thị giác làm tín hiệu phản hồi để điều chỉnh chuyển động
+của robot hoặc UAV. Trong bài toán hạ cánh tự động,
+thông tin vị trí tương đối giữa UAV và mã ArUco được
+sử dụng để xác định sai lệch so với vị trí hạ cánh
+mong muốn, từ đó xây dựng tín hiệu điều khiển nhằm
+đưa UAV về phía mục tiêu.
 
-Với sai số $e(t)$ và tín hiệu điều khiển $u(t)$, bộ điều khiển PID có dạng:
+Phương pháp điều khiển PID dựa trên thông tin vị trí
+được ước lượng từ thị giác đã được nghiên cứu và ứng
+dụng trong bài toán hạ cánh tự động của quadrotor
+\cite{sani2017aruco}. Theo phương pháp này, vị trí
+mong muốn của UAV được xác định tại khu vực hạ cánh,
+trong khi vị trí hiện tại được ước lượng thông qua
+hệ thống thị giác. Sai lệch giữa hai vị trí được
+sử dụng làm tín hiệu đầu vào của bộ điều khiển PID
+để tạo ra các lệnh vận tốc phù hợp.
+
+Trong hệ thống của đề tài, camera IMX500 được lắp
+hướng xuống phía dưới UAV để quan sát mã ArUco.
+Thông qua quá trình nhận diện và ước lượng tư thế
+bằng thuật toán PnP đã trình bày ở phần trước,
+hệ thống thu được vector tịnh tiến
+${}^{C}\mathbf{t}_{M}$, biểu diễn vị trí tâm
+marker trong hệ tọa độ camera.
+
+Để phục vụ điều khiển chuyển động, tọa độ này
+được chuyển sang hệ tọa độ thân UAV thông qua
+phép biến đổi đã trình bày trong
+phương trình~\eqref{eq:camera_to_body}.
+
+Trong đó, hệ tọa độ thân UAV của PX4 tuân theo
+quy ước FRD (Forward--Right--Down), còn tín hiệu
+vận tốc trong bộ điều khiển ROS 2 được biểu diễn
+theo quy ước FLU (Forward--Left--Up). Phép chuyển
+đổi giữa hai hệ được thực hiện theo:
+
 \begin{equation}
-  u(t)=K_p e(t)+K_i\int_0^t e(\tau)\,d\tau+K_d\frac{de(t)}{dt}.
+{}^{B_{\mathrm{FLU}}}\mathbf{p}_{M}
+=
+\begin{bmatrix}
+1&0&0\\
+0&-1&0\\
+0&0&-1
+\end{bmatrix}
+{}^{B_{\mathrm{FRD}}}\mathbf{p}_{M}.
+\label{eq:body_frd_to_flu}
 \end{equation}
-Trong đó, thành phần tỉ lệ tạo phản ứng theo sai số hiện tại, thành phần tích phân loại bỏ sai số tĩnh và thành phần vi phân giúp giảm dao động khi sai số thay đổi nhanh. Đối với UAV, các thành phần điều khiển có thể được thiết kế riêng cho sai số ngang, độ cao và góc yaw.
 
-Một chu trình hạ cánh có thể được chia thành các giai đoạn:
+Gọi vị trí tương đối của marker trong hệ tọa độ
+thân FLU là:
+
+\begin{equation}
+{}^{B_{\mathrm{FLU}}}\mathbf{p}_{M}
+=
+\begin{bmatrix}
+x_M^B\\
+y_M^B\\
+z_M^B
+\end{bmatrix}.
+\label{eq:marker_body_position_control}
+\end{equation}
+
+Khi chọn gốc tọa độ thân tại điểm tham chiếu
+cần căn chỉnh với tâm marker, vị trí mong muốn
+của marker theo hai phương ngang là:
+
+\begin{equation}
+\mathbf{p}_{d,xy}^{B}
+=
+\begin{bmatrix}
+0\\
+0
+\end{bmatrix}.
+\label{eq:desired_marker_position}
+\end{equation}
+
+Do đó, vector sai lệch vị trí ngang được xác định bởi:
+
+\begin{equation}
+\mathbf{e}_{xy}(t)
+=
+\begin{bmatrix}
+e_x(t)\\
+e_y(t)
+\end{bmatrix}
+=
+\begin{bmatrix}
+x_M^B(t)\\
+y_M^B(t)
+\end{bmatrix}
+-
+\mathbf{p}_{d,xy}^{B}.
+\label{eq:landing_horizontal_error}
+\end{equation}
+
+Trong đó, $e_x$ là sai lệch vị trí theo phương
+trước--sau và $e_y$ là sai lệch theo phương
+trái--phải của UAV. Mục tiêu của quá trình
+căn chỉnh là đưa hai sai lệch này tiến về
+giá trị không.
+
+\subsubsection{Bộ điều khiển PID theo phương ngang}
+
+Để điều chỉnh vị trí UAV trên mặt phẳng ngang,
+hai bộ điều khiển PID được sử dụng tương ứng
+với các sai lệch $e_x$ và $e_y$.
+
+Theo nguyên lý điều khiển PID, tín hiệu điều
+khiển được xác định bởi:
+
+\begin{equation}
+u(t)
+=
+K_p e(t)
++
+K_i\int_0^t e(\tau)\,d\tau
++
+K_d\frac{de(t)}{dt},
+\label{eq:landing_pid_general}
+\end{equation}
+
+trong đó $K_p$, $K_i$ và $K_d$ lần lượt là
+các hệ số tỉ lệ, tích phân và vi phân.
+
+Thành phần tỉ lệ tạo phản ứng trực tiếp
+với sai lệch hiện tại, thành phần tích phân
+giúp giảm sai số xác lập, còn thành phần vi
+phân hỗ trợ hạn chế dao động khi sai lệch
+thay đổi nhanh.
+
+Áp dụng bộ điều khiển PID cho hai phương
+ngang, vận tốc điều khiển được xác định như sau:
+
+\begin{equation}
+\begin{aligned}
+v_x^{*}(t)
+={}&K_{p,x}e_x(t)
++K_{i,x}\int_0^t e_x(\tau)\,d\tau\\
+&+K_{d,x}\frac{de_x(t)}{dt},\\[6pt]
+v_y^{*}(t)
+={}&K_{p,y}e_y(t)
++K_{i,y}\int_0^t e_y(\tau)\,d\tau\\
+&+K_{d,y}\frac{de_y(t)}{dt}.
+\end{aligned}
+\label{eq:landing_pid_xy}
+\end{equation}
+
+Trong đó, $v_x^{*}$ và $v_y^{*}$ là các vận
+tốc điều khiển theo phương trước--sau và
+trái--phải trong hệ tọa độ thân FLU.
+
+Các hệ số $K_{p,x}$, $K_{i,x}$, $K_{d,x}$
+và $K_{p,y}$, $K_{i,y}$, $K_{d,y}$ được
+lựa chọn nhằm bảo đảm khả năng đáp ứng
+và độ ổn định của UAV trong quá trình
+căn chỉnh vị trí.
+
+Để hạn chế chuyển động đột ngột, vận tốc
+điều khiển theo phương ngang được giới
+hạn bởi:
+
+\begin{equation}
+\sqrt{v_x^2+v_y^2}
+\leq v_{xy,\max},
+\label{eq:landing_velocity_limit}
+\end{equation}
+
+trong đó $v_{xy,\max}$ là giới hạn độ lớn
+vận tốc ngang cho phép.
+
+Ngoài ra, hệ thống sử dụng vùng sai lệch
+cho phép (deadband) và giới hạn thành phần
+tích phân nhằm giảm dao động quanh vị trí
+mục tiêu, đồng thời hạn chế hiện tượng
+tích lũy sai số quá mức của bộ điều khiển.
+
+\subsubsection{Điều khiển giảm độ cao}
+
+Bên cạnh việc căn chỉnh vị trí ngang, UAV
+cần điều chỉnh độ cao để tiếp cận bề mặt
+hạ cánh. Quá trình giảm độ cao chỉ được
+thực hiện khi sai lệch vị trí ngang nằm
+trong giới hạn cho phép.
+
+Độ lớn sai lệch vị trí ngang được xác định bởi:
+
+\begin{equation}
+e_{xy}
+=
+\sqrt{e_x^2+e_y^2}.
+\label{eq:landing_xy_distance}
+\end{equation}
+
+Với camera được lắp hướng xuống gần vuông
+góc với mặt phẳng marker, khoảng cách theo
+trục quang học $z_C$ có thể được sử dụng để
+ước lượng gần đúng độ cao tương đối của
+camera so với marker.
+
+Nếu $d_{CG}$ là khoảng cách theo phương
+thẳng đứng từ camera đến điểm tiếp xúc
+của cơ cấu gắp, khoảng hở tương đối của
+cơ cấu gắp được ước lượng bởi:
+
+\begin{equation}
+\hat{h}
+=
+\max(0,z_C-d_{CG}).
+\label{eq:gripper_clearance_estimate}
+\end{equation}
+
+Biểu thức trên sử dụng giả thiết camera
+gần hướng thẳng xuống bề mặt hạ cánh.
+Khi UAV nghiêng đáng kể, cần xét đến
+hướng của trục quang học để xác định
+khoảng cách thẳng đứng chính xác.
+
+Trong giai đoạn tiếp cận bằng thị giác,
+vận tốc theo phương thẳng đứng được xác
+định thông qua bộ điều khiển tỉ lệ:
+
+\begin{equation}
+v_z^{*}
+=
+\begin{cases}
+-\min\left(
+v_{z,\max},
+K_{p,z}\max(0,\hat{h}-h_{\mathrm{tr}})
+\right),
+& e_{xy}\leq e_{\mathrm{allow}},\\[6pt]
+0,
+& e_{xy}>e_{\mathrm{allow}}.
+\end{cases}
+\label{eq:landing_vertical_control}
+\end{equation}
+
+Trong đó:
+\begin{itemize}
+    \item $v_z^{*}$ là vận tốc điều khiển
+    theo trục thẳng đứng của hệ FLU.
+    
+    \item $v_{z,\max}$ là giới hạn tốc độ
+    giảm độ cao.
+    
+    \item $K_{p,z}$ là hệ số điều khiển
+    tỉ lệ theo phương thẳng đứng.
+    
+    \item $h_{\mathrm{tr}}$ là độ cao
+    chuyển tiếp sang giai đoạn hạ cánh cuối.
+    
+    \item $e_{\mathrm{allow}}$ là ngưỡng
+    sai lệch ngang cho phép để bắt đầu
+    giảm độ cao.
+\end{itemize}
+
+Do trục $Z$ của hệ FLU hướng lên trên,
+vận tốc $v_z^{*}<0$ tương ứng với chuyển
+động giảm độ cao của UAV.
+
+Để tăng độ tin cậy trong quá trình hạ cánh,
+thông tin khoảng cách từ hệ thống thị giác
+có thể được kết hợp với dữ liệu độ cao
+tương đối do bộ điều khiển bay cung cấp.
+Khi dữ liệu khoảng cách bổ sung hợp lệ,
+hệ thống có thể sử dụng ước lượng bảo thủ
+hơn trước khi chuyển sang giai đoạn
+hạ cánh cuối.
+
+\subsubsection{Trình tự điều khiển hạ cánh}
+
+Dựa trên nguyên lý điều khiển hạ cánh bằng
+thị giác được trình bày trong
+\cite{sani2017aruco}, quá trình hạ cánh
+của UAV được tổ chức thành các giai đoạn
+nhằm bảo đảm khả năng căn chỉnh và hạn chế
+rủi ro khi tiếp cận mặt đất.
+
 \begin{enumerate}
-  \item \textbf{Tìm marker:} UAV di chuyển đến vùng mà marker có thể xuất hiện trong trường nhìn.
-  \item \textbf{Căn chỉnh ngang:} giữ độ cao tương đối ổn định và giảm sai số vị trí trên mặt phẳng bãi đáp.
-  \item \textbf{Hạ độ cao:} khi sai số ngang đủ nhỏ và marker được phát hiện ổn định, UAV giảm độ cao theo giới hạn an toàn.
-  \item \textbf{Xác nhận hạ cánh:} kiểm tra độ cao, vận tốc và thời gian ổn định trước khi kích hoạt gripper.
+    \item \textbf{Tìm kiếm marker (Search):}
+    UAV được đưa đến khu vực hạ cánh dự kiến,
+    nơi mã ArUco có thể xuất hiện trong
+    trường nhìn của camera. Hệ thống liên
+    tục xử lý ảnh để phát hiện marker mục tiêu.
+
+    \item \textbf{Xác nhận marker (Lock):}
+    Sau khi phát hiện marker, hệ thống kiểm
+    tra tính liên tục của các phép đo trong
+    nhiều khung hình. Việc xác nhận giúp
+    hạn chế chuyển sang điều khiển hạ cánh
+    khi marker chỉ xuất hiện tức thời hoặc
+    kết quả nhận diện không ổn định.
+
+    \item \textbf{Căn chỉnh và tiếp cận
+    bằng thị giác (Visual Approach):}
+    Tọa độ marker được chuyển sang hệ
+    tọa độ thân UAV để xác định các sai
+    lệch $e_x$ và $e_y$. Bộ điều khiển
+    PID tạo lệnh vận tốc ngang nhằm đưa
+    UAV về phía tâm marker. Khi sai lệch
+    ngang nằm trong giới hạn cho phép,
+    hệ thống đồng thời điều khiển giảm
+    độ cao với tốc độ giới hạn.
+
+    \item \textbf{Hạ cánh cuối (Final Descent):}
+    Khi UAV đạt độ cao chuyển tiếp và
+    sai lệch ngang đủ nhỏ trong một số
+    khung hình liên tiếp, hệ thống chuyển
+    sang giai đoạn hạ cánh cuối. Vị trí
+    ngang và hướng của UAV được duy trì
+    thông qua bộ điều khiển bay, trong
+    khi UAV tiếp tục giảm độ cao với
+    vận tốc nhỏ.
+
+    \item \textbf{Xác nhận hoàn tất
+    (Landing Confirmation):}
+    Hệ thống sử dụng trạng thái hạ cánh
+    do PX4 cung cấp để xác nhận UAV đã
+    tiếp đất. Sau khi xác nhận, lệnh
+    dừng động cơ (disarm) được thực hiện
+    theo điều kiện an toàn.
 \end{enumerate}
 
-Khi dữ liệu marker bị mất, hệ thống không nên tiếp tục điều khiển dựa trên dữ liệu cũ vô hạn. Cần đặt thời gian timeout, giới hạn vận tốc và trạng thái dừng hoặc bay lên lại để giảm nguy cơ va chạm. Bộ điều khiển cũng cần có giới hạn tích phân để tránh hiện tượng tích lũy sai số khi UAV chưa nhìn thấy marker.
+Trong quá trình điều khiển, nếu marker
+không được phát hiện trong khoảng thời gian
+cho phép, hệ thống phải xử lý theo trạng
+thái bay hiện tại. Trước khi xác nhận
+marker, quá trình tìm kiếm có thể được
+thực hiện lại. Trong giai đoạn tiếp cận
+bằng thị giác, việc mất marker có thể
+kích hoạt trạng thái hủy tiếp cận để
+tránh điều khiển bằng thông tin đã cũ.
+
+Sau khi chuyển sang giai đoạn hạ cánh
+cuối và vị trí ngang đã được giữ bởi
+bộ điều khiển bay, hệ thống không còn
+phụ thuộc trực tiếp vào việc tiếp tục
+quan sát marker. Tuy nhiên, quá trình
+giảm độ cao vẫn phải được giới hạn
+về vận tốc và thời gian thực hiện.
+
+%==================================================
+% HINH: SO DO KHOI DIEU KHIEN HA CANH
+%==================================================
+\begin{figure}[htbp]
+    \centering
+
+    % \includegraphics[width=0.95\linewidth]
+    % {images/03-visual-servoing-control.png}
+
+    \fbox{
+        \parbox[c][42mm][c]{0.90\linewidth}{
+            \centering
+            \textit{Camera IMX500 / ArUco Detection}\\[2mm]
+            $\downarrow$\\[2mm]
+            \textit{PnP Pose Estimation}\\[2mm]
+            $\downarrow$\\[2mm]
+            \textit{Coordinate Transformation}\\[2mm]
+            $\downarrow$\\[2mm]
+            \textit{PID Controller / Landing State Machine}\\[2mm]
+            $\downarrow$\\[2mm]
+            \textit{PX4 Offboard Control}
+        }
+    }
+
+    \caption{Sơ đồ nguyên lý điều khiển hạ cánh
+    tự động dựa trên thông tin thị giác
+    và bộ điều khiển PID.}
+    \label{fig:visual_servoing_control}
+\end{figure}
+%==================================================
+
+
+\subsection{PX4, ROS 2 và chế độ Offboard}
+
+Trong hệ thống UAV được xây dựng, bộ điều khiển
+bay sử dụng firmware PX4 v1.17, có nhiệm vụ
+ổn định tư thế, điều khiển chuyển động và
+giám sát các trạng thái an toàn của UAV.
+Máy tính đồng hành Raspberry Pi 5 đảm nhiệm
+các tác vụ thu nhận hình ảnh, nhận diện
+ArUco, ước lượng vị trí tương đối và
+tính toán tín hiệu điều khiển hạ cánh.
+
+Để kết nối các thành phần xử lý và điều
+khiển, hệ thống sử dụng ROS 2 với kiến
+trúc các node trao đổi thông tin thông
+qua topic và service.
+
+Các thành phần chính của hệ thống gồm:
+
+\begin{itemize}
+    \item \textbf{Camera interface:}
+    Thu nhận hình ảnh từ camera IMX500 và
+    cung cấp dữ liệu ảnh cho quá trình
+    nhận diện ArUco.
+
+    \item \textbf{ArUco detection node:}
+    Phát hiện marker mục tiêu và sử dụng
+    mô hình camera đã hiệu chuẩn để
+    ước lượng vector quay và vector tịnh
+    tiến của marker trong hệ camera.
+    Kết quả được công bố dưới dạng
+    thông tin pose.
+
+    \item \textbf{Landing controller node:}
+    Nhận thông tin pose của marker,
+    thực hiện phép biến đổi tọa độ và
+    tính toán sai lệch vị trí. Các bộ
+    điều khiển PID tạo tín hiệu vận tốc
+    phục vụ quá trình căn chỉnh và
+    tiếp cận vị trí hạ cánh.
+
+    \item \textbf{PX4 bridge node:}
+    Chuyển đổi các lệnh vận tốc từ hệ
+    tọa độ thân UAV được sử dụng trong
+    ROS 2 sang hệ tọa độ NED của PX4,
+    sau đó tạo và công bố các setpoint
+    điều khiển Offboard.
+
+    \item \textbf{PX4 flight controller:}
+    Tiếp nhận các setpoint từ máy tính
+    đồng hành, thực hiện điều khiển
+    chuyển động của UAV và cung cấp
+    thông tin phản hồi về vị trí,
+    tư thế và trạng thái hạ cánh.
+\end{itemize}
+
+Trong chương trình điều khiển, node
+nhận diện ArUco công bố pose của marker
+qua topic \texttt{/uav/aruco/target\_pose}.
+Node điều khiển hạ cánh sử dụng thông tin
+này để tạo lệnh vận tốc dưới dạng
+\texttt{geometry\_msgs/Twist} trên topic
+\texttt{/aruco\_land/cmd\_vel}.
+
+Các lệnh vận tốc được biểu diễn trong hệ
+tọa độ thân FLU. Trong khi đó, PX4 sử
+dụng hệ tọa độ dẫn đường NED để biểu
+diễn vận tốc điều khiển trong thông
+điệp \texttt{TrajectorySetpoint}.
+
+Vì vậy, các thành phần vận tốc ngang
+cần được chuyển đổi dựa trên góc hướng
+(Yaw) của UAV. Gọi $\psi$ là góc hướng
+của UAV trong hệ NED, phép chuyển đổi
+vận tốc được biểu diễn bởi:
+
+\begin{equation}
+\begin{bmatrix}
+v_N\\
+v_E
+\end{bmatrix}
+=
+\begin{bmatrix}
+\cos\psi & \sin\psi\\
+\sin\psi & -\cos\psi
+\end{bmatrix}
+\begin{bmatrix}
+v_x^{B_{\mathrm{FLU}}}\\
+v_y^{B_{\mathrm{FLU}}}
+\end{bmatrix},
+\label{eq:body_velocity_to_ned}
+\end{equation}
+
+trong đó $v_N$ và $v_E$ lần lượt là vận
+tốc theo hướng Bắc và Đông trong hệ NED,
+còn $v_x^{B_{\mathrm{FLU}}}$ và
+$v_y^{B_{\mathrm{FLU}}}$ là vận tốc
+theo phương trước và trái của UAV.
+
+Đối với chuyển động thẳng đứng, do
+trục $Z$ của FLU hướng lên còn trục
+$Z$ của NED hướng xuống, hai vận tốc
+liên hệ với nhau theo:
+
+\begin{equation}
+v_D=-v_z^{B_{\mathrm{FLU}}}.
+\label{eq:vertical_velocity_conversion}
+\end{equation}
+
+Trong chế độ Offboard, PX4 tiếp nhận
+các thông tin điều khiển thông qua
+\texttt{OffboardControlMode} và
+\texttt{TrajectorySetpoint}.
+
+Ở giai đoạn tiếp cận bằng thị giác,
+hệ thống có thể sử dụng setpoint vận
+tốc theo hai phương ngang và setpoint
+vị trí theo phương thẳng đứng. Lệnh
+vận tốc thẳng đứng được tích phân
+để cập nhật vị trí độ cao mong muốn,
+giúp duy trì độ cao khi không có lệnh
+di chuyển mới.
+
+Khi chuyển sang giai đoạn hạ cánh cuối,
+hệ thống giữ các giá trị vị trí ngang
+và góc Yaw đã xác nhận, đồng thời
+chuyển sang điều khiển vận tốc giảm
+độ cao với giới hạn phù hợp.
+
+Trong suốt quá trình điều khiển Offboard,
+máy tính đồng hành phải duy trì việc
+công bố tín hiệu điều khiển với tần
+số đáp ứng yêu cầu của PX4.
+Hệ thống cũng cần kiểm tra tính hợp lệ
+của dữ liệu vị trí, tư thế và trạng
+thái bay trước khi kích hoạt chế độ
+điều khiển tự động.
+
+Việc phân tách chức năng giữa Raspberry
+Pi 5 và bộ điều khiển bay cho phép
+các thuật toán thị giác và điều khiển
+cấp cao hoạt động trên máy tính đồng
+hành, trong khi các vòng điều khiển
+tư thế và ổn định bay được thực hiện
+trực tiếp bởi PX4.
+
+Đây là cơ sở để tích hợp các chức năng
+cao hơn như tiếp cận mục tiêu, hạ cánh
+chính xác và điều khiển cơ cấu gắp
+hàng trong hệ thống UAV tự động.
 
 % TODO: Chèn sơ đồ khối vòng điều khiển hạ cánh.
 \noindent\textit{[Hình cần chèn: Camera/ArUco $\rightarrow$ sai số pose $\rightarrow$ PID $\rightarrow$ setpoint UAV $\rightarrow$ PX4.]}\par\vspace{18mm}
