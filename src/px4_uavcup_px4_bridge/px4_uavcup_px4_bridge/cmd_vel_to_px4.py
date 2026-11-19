@@ -185,7 +185,7 @@ class CmdVelToPx4(Node):
 
         self.declare_parameter('cmd_vel_topic', '/cmd_vel')
         self.declare_parameter(
-            'local_position_topic', '/fmu/out/vehicle_local_position_v1')
+            'local_position_topic', '/fmu/out/vehicle_local_position')
         self.declare_parameter(
             'attitude_topic', '/fmu/out/vehicle_attitude')
         self.declare_parameter(

@@ -27,7 +27,7 @@ aruco_landing_pid:
     touchdown_descent_speed_m_s: 0.05
     maximum_blind_descent_duration_s: 12.0
     land_detected_topic: /fmu/out/vehicle_land_detected
-    local_position_topic: /fmu/out/vehicle_local_position_v1
+    local_position_topic: /fmu/out/vehicle_local_position
     latch_xy_yaw_service: /cmd_vel_to_px4/latch_xy_yaw
     release_xy_yaw_service: /cmd_vel_to_px4/release_xy_yaw
     disarm_service: /cmd_vel_to_px4/request_disarm

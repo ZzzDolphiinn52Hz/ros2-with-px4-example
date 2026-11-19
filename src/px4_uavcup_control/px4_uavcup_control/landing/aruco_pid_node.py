@@ -49,7 +49,7 @@ class ArucoLandingPidNode(Node):
         self.declare_parameter(
             'land_detected_topic', '/fmu/out/vehicle_land_detected')
         self.declare_parameter(
-            'local_position_topic', '/fmu/out/vehicle_local_position_v1')
+            'local_position_topic', '/fmu/out/vehicle_local_position')
         self.declare_parameter(
             'latch_xy_yaw_service', '/cmd_vel_to_px4/latch_xy_yaw')
         self.declare_parameter(
