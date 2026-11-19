@@ -34,9 +34,12 @@ Các topic sau đã khớp, không đổi:
 Khi máy đã bay trên mã và preflight đạt, chuỗi gọi vẫn là:
 
 1. `/cmd_vel_to_px4/enable` với `data: true`
-2. `/cmd_vel_to_px4/request_offboard`
-3. Xác nhận `nav_state` là 14
-4. `/aruco_landing_pid/start_landing`
+2. Chờ ít nhất hơn 1 giây để bridge phát ổn định `OffboardControlMode` và setpoint ở 20 Hz
+3. `/cmd_vel_to_px4/request_offboard`
+4. Xác nhận ACK được chấp nhận và `nav_state` là 14
+5. `/aruco_landing_pid/start_landing`
+
+Không bỏ qua bước chờ heartbeat: [PX4 v1.17 Offboard Mode](https://docs.px4.io/v1.17/en/flight_modes/offboard) yêu cầu proof-of-life lớn hơn 2 Hz trong hơn 1 giây trước khi chuyển sang Offboard.
 
 ## 3. Chưa chạy stack ArUco trên Pi
 
@@ -48,7 +51,7 @@ Camera trên Pi là một IMX500 ở cổng 0. Trước khi bay cần chạy `./
 
 **Trạng thái: chưa giải quyết; không bay Offboard cho đến khi đường truyền ổn định.**
 
-Một client key `0x00000001`. Log agent có nhiều lần `session re-established`, các lần gần lúc kiểm tra cách nhau khoảng 2–5 phút. Mỗi lần đó `/fmu/out` dừng một nhịp. Chưa có lỗi agent nào chỉ ra nguyên nhân, nên chưa sửa baud hay agent. Đây là rủi ro nếu đang hạ cánh.
+Một client key `0x00000001`. Log agent có nhiều lần `session re-established`; khoảng cách giữa các lần thay đổi từ vài chục giây đến vài phút. Mỗi lần đó `/fmu/out` dừng một nhịp. Chưa có lỗi agent nào chỉ ra nguyên nhân, nên chưa sửa baud hay agent. Đây là rủi ro nếu đang hạ cánh.
 
 ## 5. Trạng thái PX4 lúc kiểm tra, chưa đủ điều kiện gọi Offboard
 
@@ -60,5 +63,7 @@ Một client key `0x00000001`. Log agent có nhiều lần `session re-establish
 - `pre_flight_checks_pass` false, nên `request_offboard` sẽ từ chối
 - vị trí local `xy_valid` và `z_valid`, nhưng `x` khoảng -19.6 m, `z` khoảng -2.87 m trong khi `dist_bottom` khoảng 0.30 m
 - `heading_good_for_control` false
+
+Giá trị `x`, `z` local và `dist_bottom` không bắt buộc phải bằng nhau: `x`, `z` được tính theo gốc local NED của EKF, còn `dist_bottom` là khoảng cách đến mặt đất. Điểm chặn Offboard trong snapshot này là `pre_flight_checks_pass=false`; đồng thời `heading_good_for_control=false` là cảnh báo phải xử lý trước khi cho phép bridge dùng yaw để đổi vận tốc body-FLU sang NED.
 
 Không đổi tham số PX4 và không reboot từ ghi chú này.
