@@ -2,14 +2,14 @@
   "version": "1.4.3",
   "integration_state_schema": 1,
   "installed_integrations": [
-    "agy"
+    "none"
   ],
   "integration_settings": {
-    "agy": {
+    "none": {
       "script": "sh",
-      "invoke_separator": "-"
+      "invoke_separator": "."
     }
   },
-  "integration": "agy",
-  "default_integration": "agy"
+  "integration": "none",
+  "default_integration": "none"
 }
