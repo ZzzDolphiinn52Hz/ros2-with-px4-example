@@ -17,6 +17,7 @@ usage() {
 Usage: ./uavcup COMMAND
 
 Commands:
+  context           Print compact Git, package and active-spec context.
   setup             Initialize px4_msgs, build both Docker targets and ROS.
   doctor            Check Docker, cameras, model, UART and Pi health.
   cameras           Run CAM0 IMX219 + CAM1 IMX500 host frame servers.
@@ -68,6 +69,46 @@ ros_run() {
 
 command="${1:-}"
 case "$command" in
+  context)
+    require_command git
+    echo "Workspace: $WORKSPACE_DIR"
+    echo "Branch: $(git branch --show-current)"
+    echo "Commit: $(git rev-parse --short HEAD)"
+    echo "Origin: $(git remote get-url origin 2>/dev/null || echo 'not configured')"
+    echo "PX4 messages: $(git submodule status src/px4_msgs | sed 's/^[ +-]//')"
+    echo "Working tree:"
+    working_tree_status="$(git status --short)"
+    if [[ -n "$working_tree_status" ]]; then
+      printf '%s\n' "$working_tree_status"
+    else
+      echo "  clean"
+    fi
+    echo "ROS packages:"
+    for package_file in src/*/package.xml; do
+      package_name="$(sed -n \
+        's:.*<name>\([^<]*\)</name>.*:\1:p' "$package_file" | head -n 1)"
+      [[ -n "$package_name" ]] && echo "  - $package_name"
+    done
+    echo "Project memory:"
+    echo "  - AGENTS.md"
+    echo "  - .specify/memory/constitution.md"
+    echo "  - docs/PROJECT_STATUS.md"
+    if [[ -f docs/PROJECT_STATUS.md ]]; then
+      sed -n '/^\*\*Active feature\*\*:/p; /^\*\*State\*\*:/p' \
+        docs/PROJECT_STATUS.md | sed 's/^/  /'
+    fi
+    echo "Feature specs:"
+    feature_specs="$(find specs -mindepth 2 -maxdepth 2 -name spec.md \
+      -print 2>/dev/null | sort || true)"
+    if [[ -n "$feature_specs" ]]; then
+      while IFS= read -r spec_file; do
+        echo "  - $spec_file"
+      done <<< "$feature_specs"
+    else
+      echo "  none"
+    fi
+    ;;
+
   setup)
     require_command git
     require_command docker

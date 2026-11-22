@@ -11,6 +11,27 @@ không thuộc sản phẩm Pi 5 đã được loại khỏi repository. Hai th�
 `report_thesis2/` và `report_thesis_final/` được giữ làm tài liệu luận văn,
 không tham gia build/runtime.
 
+## Làm việc với nhiều máy và AI
+
+Repository dùng GitHub Spec Kit ở chế độ agent-neutral để Codex, Claude, Grok,
+Antigravity hoặc người phát triển khác có thể tiếp tục công việc từ trạng thái
+đã lưu trong Git. Điểm đọc đầu tiên là `AGENTS.md`; tiến độ hiện tại nằm tại
+`docs/PROJECT_STATUS.md`, còn từng thay đổi được lưu dưới `specs/`.
+
+Lấy context ngắn của checkout hiện tại mà không cần Docker/phần cứng:
+
+```bash
+./uavcup context
+```
+
+Quy trình cài đặt/chuyển agent và bàn giao được mô tả trong
+`docs/AI_WORKFLOW.md`. Specs giúp thu hẹp source cần đọc nhưng không thay thế
+việc kiểm tra code và test liên quan trước khi sửa.
+
+Khi triển khai sang Raspberry Pi, bắt buộc theo `docs/RASPI_SYNC.md`: kiểm tra
+SSH và working tree hai bên, push branch lên `origin`, pull trên Pi bằng
+`--ff-only`, cập nhật submodule rồi so sánh commit SHA trước khi chạy test.
+
 ## Cấu trúc
 
 ```text
