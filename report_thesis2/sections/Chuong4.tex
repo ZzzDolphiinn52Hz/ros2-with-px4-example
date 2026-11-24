@@ -255,6 +255,15 @@ ros2 topic echo /fmu/out/vehicle_status_v1 --once
 ros2 topic echo /fmu/out/vehicle_local_position --once
 \end{lstlisting}
 
+Hình~\ref{fig:uxrce_topic_list_evidence} là ảnh chụp trực tiếp quá trình liệt kê các topic PX4 và kiểm tra kiểu message trong container ROS~2. Các topic thuộc cả hai chiều \texttt{/fmu/in/*} và \texttt{/fmu/out/*} đều xuất hiện, trong đó có các topic phục vụ Offboard, attitude, vehicle status và local position.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{04-output-fmu_in_out_topic_1.png}
+    \caption{Liệt kê topic \texttt{/fmu/in/*}, \texttt{/fmu/out/*} và kiểm tra kiểu message PX4 trong ROS~2.}
+    \label{fig:uxrce_topic_list_evidence}
+\end{figure}
+
 Một phần kết quả thực tế được ghi lại như sau:
 
 \begin{lstlisting}[style=terminaloutput,caption={Kết quả đọc topic PX4 qua uXRCE-DDS},label={lst:uxrce_topic_result}]
@@ -266,22 +275,26 @@ Một phần kết quả thực tế được ghi lại như sau:
 /fmu/out/vehicle_local_position
 /fmu/out/vehicle_status_v1
 
-px4_msgs/msg/VehicleStatus
-arming_state: 1
-failsafe: false
-safety_off: true
-power_input_valid: true
-pre_flight_checks_pass: false
-
-xy_valid: false
+px4_msgs/msg/VehicleLocalPosition
+xy_valid: true
 z_valid: true
-v_xy_valid: false
+v_xy_valid: true
 v_z_valid: true
 heading_good_for_control: false
-dead_reckoning: true
+xy_global: false
+z_global: false
 \end{lstlisting}
 
-Kết quả cho thấy uXRCE-DDS đã truyền được dữ liệu hai chiều: các nhóm topic \texttt{/fmu/in/*} và \texttt{/fmu/out/*} xuất hiện, kiểu message đúng với bộ \texttt{px4\_msgs} và có thể đọc được attitude, trạng thái phương tiện và local position. Tuy nhiên, tại thời điểm ghi nhận, bộ ước lượng PX4 chưa có vị trí ngang hợp lệ ($\texttt{xy\_valid=false}$ và $\texttt{v\_xy\_valid=false}$), đồng thời đang ở trạng thái dead-reckoning. Vì vậy, kết quả của tiểu mục này được đánh giá là \textbf{đạt về kết nối uXRCE-DDS} nhưng \textbf{chưa đạt điều kiện tiền đề để enable bridge và yêu cầu Offboard}; không thực hiện lệnh enable trong phiên đo này.
+Hình~\ref{fig:uxrce_local_position_evidence} cho thấy ROS~2 đọc được thông điệp \texttt{VehicleLocalPosition} từ PX4. Trong phiên minh chứng này, các cờ \texttt{xy\_valid}, \texttt{z\_valid}, \texttt{v\_xy\_valid} và \texttt{v\_z\_valid} đều bằng \texttt{true}, xác nhận estimator đã cung cấp được vị trí và vận tốc cục bộ cần thiết cho bước kiểm tra bridge tiếp theo.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{04-output-fmu_in_out_topic_2.png}
+    \caption{Đọc thông điệp \texttt{/fmu/out/vehicle\_local\_position} và xác nhận các cờ hợp lệ của local position.}
+    \label{fig:uxrce_local_position_evidence}
+\end{figure}
+
+Kết quả cho thấy uXRCE-DDS đã truyền được dữ liệu hai chiều: các nhóm topic \texttt{/fmu/in/*} và \texttt{/fmu/out/*} xuất hiện, kiểu message đúng với bộ \texttt{px4\_msgs} và ROS~2 đọc được attitude, vehicle status cùng local position. Vì vậy, tiểu mục kiểm tra kết nối uXRCE-DDS được đánh giá là \textbf{đạt}. Tuy nhiên, cờ \texttt{heading\_good\_for\_control=false} và các cờ \texttt{xy\_global}, \texttt{z\_global} vẫn bằng \texttt{false}; do đó kết quả này chỉ xác nhận đường truyền và local position, chưa thay thế cho bài kiểm tra enable adapter và yêu cầu Offboard ở tiểu mục kế tiếp.
 
 \subsubsection{Kiểm tra Offboard khi tháo cánh quạt}
 
