@@ -21,7 +21,7 @@ Các điều kiện chung cần được giữ cố định hoặc ghi lại tro
         Không gian thử nghiệm & Trong nhà, khu vực bằng phẳng, không có người và vật cản trong vùng bay. \\
         Marker mục tiêu & ArUco ID~0, từ điển \texttt{DICT\_5X5\_100}, kích thước cạnh $0{,}16$~m. \\
         Camera & IMX500 hướng xuống, độ phân giải $640\times480$; mép trên ảnh hướng về mũi UAV. \\
-        Máy tính đồng hành & Raspberry Pi~5 chạy Raspberry Pi OS và ROS~2 Humble trong Docker. \\
+        Máy tính nhúng & Raspberry Pi~5 chạy Raspberry Pi OS và ROS~2 Humble trong Docker. \\
         Bộ điều khiển bay & NxtPx4V2, PX4 v1.17; kết nối UART ở $921600$ baud. \\
         Độ cao bắt đầu & Ghi lại theo từng lần thử; giá trị đề xuất cho thử nghiệm hoàn chỉnh là khoảng $1{,}5$~m. \\
         Điều kiện ánh sáng & Ghi mức độ chiếu sáng, hướng nguồn sáng, bóng đổ và hiện tượng phản xạ trên marker. \\
@@ -64,57 +64,168 @@ Các tiêu chí đánh giá được chia thành bốn nhóm gồm hiệu năng 
 
 Đối với các đại lượng thay đổi theo thời gian như pose, vận tốc điều khiển và nhiệt độ, cần lưu toàn bộ chuỗi mẫu thay vì chỉ ghi một giá trị tức thời. Kết quả nên được biểu diễn bằng giá trị trung bình, độ lệch chuẩn, giá trị cực đại và đồ thị theo thời gian.
 
+\subsection{Thử nghiệm độ ổn định của hệ thống cấp nguồn}
+
+Trước khi thực hiện các thử nghiệm liên quan đến camera và điều khiển, hệ thống cấp nguồn cho máy tính đồng hành được kiểm tra riêng để loại trừ nguyên nhân gây mất ổn định do sụt áp. Raspberry Pi~5 được cấp nguồn theo đúng cấu hình dự kiến khi bay: pin LiPo đi qua bộ hạ áp XL4015, sau đó đưa vào các chân $5$~V và GND trên GPIO. Trong thử nghiệm này, toàn bộ cánh quạt được tháo, bộ phát hiện ArUco chạy với camera IMX500 ở độ phân giải $640\times480$ và tốc độ $15$~frame/s, đồng thời Micro XRCE-DDS Agent được giữ hoạt động. Bộ điều khiển hạ cánh và yêu cầu Offboard không được kích hoạt.
+
+Trong thời gian $10$ phút, dữ liệu được lấy mẫu mỗi giây, gồm điện áp rail $5$~V tại PMIC, nhiệt độ CPU, nhiệt độ PMIC, mức sử dụng CPU, tần số CPU, dung lượng bộ nhớ sử dụng và cờ throttling. Kết quả của phiên thử được tổng hợp trong Bảng~\ref{tab:power_stability_result}.
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Kết quả thử nghiệm độ ổn định nguồn Raspberry Pi~5}
+    \label{tab:power_stability_result}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.46\textwidth} X}
+        \toprule
+        \textbf{Đại lượng} & \textbf{Kết quả} \\
+        \midrule
+        Số mẫu và chu kỳ lấy mẫu & $600$ mẫu, $1$~s/mẫu \\
+        Điện áp EXT5V\_V trung bình & $5{,}0002$~V \\
+        Điện áp EXT5V\_V nhỏ nhất--lớn nhất & $4{,}8923$--$5{,}0384$~V \\
+        Nhiệt độ CPU trung bình--cực đại & $70{,}4$--$74{,}1$~$^\circ$C \\
+        Nhiệt độ PMIC trung bình--cực đại & $65{,}2$--$66{,}5$~$^\circ$C \\
+        Mức sử dụng CPU trung bình--cực đại & $27{,}9$--$30{,}1$~\% \\
+        Số mẫu có cờ throttling khác không & $0/600$ \\
+        Số sự kiện undervoltage mới trong kernel & $0$ \\
+        Dòng điện đầu vào & Chưa có sensor để đo \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Các Hình~\ref{fig:power_cpu_usage}--\ref{fig:power_voltage} cho thấy điện áp cấp được duy trì xấp xỉ $5$~V trong suốt phiên thử, trong khi nhiệt độ CPU tăng rồi tiến tới vùng ổn định quanh $70$--$74~^\circ$C. Không xuất hiện sự kiện undervoltage mới và không có mẫu nào mang cờ throttling. Kết quả này chứng minh đường cấp nguồn GPIO hoạt động ổn định trong điều kiện tải tĩnh gồm camera, ArUco và Docker. Tuy nhiên, dòng điện đầu vào chưa được đo, đồng thời chưa đánh giá các quá độ do động cơ, servo hoặc điện áp LiPo thấp; vì vậy kết quả chỉ được xem là khảo sát tính khả thi ban đầu và chưa thay thế kiểm tra nguồn trong điều kiện bay.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{power_test/04-power-cpu-usage.png}
+    \caption{Mức sử dụng CPU của Raspberry Pi~5 khi chạy camera IMX500 và ArUco trong 10 phút.}
+    \label{fig:power_cpu_usage}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{power_test/04-power-temperature.png}
+    \caption{Nhiệt độ CPU và PMIC của Raspberry Pi~5 trong thời gian thử nghiệm.}
+    \label{fig:power_temperature}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{power_test/04-power-voltage.png}
+    \caption{Điện áp rail 5~V cấp cho Raspberry Pi~5 trong thời gian thử nghiệm.}
+    \label{fig:power_voltage}
+\end{figure}
+
 \subsection{Thử nghiệm camera và ArUco tĩnh}
 
 Các thử nghiệm tĩnh được thực hiện trước khi kết nối thuật toán với PX4. Camera được cố định, marker được đặt tại các vị trí đã đo trước, còn bộ điều khiển PID và PX4 bridge giữ ở trạng thái vô hiệu. Mỗi cấu hình nên được ghi tối thiểu từ $100$ đến $200$ mẫu pose để đánh giá độ ổn định.
 
 \subsubsection{Ảnh hưởng của khoảng cách}
 
-Marker được đặt gần tâm ảnh tại các khoảng cách $0{,}3$, $0{,}5$, $0{,}8$, $1{,}0$, $1{,}5$ và $2{,}0$~m. Ở mỗi khoảng cách, cần ghi nhận khả năng nhận đúng ID, giá trị trung bình của \texttt{tvec}, tần số phát hiện, độ trễ và độ lệch chuẩn của pose. Bảng~\ref{tab:aruco_distance_test} là mẫu tổng hợp kết quả.
+Marker ID~0 được đặt gần tâm ảnh tại ba khoảng cách danh định $0{,}50$, $0{,}80$ và $1{,}00$~m.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{images/04-space_test.png}
+    \caption{Bố trí thực nghiệm ước lượng độ cao.}
+    \label{fig:space-test}
+\end{figure}
+
+Mỗi phiên ghi rosbag trong khoảng 30~s, sau đó các mẫu trên các topic \texttt{/uav/aruco/ids}, \texttt{/uav/aruco/tvecs} và \texttt{/uav/aruco/status} được dùng để tính trung bình, độ lệch chuẩn, tần số phát hiện và độ trễ. Bảng~\ref{tab:aruco_distance_test} trình bày số liệu thu được.
 
 \begin{table}[H]
     \centering
-    \scriptsize
     \caption{Kết quả thử nghiệm ArUco theo khoảng cách}
     \label{tab:aruco_distance_test}
-    \begin{tabularx}{\textwidth}{c c c c c c X}
+    \setlength{\tabcolsep}{5pt}
+    \renewcommand{\arraystretch}{1.25}
+    \begin{tabular}{c c c c c c c}
         \toprule
-        \textbf{$Z$ đặt} & \textbf{Đúng ID} & \textbf{$\bar{x}$} & \textbf{$\bar{y}$} & \textbf{$\bar{z}$} & \textbf{Độ trễ} & \textbf{Tần số/độ dao động pose} \\
-        \textbf{(m)} & & \textbf{(m)} & \textbf{(m)} & \textbf{(m)} & \textbf{(ms)} & \\
+        \textbf{\shortstack{$Z$ đặt\\(m)}} &
+        \textbf{\shortstack{ID~0 /\\phát hiện}} &
+        \textbf{\shortstack{$\bar{x}$\\(m)}} &
+        \textbf{\shortstack{$\bar{y}$\\(m)}} &
+        \textbf{\shortstack{$\bar{z}\pm\sigma_z$\\(m)}} &
+        \textbf{\shortstack{Độ trễ\\(ms)}} &
+        \textbf{\shortstack{Tần số\\(Hz)}} \\
         \midrule
-        $0{,}3$ & -- & -- & -- & -- & -- & -- \\
-        $0{,}5$ & -- & -- & -- & -- & -- & -- \\
-        $0{,}8$ & -- & -- & -- & -- & -- & -- \\
-        $1{,}0$ & -- & -- & -- & -- & -- & -- \\
-        $1{,}5$ & -- & -- & -- & -- & -- & -- \\
-        $2{,}0$ & -- & -- & -- & -- & -- & -- \\
+        $0{,}50$ & $182/188$ ($96{,}8\%$) & $-0{,}0055$ & $-0{,}0081$ & $0{,}5493\pm0{,}0389$ & $155{,}7$ & $6{,}19$ \\
+        $0{,}80$ & $194/194$ ($100\%$) & $0{,}0066$ & $0{,}0458$ & $0{,}7845\pm0{,}0038$ & $147{,}3$ & $6{,}76$ \\
+        $1{,}00$ & $151/165$ ($91{,}5\%$) & $0{,}0402$ & $-0{,}0073$ & $1{,}0039\pm0{,}0035$ & $177{,}5$ & $5{,}13$ \\
         \bottomrule
-    \end{tabularx}
+    \end{tabular}
 \end{table}
 
-Khoảng cách phát hiện tối đa không nên được xác định từ một frame đơn lẻ. Marker chỉ được xem là phát hiện ổn định khi detector nhận đúng ID trong phần lớn số frame của khoảng quan sát và pose không xuất hiện bước nhảy bất thường.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{aruco_static/04-aruco-z-distance-tests.png}
+    \caption{Biến thiên thành phần $z$ của \texttt{tvec} trong ba phiên thử ArUco tĩnh. Đường gạch đỏ là khoảng cách danh định.}
+    \label{fig:aruco_distance_z}
+\end{figure}
+
+Đồ thị trong Hình~\ref{fig:aruco_distance_z} thể hiện trực tiếp khoảng cách $z$ được bộ giải PnP ước lượng trong phép thử tĩnh. Tại $0{,}80$~m và $1{,}00$~m, giá trị ước lượng nằm gần khoảng cách danh định với độ lệch chuẩn lần lượt là $3{,}8$ và $3{,}5$~mm. Ở phiên danh định $0{,}50$~m, marker ban đầu được đặt lệch xa khoảng $10$~cm; các mẫu đầu vì vậy nằm quanh $0{,}60$--$0{,}65$~m. Khi marker được kéo xuống gần mốc thử, giá trị $z$ giảm liên tục và ổn định quanh $0{,}53$--$0{,}55$~m. Như vậy, đồ thị phản ánh đúng sự thay đổi khoảng cách thực tế trong lúc bố trí marker; giá trị trung bình toàn phiên tăng lên $0{,}549$~m và độ lệch chuẩn đạt $38{,}9$~mm chủ yếu do đoạn quá độ ban đầu, không phải do sai số ngẫu nhiên kéo dài của detector.
+
+Tỷ lệ nhận đúng ID~0 đạt $100\%$ ở $0{,}80$~m, giảm còn $96{,}8\%$ ở $0{,}50$~m và $91{,}5\%$ ở $1{,}00$~m. Ở khoảng cách $1{,}00$~m, số lần mất marker tăng nhẹ và tần số xuất bản tvec giảm còn $5{,}13$~Hz; đây là vùng cần tiếp tục kiểm tra khi bay. Độ lệch trung bình theo phương ngang vẫn nhỏ, ngoại trừ thành phần $y=0{,}0458$~m tại $0{,}80$~m và $x=0{,}0402$~m tại $1{,}00$~m, cho thấy việc đặt marker bằng tay chưa hoàn toàn trùng tâm camera. Độ trễ đo được trong khoảng $147{,}3$--$177{,}5$~ms là thông số cần ghi nhận khi thiết kế và hiệu chỉnh PID ở các thí nghiệm sau.
+
+Khoảng cách phát hiện ổn định không nên được xác định từ một frame đơn lẻ. Với ba phiên đo này, detector nhận dạng đáng tin cậy trong khoảng $0{,}50$--$1{,}00$~m, nhưng bộ điều khiển vẫn nên dùng điều kiện khóa nhiều frame liên tiếp và bộ lọc pose để loại bỏ quá độ hoặc các khoảng mất marker ngắn.
 
 \subsubsection{Ảnh hưởng của vị trí marker trong ảnh}
 
-Marker lần lượt được đặt tại chính giữa, bên trái, bên phải, phía trước và phía sau so với UAV. Thử nghiệm này dùng để kiểm chứng dấu của \texttt{tvec}, phép biến đổi từ camera frame sang body frame và chiều lệnh điều khiển. Với quy ước camera hiện tại, dấu của tọa độ ảnh phải phù hợp với quan sát đã xác nhận; sau phép đổi hệ, lệnh vận tốc phải làm giảm sai số thay vì đẩy UAV ra xa marker.
+Marker được đặt tại ba cấu hình đã ghi rosbag: chính giữa (center), bên phải (right) và phía trước--bên phải (front-right). Mục tiêu của phép thử là kiểm chứng đồng thời dấu của pose trong hệ camera quang học và chiều lệnh vận tốc sau khi bộ điều khiển biến đổi sang hệ body-FLU. Với camera quang học hiện tại, $x>0$ biểu thị marker nằm về phía phải ảnh, $y<0$ biểu thị marker nằm về phía trước ảnh; trong hệ body-FLU, $v_x>0$ là chuyển động về phía trước và $v_y<0$ là chuyển động sang phải. Vì vậy, hai thành phần ngang của \texttt{cmd\_vel} phải có chiều làm giảm sai số tương ứng.
+
+Các phiên center và right được ghi ở độ cao danh định $1{,}1208$~m. Phiên front-right kéo dài hơn và UAV/marker được xê dịch có chủ ý để quan sát đáp ứng theo thời gian; do đó đây là phép thử có chuyển động, không phải phép đo tĩnh thuần túy. Kết quả pose được tổng hợp trong Bảng~\ref{tab:marker_position_pose_result}.
 
 \begin{table}[H]
     \centering
     \small
-    \caption{Mẫu kiểm tra dấu tọa độ và chiều điều khiển}
-    \label{tab:marker_position_test}
-    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.20\textwidth} >{\raggedright\arraybackslash}p{0.23\textwidth} >{\raggedright\arraybackslash}p{0.24\textwidth} X}
+    \caption{Kết quả pose ArUco theo vị trí marker trong ảnh}
+    \label{tab:marker_position_pose_result}
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{l c c c c c}
         \toprule
-        \textbf{Vị trí marker} & \textbf{Dấu pose quan sát} & \textbf{Chiều \texttt{cmd\_vel}} & \textbf{Kết quả} \\
+        \textbf{Vị trí} & \textbf{Số mẫu} & \textbf{$\bar{x}\pm\sigma_x$ (m)} & \textbf{$\bar{y}\pm\sigma_y$ (m)} & \textbf{$\bar{z}\pm\sigma_z$ (m)} & \textbf{Độ trễ (ms)} \\
         \midrule
-        Chính giữa & $x\approx0$, $y\approx0$ & Nằm trong deadband & -- \\
-        Bên trái & -- & Đưa UAV về phía marker & -- \\
-        Bên phải & -- & Đưa UAV về phía marker & -- \\
-        Phía trước & -- & Đưa UAV về phía marker & -- \\
-        Phía sau & -- & Đưa UAV về phía marker & -- \\
+        Center & $154$ & $-0{,}0075\pm0{,}0003$ & $0{,}0100\pm0{,}0018$ & $1{,}1228\pm0{,}0023$ & $175{,}6$ \\
+        Right & $217$ & $0{,}1643\pm0{,}0006$ & $0{,}0550\pm0{,}0011$ & $1{,}1189\pm0{,}0047$ & $178{,}1$ \\
+        Front-right & $312$ & $0{,}2250\pm0{,}0433$ & $-0{,}0739\pm0{,}0190$ & $1{,}1119\pm0{,}0100$ & $162{,}1$ \\
         \bottomrule
-    \end{tabularx}
+    \end{tabular}
 \end{table}
+
+Hai đồ thị dưới đây dùng cùng mốc thời gian tương đối trong từng phiên. Hình~\ref{fig:aruco_position_pose} biểu diễn ba thành phần pose, còn Hình~\ref{fig:aruco_position_cmdvel} biểu diễn các lệnh vận tốc body-FLU tương ứng. Rosbag center được ghi trước khi bổ sung topic \texttt{/aruco\_land/cmd\_vel}, vì vậy ô center trong Hình~\ref{fig:aruco_position_cmdvel} được đánh dấu là chưa có dữ liệu thay vì suy diễn lệnh từ pose.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-position-pose.png}
+    \caption{Các thành phần $x$, $y$, $z$ của pose ArUco trong ba cấu hình vị trí marker.}
+    \label{fig:aruco_position_pose}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-position-cmdvel.png}
+    \caption{Các thành phần \texttt{cmd\_vel} body-FLU ghi đồng thời với các phiên right và front-right.}
+    \label{fig:aruco_position_cmdvel}
+\end{figure}
+
+Các giá trị trung bình của lệnh vận tốc được trình bày trong Bảng~\ref{tab:marker_position_cmd_result}. Ở cấu hình right, pose có $x>0$ và $y>0$ trong hệ camera, tương ứng bộ điều khiển phát $v_x=-0{,}0459$ và $v_y=-0{,}0942$~m/s để đưa UAV lùi lại và dịch sang phải. Ở cấu hình front-right, pose có $x>0$ và $y<0$, còn lệnh trung bình là $v_x=+0{,}0072$ và $v_y=-0{,}0388$~m/s; chiều tiến và chiều sang phải phù hợp với vị trí quan sát được. Các lệnh đều bị giới hạn, không có lệnh yaw trong hai phiên.
+
+\begin{table}[H]
+    \centering
+    \small
+    \caption{Giá trị trung bình của lệnh vận tốc theo vị trí marker}
+    \label{tab:marker_position_cmd_result}
+    \setlength{\tabcolsep}{5pt}
+    \begin{tabular}{l c c c c}
+        \toprule
+        \textbf{Vị trí} & \textbf{Số mẫu} & \textbf{$\bar{v}_x$ (m/s)} & \textbf{$\bar{v}_y$ (m/s)} & \textbf{$\bar{v}_z$ (m/s)} \\
+        \midrule
+        Center & -- & \multicolumn{3}{c}{Chưa ghi topic \texttt{/aruco\_land/cmd\_vel}} \\
+        Right & $775$ & $-0{,}0459$ & $-0{,}0942$ & $0{,}0000$ \\
+        Front-right & $1212$ & $+0{,}0072$ & $-0{,}0388$ & $-0{,}0059$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Phiên front-right cho thấy rõ ảnh hưởng của việc dịch chuyển trong lúc ghi: $x$ thay đổi từ $0{,}028$ đến $0{,}254$~m và $y$ từ $-0{,}105$ đến $-0{,}006$~m. Khi marker bị mất trước điều kiện chuyển sang pha mù, PID chuyển sang trạng thái an toàn và đưa lệnh về không; vì vậy đoạn $v_z=-0{,}20$~m/s xuất hiện ngắn trong giai đoạn tiếp cận rồi cũng kết thúc bằng lệnh bằng không. Đây là bằng chứng về phản ứng an toàn khi mất marker, không phải kết quả của một lần hạ cánh PX4 hoàn chỉnh.
 
 \subsubsection{Ảnh hưởng của góc nghiêng}
 
