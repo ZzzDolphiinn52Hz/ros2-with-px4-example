@@ -17,11 +17,11 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 
-TESTS = ("center", "right", "front_right")
+TESTS = ("center", "right", "multidirectional3")
 TEST_TITLES = {
     "center": "Center (z danh định 1,1208 m)",
     "right": "Right (z danh định 1,1208 m)",
-    "front_right": "Front-right (có dịch chuyển trong lúc ghi)",
+    "multidirectional3": "Đa hướng (độ cao khoảng 1,3 m)",
 }
 COLORS = {"x": "#c0392b", "y": "#2471a3", "z": "#239b56"}
 

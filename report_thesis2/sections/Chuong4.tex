@@ -169,9 +169,9 @@ Khoảng cách phát hiện ổn định không nên được xác định từ 
 
 \subsubsection{Ảnh hưởng của vị trí marker trong ảnh}
 
-Marker được đặt tại ba cấu hình đã ghi rosbag: chính giữa (center), bên phải (right) và phía trước--bên phải (front-right). Mục tiêu của phép thử là kiểm chứng đồng thời dấu của pose trong hệ camera quang học và chiều lệnh vận tốc sau khi bộ điều khiển biến đổi sang hệ body-FLU. Với camera quang học hiện tại, $x>0$ biểu thị marker nằm về phía phải ảnh, $y<0$ biểu thị marker nằm về phía trước ảnh; trong hệ body-FLU, $v_x>0$ là chuyển động về phía trước và $v_y<0$ là chuyển động sang phải. Vì vậy, hai thành phần ngang của \texttt{cmd\_vel} phải có chiều làm giảm sai số tương ứng.
+Marker được đặt tại ba cấu hình đã ghi rosbag: chính giữa (center), bên phải (right) và một phiên di chuyển đa hướng (multidirectional3). Mục tiêu của phép thử là kiểm chứng đồng thời dấu của pose trong hệ camera quang học và chiều lệnh vận tốc sau khi bộ điều khiển biến đổi sang hệ body-FLU. Với camera quang học hiện tại, $x>0$ biểu thị marker nằm về phía phải ảnh, $y<0$ biểu thị marker nằm về phía trước ảnh; trong hệ body-FLU, $v_x>0$ là chuyển động về phía trước và $v_y<0$ là chuyển động sang phải. Vì vậy, khi dấu của sai số $x,y$ thay đổi, hai thành phần ngang của \texttt{cmd\_vel} cũng phải đổi chiều để giảm sai số tương ứng.
 
-Các phiên center và right được ghi ở độ cao danh định $1{,}1208$~m. Phiên front-right kéo dài hơn và UAV/marker được xê dịch có chủ ý để quan sát đáp ứng theo thời gian; do đó đây là phép thử có chuyển động, không phải phép đo tĩnh thuần túy. Kết quả pose được tổng hợp trong Bảng~\ref{tab:marker_position_pose_result}.
+Các phiên center và right được ghi ở độ cao danh định $1{,}1208$~m. Phiên multidirectional3 kéo dài $42{,}25$~s, trong đó UAV/marker được xê dịch tuần tự qua nhiều hướng ở độ cao đo được khoảng $1{,}29$~m để quan sát đáp ứng theo thời gian; do đó đây là phép thử động trên mặt đất, không phải phép đo tĩnh thuần túy. Kết quả pose được tổng hợp trong Bảng~\ref{tab:marker_position_pose_result}.
 
 \begin{table}[H]
     \centering
@@ -185,7 +185,7 @@ Các phiên center và right được ghi ở độ cao danh định $1{,}1208$~
         \midrule
         Center & $154$ & $-0{,}0075\pm0{,}0003$ & $0{,}0100\pm0{,}0018$ & $1{,}1228\pm0{,}0023$ & $175{,}6$ \\
         Right & $217$ & $0{,}1643\pm0{,}0006$ & $0{,}0550\pm0{,}0011$ & $1{,}1189\pm0{,}0047$ & $178{,}1$ \\
-        Front-right & $312$ & $0{,}2250\pm0{,}0433$ & $-0{,}0739\pm0{,}0190$ & $1{,}1119\pm0{,}0100$ & $162{,}1$ \\
+        Multidirectional3 & $233$ & $0{,}0133\pm0{,}1379$ & $0{,}0564\pm0{,}1341$ & $1{,}2941\pm0{,}0304$ & $180{,}3$ \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -208,12 +208,12 @@ Mỗi cấu hình được biểu diễn bằng một đồ thị gồm bốn đ
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-front_right-pose-cmdvel-xy.png}
-    \caption{Pose $x,y$ và lệnh \texttt{cmd\_vel.x,y} của cấu hình front-right khi có dịch chuyển trong lúc ghi.}
-    \label{fig:aruco_front_right_pose_cmdvel_xy}
+    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-multidirectional3-pose-cmdvel-xy.png}
+    \caption{Pose $x,y$ và lệnh \texttt{cmd\_vel.x,y} khi di chuyển marker theo nhiều hướng.}
+    \label{fig:aruco_multidirectional_pose_cmdvel_xy}
 \end{figure}
 
-Các giá trị trung bình của hai thành phần lệnh ngang được trình bày trong Bảng~\ref{tab:marker_position_cmd_result}. Ở cấu hình right, pose có $x>0$ và $y>0$ trong hệ camera, tương ứng bộ điều khiển phát $v_x=-0{,}0459$ và $v_y=-0{,}0942$~m/s để đưa UAV lùi lại và dịch sang phải. Ở cấu hình front-right, pose có $x>0$ và $y<0$, còn lệnh trung bình là $v_x=+0{,}0072$ và $v_y=-0{,}0388$~m/s; chiều tiến và chiều sang phải phù hợp với vị trí quan sát được.
+Các giá trị trung bình của hai thành phần lệnh ngang được trình bày trong Bảng~\ref{tab:marker_position_cmd_result}. Ở cấu hình right, pose có $x>0$ và $y>0$ trong hệ camera, tương ứng bộ điều khiển phát $v_x=-0{,}0459$ và $v_y=-0{,}0942$~m/s để đưa UAV lùi lại và dịch sang phải. Ở phiên multidirectional3, các giá trị trung bình trên toàn phiên là $v_x=-0{,}0447$ và $v_y=-0{,}0090$~m/s. Hai giá trị này chỉ mang tính mô tả toàn phiên vì marker được đưa qua nhiều góc phần tư; dấu và biên độ tức thời cần được đọc trên Hình~\ref{fig:aruco_multidirectional_pose_cmdvel_xy}. Khi $x,y$ đổi dấu, các đường nét đứt cũng đảo chiều hoặc tiến về không, cho thấy bộ điều khiển đang phản hồi theo sai số ngang thay vì giữ một lệnh cố định.
 
 \begin{table}[H]
     \centering
@@ -227,12 +227,12 @@ Các giá trị trung bình của hai thành phần lệnh ngang được trình
         \midrule
         Center & -- & \multicolumn{2}{c}{Chưa ghi topic \texttt{/aruco\_land/cmd\_vel}} \\
         Right & $775$ & $-0{,}0459$ & $-0{,}0942$ \\
-        Front-right & $1212$ & $+0{,}0072$ & $-0{,}0388$ \\
+        Multidirectional3 & $846$ & $-0{,}0447$ & $-0{,}0090$ \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-Phiên front-right cho thấy rõ ảnh hưởng của việc dịch chuyển trong lúc ghi: $x$ thay đổi từ $0{,}028$ đến $0{,}254$~m và $y$ từ $-0{,}105$ đến $-0{,}006$~m. Khi marker bị mất trước điều kiện chuyển sang pha mù, PID chuyển sang trạng thái an toàn và đưa hai lệnh ngang về không. Đây là bằng chứng về phản ứng an toàn khi mất marker, không phải kết quả của một lần hạ cánh PX4 hoàn chỉnh.
+Trong phiên multidirectional3, $x$ thay đổi từ $-0{,}242$ đến $0{,}272$~m và $y$ từ $-0{,}161$ đến $0{,}342$~m; marker vẫn được nhận ở cả $233/233$ mẫu pose và bộ điều khiển duy trì trạng thái \texttt{visual\_approach}, không phát sinh \texttt{abort}. Do đó, đồ thị cho thấy rõ miền biến thiên pose và sự thay đổi tương ứng của lệnh ngang trong bài thử bench; kết quả này chưa phải là đánh giá hạ cánh khi UAV đang bay.
 
 \subsubsection{Ảnh hưởng của góc nghiêng}
 
