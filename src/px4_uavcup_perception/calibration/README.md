@@ -10,6 +10,9 @@ printing.
   squares. Use `square_size_m:=0.03`.
 - `aruco_5x5_50/`: IDs 0 through 4 from `DICT_5X5_50`, one A4 portrait page
   per ID. Each marker's black outer square is 160x160 mm.
+- `aruco_5x5_50/aruco_5x5_50_id_0_80mm_a4.pdf`: flight target ID 0,
+  black outer square 80x80 mm on an A4 portrait page. Runtime pose estimation
+  must use `marker_size_m: 0.08`.
 
 After printing, verify one checker square and both dimensions of an ArUco
 marker with a ruler. The physical marker size used by pose estimation is the

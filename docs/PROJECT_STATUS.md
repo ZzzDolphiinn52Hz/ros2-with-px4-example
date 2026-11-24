@@ -1,14 +1,21 @@
 # Project Handoff Status
 
-**Updated**: 2026-11-23
+**Updated**: 2026-11-24
 
-**Active feature**: `specs/002-pi-gpio-power-validation/`
+**Active feature**: `specs/003-aruco-80mm-target/`
 
 **Branch**: `main`
-**State**: bench evidence recorded; hardware follow-up remains
+**State**: 80 mm target implemented; print and camera validation pending
 
 ## Last Completed
 
+- Generated an A4 `DICT_5X5_50`, ID 0 target with an 80 mm black outer
+  square and a matching 300 DPI PNG.
+- Changed the ArUco runtime contract from the former 160 mm target to
+  `marker_size_m: 0.08`, while leaving IMX500 intrinsics and mounting geometry
+  unchanged.
+- Added a regression test that keeps dictionary, target ID and physical size
+  synchronized with the printed target.
 - Recorded a 10-minute GPIO-powered Raspberry Pi 5 IMX500 + ArUco bench test
   with one-second CSV sampling and PNG plots.
 - Stored the accepted test evidence and limits in
@@ -27,24 +34,22 @@
 
 ## Last Evidence
 
-Read `specs/002-pi-gpio-power-validation/verification.md` for exact commands,
-measurements and limits. The accepted Pi test produced 600 samples, three
-verified PNGs, and a final ArUco status of `ok`. No ROS source or runtime
-configuration changed in this evidence task.
+Read `specs/003-aruco-80mm-target/verification.md`. The configuration test
+passed, the PDF is A4, and the 300 DPI marker region measures approximately
+80.01 x 80.01 mm after pixel rounding. Printing and camera validation are
+still NOT RUN.
 
 ## Working Tree
 
-The GPIO power evidence is documented locally but the raw CSV/PNG artifacts
-remain on the Raspberry Pi under its ignored `artifacts/` directory. The local
-checkout contains only the durable specification and handoff updates.
+The 80 mm target work started from commit `6a1b6cd`. Raspberry Pi deployment
+has not run yet and must follow `docs/RASPI_SYNC.md` after commit/push.
 
 ## Next Action
 
-Repeat the power test at the lowest expected LiPo voltage and with representative
-servo/load transients while propellers remain removed. Add an external current
-sensor or DC watt meter before claiming XL4015 current headroom. Then review
-and commit the durable specification updates; no source synchronization is
-needed for this documentation-only change.
+Print the new PDF at Actual size / 100%, measure both outer black edges, then
+deploy the matching commit to the Raspberry Pi with a fast-forward-only pull.
+Repeat static pose tests to determine the reliable range of the smaller marker
+before any flight test.
 
 ## Known Constraints
 

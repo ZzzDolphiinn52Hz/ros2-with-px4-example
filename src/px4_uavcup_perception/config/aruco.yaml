@@ -18,8 +18,9 @@ aruco_detector_node:
     # These topics are used only when input_mode is changed to ros_topic.
     image_topic: /camera/down/image_raw
     camera_info_topic: /camera/down/camera_info
-    dictionary: DICT_5X5_100
-    marker_size_m: 0.16
+    # Physical target: ID 0, outer black square 80 x 80 mm.
+    dictionary: DICT_5X5_50
+    marker_size_m: 0.08
     target_marker_id: 0
     maximum_processing_rate_hz: 15.0
     # Flight profile publishes only target_pose + status. Test launch

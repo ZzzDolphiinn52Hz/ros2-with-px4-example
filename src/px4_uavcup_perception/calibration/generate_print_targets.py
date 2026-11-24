@@ -4,7 +4,6 @@
 
 from pathlib import Path
 
-import cv2
 from PIL import Image, ImageDraw, ImageFont
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
@@ -75,67 +74,84 @@ def get_font(size: int):
     return ImageFont.load_default()
 
 
-def generate_aruco_pages() -> None:
+def draw_aruco_marker(marker_id: int, marker_source_px: int) -> Image.Image:
+    import cv2
+
+    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_50)
+    marker = cv2.aruco.drawMarker(
+        dictionary, marker_id, marker_source_px, borderBits=1)
+    return Image.fromarray(marker, mode='L')
+
+
+def generate_aruco_page(
+        marker_id: int,
+        marker_size_mm: float,
+        marker_image: Image.Image | None = None) -> None:
     output_dir = OUTPUT_DIR / 'aruco_5x5_50'
     output_dir.mkdir(parents=True, exist_ok=True)
-    dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_50)
-    marker_size_mm = 160.0
     marker_source_px = 1600
+    size_label = f'{marker_size_mm:g}'
+    if marker_image is None:
+        marker_image = draw_aruco_marker(marker_id, marker_source_px)
+    marker_image = marker_image.convert('L')
+    stem = f'aruco_5x5_50_id_{marker_id}_{size_label}mm_a4'
 
+    page_width, page_height = A4
+    marker_points = marker_size_mm * mm
+    origin_x = (page_width - marker_points) / 2.0
+    origin_y = (page_height - marker_points) / 2.0
+    pdf = Canvas(
+        str(output_dir / f'{stem}.pdf'),
+        pagesize=A4,
+    )
+    pdf.drawImage(
+        ImageReader(marker_image),
+        origin_x,
+        origin_y,
+        width=marker_points,
+        height=marker_points,
+        preserveAspectRatio=True,
+        mask='auto',
+    )
+    pdf.setFont('Helvetica', 11)
+    label = (
+        f'DICT_5X5_50  ID {marker_id}  |  '
+        f'outer size {size_label} mm')
+    pdf.drawCentredString(
+        page_width / 2.0,
+        origin_y - 12.0 * mm,
+        label,
+    )
+    pdf.showPage()
+    pdf.save()
+
+    page_width_px = mm_to_px(210.0)
+    page_height_px = mm_to_px(297.0)
+    marker_px = mm_to_px(marker_size_mm)
+    page = Image.new('L', (page_width_px, page_height_px), 255)
+    marker_on_page = marker_image.resize(
+        (marker_px, marker_px), Image.NEAREST)
+    origin_x_px = (page_width_px - marker_px) // 2
+    origin_y_px = (page_height_px - marker_px) // 2
+    page.paste(marker_on_page, (origin_x_px, origin_y_px))
+    draw = ImageDraw.Draw(page)
+    font = get_font(34)
+    label_box = draw.textbbox((0, 0), label, font=font)
+    label_width = label_box[2] - label_box[0]
+    draw.text(
+        ((page_width_px - label_width) // 2,
+         origin_y_px + marker_px + mm_to_px(10.0)),
+        label,
+        fill=0,
+        font=font,
+    )
+    page.save(output_dir / f'{stem}_300dpi.png', dpi=(DPI, DPI))
+
+
+def generate_aruco_pages() -> None:
     for marker_id in range(5):
-        marker = cv2.aruco.drawMarker(
-            dictionary, marker_id, marker_source_px, borderBits=1)
-        marker_image = Image.fromarray(marker, mode='L')
-        stem = f'aruco_5x5_50_id_{marker_id}_160mm_a4'
-
-        page_width, page_height = A4
-        marker_points = marker_size_mm * mm
-        origin_x = (page_width - marker_points) / 2.0
-        origin_y = (page_height - marker_points) / 2.0
-        pdf = Canvas(
-            str(output_dir / f'{stem}.pdf'),
-            pagesize=A4,
-        )
-        pdf.drawImage(
-            ImageReader(marker_image),
-            origin_x,
-            origin_y,
-            width=marker_points,
-            height=marker_points,
-            preserveAspectRatio=True,
-            mask='auto',
-        )
-        pdf.setFont('Helvetica', 11)
-        pdf.drawCentredString(
-            page_width / 2.0,
-            origin_y - 12.0 * mm,
-            f'DICT_5X5_50  ID {marker_id}  |  outer size 160 mm',
-        )
-        pdf.showPage()
-        pdf.save()
-
-        page_width_px = mm_to_px(210.0)
-        page_height_px = mm_to_px(297.0)
-        marker_px = mm_to_px(marker_size_mm)
-        page = Image.new('L', (page_width_px, page_height_px), 255)
-        marker_on_page = marker_image.resize(
-            (marker_px, marker_px), Image.NEAREST)
-        origin_x_px = (page_width_px - marker_px) // 2
-        origin_y_px = (page_height_px - marker_px) // 2
-        page.paste(marker_on_page, (origin_x_px, origin_y_px))
-        draw = ImageDraw.Draw(page)
-        label = f'DICT_5X5_50  ID {marker_id}  |  outer size 160 mm'
-        font = get_font(34)
-        label_box = draw.textbbox((0, 0), label, font=font)
-        label_width = label_box[2] - label_box[0]
-        draw.text(
-            ((page_width_px - label_width) // 2,
-             origin_y_px + marker_px + mm_to_px(10.0)),
-            label,
-            fill=0,
-            font=font,
-        )
-        page.save(output_dir / f'{stem}_300dpi.png', dpi=(DPI, DPI))
+        generate_aruco_page(marker_id, 160.0)
+    generate_aruco_page(0, 80.0)
 
 
 def main() -> None:

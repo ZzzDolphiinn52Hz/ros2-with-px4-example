@@ -3,7 +3,7 @@
 Repository bàn giao cho Raspberry Pi 5, gồm hai pipeline đang dùng trên drone:
 
 - CAM0 IMX219 phía trước: ZipDepth 512x384 và corridor/free-space tương đối.
-- CAM1 IMX500 nhìn xuống: ArUco `DICT_5X5_100`, pose ID mục tiêu và landing PID.
+- CAM1 IMX500 nhìn xuống: ArUco `DICT_5X5_50`, pose ID mục tiêu và landing PID.
 - PX4 v1.17 qua TELEM2/UART: Micro XRCE-DDS Agent và Offboard adapter có khóa an toàn.
 
 Các package SLAM/Gazebo, Nav2, Jetson/Depth Anything và node Offboard thử nghiệm
@@ -158,7 +158,7 @@ quạt trong bench test.
 - IMX500 nhìn xuống, mép trên ảnh hướng về mũi drone.
 - IMX500 nằm cùng tâm XY với cơ cấu gắp.
 - Camera cao hơn điểm tiếp xúc cơ cấu gắp 0.15 m.
-- ArUco marker mặc định: ID 0, cạnh đen ngoài 0.16 m.
+- ArUco marker mặc định: `DICT_5X5_50`, ID 0, cạnh đen ngoài 0.08 m.
 
 Nếu thay camera, độ phân giải hoặc gá lắp, phải hiệu chuẩn và cập nhật config
 trước khi dùng landing.

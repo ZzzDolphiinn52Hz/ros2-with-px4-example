@@ -46,6 +46,9 @@ Các profile test không khởi động PID, PX4 bridge hoặc topic `/fmu/in/*`
 IMX500 hiện dùng 640x480 với calibration trong `aruco.yaml`. Detector giữ ảnh
 gốc để calibration còn đúng; phép biến đổi camera-to-body nằm trong package
 control. Nếu đổi sensor, mode ảnh hoặc gá camera thì phải calibrate lại.
+Marker mục tiêu hiện dùng `DICT_5X5_50`, ID~0, với cạnh đen ngoài 80 mm
+(`marker_size_m: 0.08`). Khi in phải chọn Actual size/100% và đo lại hai cạnh
+bằng thước trước khi thu pose.
 
 Chạy GUI calibration IMX500 sau khi camera host server đã hoạt động:
 

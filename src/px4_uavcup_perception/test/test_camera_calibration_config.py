@@ -30,3 +30,11 @@ def test_imx500_intrinsics_are_valid_and_synchronized():
     assert 0.0 < detector_matrix[0, 2] < detector['camera_width']
     assert 0.0 < detector_matrix[1, 2] < detector['camera_height']
     assert detector_distortion.shape == (5,)
+
+
+def test_aruco_runtime_matches_printed_80mm_target():
+    detector = _parameters('aruco.yaml', 'aruco_detector_node')
+
+    assert detector['dictionary'] == 'DICT_5X5_50'
+    assert detector['target_marker_id'] == 0
+    assert detector['marker_size_m'] == 0.08
