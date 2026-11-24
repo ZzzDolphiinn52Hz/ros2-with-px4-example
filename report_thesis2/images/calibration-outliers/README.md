@@ -1,6 +1,6 @@
-# Ảnh ngoại lai của phiên hiệu chuẩn IMX500
+# Ảnh ngoại lai của lần hiệu chuẩn IMX500
 
-Các ảnh trong thư mục này thuộc phiên hiệu chuẩn `20261115_141308`, độ phân giải
+Các ảnh trong thư mục này thuộc lần hiệu chuẩn `20261115_141308`, độ phân giải
 640 x 480, mẫu bàn cờ 9 x 6 góc trong. Ảnh vẫn được lưu làm minh chứng nhưng bị
 loại khỏi phép fit cuối do sai số chiếu lại lớn.
 

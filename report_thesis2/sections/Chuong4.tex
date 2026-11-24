@@ -7,7 +7,7 @@ Chương này xây dựng quy trình thực nghiệm để đánh giá toàn b�
 
 Mục tiêu thực nghiệm là kiểm chứng ba nhóm chức năng. Thứ nhất, camera và ArUco detector phải nhận đúng marker mục tiêu, cung cấp pose ổn định trong miền khoảng cách và góc quan sát dự kiến. Thứ hai, cầu nối uXRCE-DDS phải trao đổi dữ liệu hai chiều ổn định giữa Raspberry Pi~5 và NxtPx4V2, đồng thời các điều kiện an toàn phải ngăn việc chuyển sang Offboard khi trạng thái PX4 không hợp lệ. Thứ ba, bộ điều khiển phải đưa UAV hội tụ về tâm marker, chuyển pha đúng điều kiện và hoàn thành hạ cánh với sai số nằm trong giới hạn cho phép.
 
-Các điều kiện chung cần được giữ cố định hoặc ghi lại trong từng lần thử được tổng hợp trong Bảng~\ref{tab:experimental_conditions}. Việc ghi nhận đầy đủ các điều kiện này giúp so sánh kết quả giữa các phiên thử và truy tìm nguyên nhân khi hệ thống hoạt động không ổn định.
+Các điều kiện chung cần được giữ cố định hoặc ghi lại trong từng lần thử được tổng hợp trong Bảng~\ref{tab:experimental_conditions}. Việc ghi nhận đầy đủ các điều kiện này giúp so sánh kết quả giữa các lần thử và truy tìm nguyên nhân khi hệ thống hoạt động không ổn định.
 
 \begin{table}[H]
     \centering
@@ -55,7 +55,7 @@ Các tiêu chí đánh giá được chia thành bốn nhóm gồm hiệu năng 
         Thời gian hạ cánh & s & Tính từ lúc bắt đầu quy trình Landing đến khi PX4 báo landed. \\
         Số lần mất marker & lần & Đếm các khoảng mà \texttt{target\_visible=false} trong pha tiếp cận bằng thị giác. \\
         Tỷ lệ thành công & \% & Tỷ số giữa số lần hạ cánh đạt yêu cầu và tổng số lần thử. \\
-        CPU, RAM và nhiệt độ Pi & \%, MB, $^\circ$C & Ghi định kỳ trong toàn bộ phiên thử nghiệm. \\
+        CPU, RAM và nhiệt độ Pi & \%, MB, $^\circ$C & Ghi định kỳ trong toàn bộ lần thử nghiệm. \\
         Điện áp và cảnh báo nguồn & V & Ghi điện áp thấp nhất và trạng thái undervoltage/throttling của Raspberry Pi. \\
         \bottomrule
     \end{tabularx}
@@ -67,7 +67,7 @@ Các tiêu chí đánh giá được chia thành bốn nhóm gồm hiệu năng 
 
 Trước khi thực hiện các thử nghiệm liên quan đến camera và điều khiển, hệ thống cấp nguồn cho máy tính đồng hành được kiểm tra riêng để loại trừ nguyên nhân gây mất ổn định do sụt áp. Raspberry Pi~5 được cấp nguồn theo đúng cấu hình dự kiến khi bay: pin LiPo đi qua bộ hạ áp XL4015, sau đó đưa vào các chân $5$~V và GND trên GPIO. Trong thử nghiệm này, toàn bộ cánh quạt được tháo, bộ phát hiện ArUco chạy với camera IMX500 ở độ phân giải $640\times480$ và tốc độ $15$~frame/s, đồng thời Micro XRCE-DDS Agent được giữ hoạt động. Bộ điều khiển hạ cánh và yêu cầu Offboard không được kích hoạt.
 
-Trong thời gian $10$ phút, dữ liệu được lấy mẫu mỗi giây, gồm điện áp rail $5$~V tại PMIC, nhiệt độ CPU, nhiệt độ PMIC, mức sử dụng CPU, tần số CPU, dung lượng bộ nhớ sử dụng và cờ throttling. Kết quả của phiên thử được tổng hợp trong Bảng~\ref{tab:power_stability_result}.
+Trong thời gian $10$ phút, dữ liệu được lấy mẫu mỗi giây, gồm điện áp rail $5$~V tại PMIC, nhiệt độ CPU, nhiệt độ PMIC, mức sử dụng CPU, tần số CPU, dung lượng bộ nhớ sử dụng và cờ throttling. Kết quả của lần thử được tổng hợp trong Bảng~\ref{tab:power_stability_result}.
 
 \begin{table}[H]
     \centering
@@ -91,7 +91,7 @@ Trong thời gian $10$ phút, dữ liệu được lấy mẫu mỗi giây, gồ
     \end{tabularx}
 \end{table}
 
-Các Hình~\ref{fig:power_cpu_usage}--\ref{fig:power_voltage} cho thấy điện áp cấp được duy trì xấp xỉ $5$~V trong suốt phiên thử, trong khi nhiệt độ CPU tăng rồi tiến tới vùng ổn định quanh $70$--$74~^\circ$C. Không xuất hiện sự kiện undervoltage mới và không có mẫu nào mang cờ throttling. Kết quả này chứng minh đường cấp nguồn GPIO hoạt động ổn định trong điều kiện tải tĩnh gồm camera, ArUco và Docker. Tuy nhiên, dòng điện đầu vào chưa được đo, đồng thời chưa đánh giá các quá độ do động cơ, servo hoặc điện áp LiPo thấp; vì vậy kết quả chỉ được xem là khảo sát tính khả thi ban đầu và chưa thay thế kiểm tra nguồn trong điều kiện bay.
+Các Hình~\ref{fig:power_cpu_usage}--\ref{fig:power_voltage} cho thấy điện áp cấp được duy trì xấp xỉ $5$~V trong suốt lần thử, trong khi nhiệt độ CPU tăng rồi tiến tới vùng ổn định quanh $70$--$74~^\circ$C. Không xuất hiện sự kiện undervoltage mới và không có mẫu nào mang cờ throttling. Kết quả này chứng minh đường cấp nguồn GPIO hoạt động ổn định trong điều kiện tải tĩnh gồm camera, ArUco và Docker. Tuy nhiên, dòng điện đầu vào chưa được đo, đồng thời chưa đánh giá các quá độ do động cơ, servo hoặc điện áp LiPo thấp; vì vậy kết quả chỉ được xem là khảo sát tính khả thi ban đầu và chưa thay thế kiểm tra nguồn trong điều kiện bay.
 
 \begin{figure}[H]
     \centering
@@ -128,7 +128,7 @@ Marker ID~0 được đặt gần tâm ảnh tại ba khoảng cách danh địn
     \label{fig:space-test}
 \end{figure}
 
-Mỗi phiên ghi rosbag trong khoảng 30~s, sau đó các mẫu trên các topic \texttt{/uav/aruco/ids}, \texttt{/uav/aruco/tvecs} và \texttt{/uav/aruco/status} được dùng để tính trung bình, độ lệch chuẩn, tần số phát hiện và độ trễ. Bảng~\ref{tab:aruco_distance_test} trình bày số liệu thu được.
+Mỗi lần ghi rosbag kéo dài khoảng 30~s, sau đó các mẫu trên các topic \texttt{/uav/aruco/ids}, \texttt{/uav/aruco/tvecs} và \texttt{/uav/aruco/status} được dùng để tính trung bình, độ lệch chuẩn, tần số phát hiện và độ trễ. Bảng~\ref{tab:aruco_distance_test} trình bày số liệu thu được.
 
 \begin{table}[H]
     \centering
@@ -156,21 +156,21 @@ Mỗi phiên ghi rosbag trong khoảng 30~s, sau đó các mẫu trên các topi
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{aruco_static/04-aruco-z-distance-tests.png}
-    \caption{Biến thiên thành phần $z$ của \texttt{tvec} trong ba phiên thử ArUco tĩnh. Đường gạch đỏ là khoảng cách danh định.}
+    \caption{Biến thiên thành phần $z$ của \texttt{tvec} trong ba lần thử ArUco tĩnh. Đường gạch đỏ là khoảng cách danh định.}
     \label{fig:aruco_distance_z}
 \end{figure}
 
-Đồ thị trong Hình~\ref{fig:aruco_distance_z} thể hiện trực tiếp khoảng cách $z$ được bộ giải PnP ước lượng trong phép thử tĩnh. Tại $0{,}80$~m và $1{,}00$~m, giá trị ước lượng nằm gần khoảng cách danh định với độ lệch chuẩn lần lượt là $3{,}8$ và $3{,}5$~mm. Ở phiên danh định $0{,}50$~m, marker ban đầu được đặt lệch xa khoảng $10$~cm; các mẫu đầu vì vậy nằm quanh $0{,}60$--$0{,}65$~m. Khi marker được kéo xuống gần mốc thử, giá trị $z$ giảm liên tục và ổn định quanh $0{,}53$--$0{,}55$~m. Như vậy, đồ thị phản ánh đúng sự thay đổi khoảng cách thực tế trong lúc bố trí marker; giá trị trung bình toàn phiên tăng lên $0{,}549$~m và độ lệch chuẩn đạt $38{,}9$~mm chủ yếu do đoạn quá độ ban đầu, không phải do sai số ngẫu nhiên kéo dài của detector.
+Đồ thị trong Hình~\ref{fig:aruco_distance_z} thể hiện trực tiếp khoảng cách $z$ được bộ giải PnP ước lượng trong phép thử tĩnh. Tại $0{,}80$~m và $1{,}00$~m, giá trị ước lượng nằm gần khoảng cách danh định với độ lệch chuẩn lần lượt là $3{,}8$ và $3{,}5$~mm. Ở lần đo danh định $0{,}50$~m, marker ban đầu được đặt lệch xa khoảng $10$~cm; các mẫu đầu vì vậy nằm quanh $0{,}60$--$0{,}65$~m. Khi marker được kéo xuống gần mốc thử, giá trị $z$ giảm liên tục và ổn định quanh $0{,}53$--$0{,}55$~m. Như vậy, đồ thị phản ánh đúng sự thay đổi khoảng cách thực tế trong lúc bố trí marker; giá trị trung bình của toàn bộ lần đo tăng lên $0{,}549$~m và độ lệch chuẩn đạt $38{,}9$~mm chủ yếu do đoạn quá độ ban đầu, không phải do sai số ngẫu nhiên kéo dài của detector.
 
 Tỷ lệ nhận đúng ID~0 đạt $100\%$ ở $0{,}80$~m, giảm còn $96{,}8\%$ ở $0{,}50$~m và $91{,}5\%$ ở $1{,}00$~m. Ở khoảng cách $1{,}00$~m, số lần mất marker tăng nhẹ và tần số xuất bản tvec giảm còn $5{,}13$~Hz; đây là vùng cần tiếp tục kiểm tra khi bay. Độ lệch trung bình theo phương ngang vẫn nhỏ, ngoại trừ thành phần $y=0{,}0458$~m tại $0{,}80$~m và $x=0{,}0402$~m tại $1{,}00$~m, cho thấy việc đặt marker bằng tay chưa hoàn toàn trùng tâm camera. Độ trễ đo được trong khoảng $147{,}3$--$177{,}5$~ms là thông số cần ghi nhận khi thiết kế và hiệu chỉnh PID ở các thí nghiệm sau.
 
-Khoảng cách phát hiện ổn định không nên được xác định từ một frame đơn lẻ. Với ba phiên đo này, detector nhận dạng đáng tin cậy trong khoảng $0{,}50$--$1{,}00$~m, nhưng bộ điều khiển vẫn nên dùng điều kiện khóa nhiều frame liên tiếp và bộ lọc pose để loại bỏ quá độ hoặc các khoảng mất marker ngắn.
+Khoảng cách phát hiện ổn định không nên được xác định từ một frame đơn lẻ. Với ba lần đo này, detector nhận dạng đáng tin cậy trong khoảng $0{,}50$--$1{,}00$~m, nhưng bộ điều khiển vẫn nên dùng điều kiện khóa nhiều frame liên tiếp và bộ lọc pose để loại bỏ quá độ hoặc các khoảng mất marker ngắn.
 
 \subsubsection{Ảnh hưởng của vị trí marker trong ảnh}
 
-Marker được đặt tại ba cấu hình đã ghi rosbag: chính giữa (center), bên phải (right) và một phiên di chuyển đa hướng (multidirectional3). Mục tiêu của phép thử là kiểm chứng đồng thời dấu của pose trong hệ camera quang học và chiều lệnh vận tốc sau khi bộ điều khiển biến đổi sang hệ body-FLU. Với camera quang học hiện tại, $x>0$ biểu thị marker nằm về phía phải ảnh, $y<0$ biểu thị marker nằm về phía trước ảnh; trong hệ body-FLU, $v_x>0$ là chuyển động về phía trước và $v_y<0$ là chuyển động sang phải. Vì vậy, khi dấu của sai số $x,y$ thay đổi, hai thành phần ngang của \texttt{cmd\_vel} cũng phải đổi chiều để giảm sai số tương ứng.
+Marker được đặt tại ba cấu hình đã ghi rosbag: chính giữa (center), bên phải (right) và một lần di chuyển đa hướng (multidirectional3). Mục tiêu của phép thử là kiểm chứng đồng thời dấu của pose trong hệ camera quang học và chiều lệnh vận tốc sau khi bộ điều khiển biến đổi sang hệ body-FLU. Với camera quang học hiện tại, $x>0$ biểu thị marker nằm về phía phải ảnh, $y<0$ biểu thị marker nằm về phía trước ảnh; trong hệ body-FLU, $v_x>0$ là chuyển động về phía trước và $v_y<0$ là chuyển động sang phải. Vì vậy, khi dấu của sai số $x,y$ thay đổi, hai thành phần ngang của \texttt{cmd\_vel} cũng phải đổi chiều để giảm sai số tương ứng.
 
-Các phiên center và right được ghi ở độ cao danh định $1{,}1208$~m. Phiên multidirectional3 kéo dài $42{,}25$~s, trong đó UAV/marker được xê dịch tuần tự qua nhiều hướng ở độ cao đo được khoảng $1{,}29$~m để quan sát đáp ứng theo thời gian; do đó đây là phép thử động trên mặt đất, không phải phép đo tĩnh thuần túy. Kết quả pose được tổng hợp trong Bảng~\ref{tab:marker_position_pose_result}.
+Các lần đo center và right được ghi ở độ cao danh định $1{,}1208$~m. Lần thử multidirectional3 kéo dài $42{,}25$~s, trong đó UAV/marker được xê dịch tuần tự qua nhiều hướng ở độ cao đo được khoảng $1{,}29$~m để quan sát đáp ứng theo thời gian; do đó đây là phép thử động trên mặt đất, không phải phép đo tĩnh thuần túy. Kết quả pose được tổng hợp trong Bảng~\ref{tab:marker_position_pose_result}.
 
 \begin{table}[H]
     \centering
@@ -212,7 +212,7 @@ Mỗi cấu hình được biểu diễn bằng một đồ thị gồm bốn đ
     \label{fig:aruco_multidirectional_pose_cmdvel_xy}
 \end{figure}
 
-Các giá trị trung bình của hai thành phần lệnh ngang được trình bày trong Bảng~\ref{tab:marker_position_cmd_result}. Ở cấu hình right, pose có $x>0$ và $y>0$ trong hệ camera, tương ứng bộ điều khiển phát $v_x=-0{,}0459$ và $v_y=-0{,}0942$~m/s để đưa UAV lùi lại và dịch sang phải. Ở phiên multidirectional3, các giá trị trung bình trên toàn phiên là $v_x=-0{,}0447$ và $v_y=-0{,}0090$~m/s. Hai giá trị này chỉ mang tính mô tả toàn phiên vì marker được đưa qua nhiều góc phần tư; dấu và biên độ tức thời cần được đọc trên Hình~\ref{fig:aruco_multidirectional_pose_cmdvel_xy}. Khi $x,y$ đổi dấu, các đường nét đứt cũng đảo chiều hoặc tiến về không, cho thấy bộ điều khiển đang phản hồi theo sai số ngang thay vì giữ một lệnh cố định.
+Các giá trị trung bình của hai thành phần lệnh ngang được trình bày trong Bảng~\ref{tab:marker_position_cmd_result}. Ở cấu hình right, pose có $x>0$ và $y>0$ trong hệ camera, tương ứng bộ điều khiển phát $v_x=-0{,}0459$ và $v_y=-0{,}0942$~m/s để đưa UAV lùi lại và dịch sang phải. Ở lần thử multidirectional3, các giá trị trung bình của toàn bộ lần thử là $v_x=-0{,}0447$ và $v_y=-0{,}0090$~m/s. Hai giá trị này chỉ mang tính mô tả toàn bộ lần thử vì marker được đưa qua nhiều góc phần tư; dấu và biên độ tức thời cần được đọc trên Hình~\ref{fig:aruco_multidirectional_pose_cmdvel_xy}. Khi $x,y$ đổi dấu, các đường nét đứt cũng đảo chiều hoặc tiến về không, cho thấy bộ điều khiển đang phản hồi theo sai số ngang thay vì giữ một lệnh cố định.
 
 \begin{table}[H]
     \centering
@@ -231,7 +231,7 @@ Các giá trị trung bình của hai thành phần lệnh ngang được trình
     \end{tabular}
 \end{table}
 
-Trong phiên multidirectional3, $x$ thay đổi từ $-0{,}242$ đến $0{,}272$~m và $y$ từ $-0{,}161$ đến $0{,}342$~m; marker vẫn được nhận ở cả $233/233$ mẫu pose và bộ điều khiển duy trì trạng thái \texttt{visual\_approach}, không phát sinh \texttt{abort}. Do đó, đồ thị cho thấy rõ miền biến thiên pose và sự thay đổi tương ứng của lệnh ngang trong bài thử bench; kết quả này chưa phải là đánh giá hạ cánh khi UAV đang bay.
+Trong lần thử multidirectional3, $x$ thay đổi từ $-0{,}242$ đến $0{,}272$~m và $y$ từ $-0{,}161$ đến $0{,}342$~m; marker vẫn được nhận ở cả $233/233$ mẫu pose và bộ điều khiển duy trì trạng thái \texttt{visual\_approach}, không phát sinh \texttt{abort}. Do đó, đồ thị cho thấy rõ miền biến thiên pose và sự thay đổi tương ứng của lệnh ngang trong bài thử bench; kết quả này chưa phải là đánh giá hạ cánh khi UAV đang bay.
 
 \subsection{Thử nghiệm kết nối ROS 2--PX4}
 
@@ -285,7 +285,7 @@ xy_global: false
 z_global: false
 \end{lstlisting}
 
-Hình~\ref{fig:uxrce_local_position_evidence} cho thấy ROS~2 đọc được thông điệp \texttt{VehicleLocalPosition} từ PX4. Trong phiên minh chứng này, các cờ \texttt{xy\_valid}, \texttt{z\_valid}, \texttt{v\_xy\_valid} và \texttt{v\_z\_valid} đều bằng \texttt{true}, xác nhận estimator đã cung cấp được vị trí và vận tốc cục bộ cần thiết cho bước kiểm tra bridge tiếp theo.
+Hình~\ref{fig:uxrce_local_position_evidence} cho thấy ROS~2 đọc được thông điệp \texttt{VehicleLocalPosition} từ PX4. Trong lần minh chứng này, các cờ \texttt{xy\_valid}, \texttt{z\_valid}, \texttt{v\_xy\_valid} và \texttt{v\_z\_valid} đều bằng \texttt{true}, xác nhận estimator đã cung cấp được vị trí và vận tốc cục bộ cần thiết cho bước kiểm tra bridge tiếp theo.
 
 \begin{figure}[H]
     \centering
@@ -410,7 +410,7 @@ Sau khi hoàn tất các lần thử, cần tính tỷ lệ thành công, sai s�
 
 \subsection{Đánh giá tài nguyên Raspberry Pi}
 
-Độ ổn định của Raspberry Pi phải được đánh giá riêng vì hệ thống từng xuất hiện hiện tượng tắt hoặc treo trong quá trình bay. CPU, RAM, nhiệt độ, điện áp và trạng thái throttling cần được ghi từ trước khi cất cánh đến sau khi kết thúc thử nghiệm. Một phiên kiểm tra tải kéo dài hơn thời gian bay dự kiến giúp phát hiện lỗi nhiệt hoặc nguồn không xuất hiện trong các lần chạy ngắn.
+Độ ổn định của Raspberry Pi phải được đánh giá riêng vì hệ thống từng xuất hiện hiện tượng tắt hoặc treo trong quá trình bay. CPU, RAM, nhiệt độ, điện áp và trạng thái throttling cần được ghi từ trước khi cất cánh đến sau khi kết thúc thử nghiệm. Một lần kiểm tra tải kéo dài hơn thời gian bay dự kiến giúp phát hiện lỗi nhiệt hoặc nguồn không xuất hiện trong các lần chạy ngắn.
 
 \begin{table}[H]
     \centering
