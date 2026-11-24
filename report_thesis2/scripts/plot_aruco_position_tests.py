@@ -43,61 +43,34 @@ def configure_axis(axis, title: str, ylabel: str) -> None:
     axis.margins(x=0.01)
 
 
-def plot_pose(records: list[list[object]], output: Path) -> None:
-    figure, axes = plt.subplots(3, 1, figsize=(12, 10), sharex=False)
-    for axis, test in zip(axes, TESTS):
-        rows = series(records, test, "pose")
-        if not rows:
-            axis.text(
-                0.5,
-                0.5,
-                "Không có dữ liệu pose",
-                ha="center",
-                va="center",
-                transform=axis.transAxes,
-            )
-            axis.set_title(TEST_TITLES[test], loc="left", fontsize=11, fontweight="bold")
-            axis.grid(True, alpha=0.25)
-            continue
+def plot_xy(records: list[list[object]], test: str, stream: str, output: Path) -> None:
+    """Write one x/y plot for a single test and stream."""
+    figure, axis = plt.subplots(figsize=(11, 5.5))
+    rows = series(records, test, stream)
+    ylabel = "Pose (m)" if stream == "pose" else "Vận tốc body-FLU (m/s)"
+    prefix = "pose" if stream == "pose" else "cmd_vel"
+    if not rows:
+        message = (
+            "Không có /aruco_land/cmd_vel trong rosbag center"
+            if stream == "cmd"
+            else "Không có dữ liệu pose"
+        )
+        axis.text(0.5, 0.5, message, ha="center", va="center", transform=axis.transAxes)
+        axis.set_xlim(0, 1)
+    else:
         time = [float(row[2]) for row in rows]
-        for index, name in enumerate(("x", "y", "z"), start=3):
-            axis.plot(time, [float(row[index]) for row in rows],
-                      color=COLORS[name], linewidth=1.5, label=f"pose {name}")
-        configure_axis(axis, TEST_TITLES[test], "Pose (m)")
-        axis.legend(loc="upper right", ncol=3, fontsize=8, frameon=True)
-    axes[-1].set_xlabel("Thời gian kể từ đầu phiên (s)")
-    figure.suptitle("Pose ArUco trong ba vị trí kiểm tra", fontsize=14, fontweight="bold")
-    figure.tight_layout(rect=(0, 0, 1, 0.96))
-    figure.savefig(output, dpi=220, bbox_inches="tight")
-    plt.close(figure)
-
-
-def plot_cmd_vel(records: list[list[object]], output: Path) -> None:
-    figure, axes = plt.subplots(3, 1, figsize=(12, 10), sharex=False)
-    for axis, test in zip(axes, TESTS):
-        rows = series(records, test, "cmd")
-        if not rows:
-            axis.text(
-                0.5,
-                0.5,
-                "Không có /aruco_land/cmd_vel trong rosbag center",
-                ha="center",
-                va="center",
-                transform=axis.transAxes,
-                fontsize=10,
+        for index, name in ((3, "x"), (4, "y")):
+            axis.plot(
+                time,
+                [float(row[index]) for row in rows],
+                color=COLORS[name],
+                linewidth=1.6,
+                label=f"{prefix} {name}",
             )
-            axis.set_title(TEST_TITLES[test], loc="left", fontsize=11, fontweight="bold")
-            axis.grid(True, alpha=0.25)
-            continue
-        time = [float(row[2]) for row in rows]
-        for index, name in enumerate(("x", "y", "z"), start=3):
-            axis.plot(time, [float(row[index]) for row in rows],
-                      color=COLORS[name], linewidth=1.4, label=f"cmd_vel {name}")
-        configure_axis(axis, TEST_TITLES[test], "Vận tốc body-FLU (m/s)")
-        axis.legend(loc="upper right", ncol=3, fontsize=8, frameon=True)
-    axes[-1].set_xlabel("Thời gian kể từ đầu phiên (s)")
-    figure.suptitle("Lệnh vận tốc ArUco trong ba vị trí kiểm tra", fontsize=14, fontweight="bold")
-    figure.tight_layout(rect=(0, 0, 1, 0.96))
+        axis.legend(loc="upper right", ncol=2, fontsize=9, frameon=True)
+    configure_axis(axis, f"{TEST_TITLES[test]} — {prefix} x,y", ylabel)
+    axis.set_xlabel("Thời gian kể từ đầu phiên (s)")
+    figure.tight_layout()
     figure.savefig(output, dpi=220, bbox_inches="tight")
     plt.close(figure)
 
@@ -109,8 +82,9 @@ def main() -> None:
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     records = load_records(args.input)
-    plot_pose(records, args.output_dir / "04-aruco-position-pose.png")
-    plot_cmd_vel(records, args.output_dir / "04-aruco-position-cmdvel.png")
+    for test in TESTS:
+        plot_xy(records, test, "pose", args.output_dir / f"04-aruco-{test}-pose-xy.png")
+        plot_xy(records, test, "cmd", args.output_dir / f"04-aruco-{test}-cmdvel-xy.png")
 
 
 if __name__ == "__main__":

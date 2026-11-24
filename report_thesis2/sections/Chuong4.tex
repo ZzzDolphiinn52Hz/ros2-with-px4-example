@@ -190,23 +190,51 @@ Các phiên center và right được ghi ở độ cao danh định $1{,}1208$~
     \end{tabular}
 \end{table}
 
-Hai đồ thị dưới đây dùng cùng mốc thời gian tương đối trong từng phiên. Hình~\ref{fig:aruco_position_pose} biểu diễn ba thành phần pose, còn Hình~\ref{fig:aruco_position_cmdvel} biểu diễn các lệnh vận tốc body-FLU tương ứng. Rosbag center được ghi trước khi bổ sung topic \texttt{/aruco\_land/cmd\_vel}, vì vậy ô center trong Hình~\ref{fig:aruco_position_cmdvel} được đánh dấu là chưa có dữ liệu thay vì suy diễn lệnh từ pose.
+Mỗi phiên được biểu diễn bằng hai đồ thị cùng mốc thời gian tương đối: một đồ thị pose chỉ gồm $x,y$ và một đồ thị lệnh vận tốc chỉ gồm $v_x,v_y$. Như vậy, ba cấu hình tạo thành sáu đồ thị, giúp quan sát trực tiếp quan hệ giữa sai lệch ngang và lệnh điều khiển tương ứng. Rosbag center được ghi trước khi bổ sung topic \texttt{/aruco\_land/cmd\_vel}, vì vậy đồ thị lệnh của center được đánh dấu là chưa có dữ liệu thay vì suy diễn lệnh từ pose.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-position-pose.png}
-    \caption{Các thành phần $x$, $y$, $z$ của pose ArUco trong ba cấu hình vị trí marker.}
-    \label{fig:aruco_position_pose}
+    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-center-pose-xy.png}
+    \caption{Pose $x,y$ của cấu hình center.}
+    \label{fig:aruco_center_pose_xy}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-position-cmdvel.png}
-    \caption{Các thành phần \texttt{cmd\_vel} body-FLU ghi đồng thời với các phiên right và front-right.}
-    \label{fig:aruco_position_cmdvel}
+    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-center-cmdvel-xy.png}
+    \caption{Lệnh \texttt{cmd\_vel.x,y} của cấu hình center; rosbag chưa ghi topic này.}
+    \label{fig:aruco_center_cmdvel_xy}
 \end{figure}
 
-Các giá trị trung bình của lệnh vận tốc được trình bày trong Bảng~\ref{tab:marker_position_cmd_result}. Ở cấu hình right, pose có $x>0$ và $y>0$ trong hệ camera, tương ứng bộ điều khiển phát $v_x=-0{,}0459$ và $v_y=-0{,}0942$~m/s để đưa UAV lùi lại và dịch sang phải. Ở cấu hình front-right, pose có $x>0$ và $y<0$, còn lệnh trung bình là $v_x=+0{,}0072$ và $v_y=-0{,}0388$~m/s; chiều tiến và chiều sang phải phù hợp với vị trí quan sát được. Các lệnh đều bị giới hạn, không có lệnh yaw trong hai phiên.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-right-pose-xy.png}
+    \caption{Pose $x,y$ của cấu hình right.}
+    \label{fig:aruco_right_pose_xy}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-right-cmdvel-xy.png}
+    \caption{Lệnh \texttt{cmd\_vel.x,y} của cấu hình right.}
+    \label{fig:aruco_right_cmdvel_xy}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-front_right-pose-xy.png}
+    \caption{Pose $x,y$ của cấu hình front-right khi có dịch chuyển trong lúc ghi.}
+    \label{fig:aruco_front_right_pose_xy}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-front_right-cmdvel-xy.png}
+    \caption{Lệnh \texttt{cmd\_vel.x,y} của cấu hình front-right.}
+    \label{fig:aruco_front_right_cmdvel_xy}
+\end{figure}
+
+Các giá trị trung bình của hai thành phần lệnh ngang được trình bày trong Bảng~\ref{tab:marker_position_cmd_result}. Ở cấu hình right, pose có $x>0$ và $y>0$ trong hệ camera, tương ứng bộ điều khiển phát $v_x=-0{,}0459$ và $v_y=-0{,}0942$~m/s để đưa UAV lùi lại và dịch sang phải. Ở cấu hình front-right, pose có $x>0$ và $y<0$, còn lệnh trung bình là $v_x=+0{,}0072$ và $v_y=-0{,}0388$~m/s; chiều tiến và chiều sang phải phù hợp với vị trí quan sát được.
 
 \begin{table}[H]
     \centering
@@ -214,18 +242,18 @@ Các giá trị trung bình của lệnh vận tốc được trình bày trong 
     \caption{Giá trị trung bình của lệnh vận tốc theo vị trí marker}
     \label{tab:marker_position_cmd_result}
     \setlength{\tabcolsep}{5pt}
-    \begin{tabular}{l c c c c}
+    \begin{tabular}{l c c c}
         \toprule
-        \textbf{Vị trí} & \textbf{Số mẫu} & \textbf{$\bar{v}_x$ (m/s)} & \textbf{$\bar{v}_y$ (m/s)} & \textbf{$\bar{v}_z$ (m/s)} \\
+        \textbf{Vị trí} & \textbf{Số mẫu} & \textbf{$\bar{v}_x$ (m/s)} & \textbf{$\bar{v}_y$ (m/s)} \\
         \midrule
-        Center & -- & \multicolumn{3}{c}{Chưa ghi topic \texttt{/aruco\_land/cmd\_vel}} \\
-        Right & $775$ & $-0{,}0459$ & $-0{,}0942$ & $0{,}0000$ \\
-        Front-right & $1212$ & $+0{,}0072$ & $-0{,}0388$ & $-0{,}0059$ \\
+        Center & -- & \multicolumn{2}{c}{Chưa ghi topic \texttt{/aruco\_land/cmd\_vel}} \\
+        Right & $775$ & $-0{,}0459$ & $-0{,}0942$ \\
+        Front-right & $1212$ & $+0{,}0072$ & $-0{,}0388$ \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-Phiên front-right cho thấy rõ ảnh hưởng của việc dịch chuyển trong lúc ghi: $x$ thay đổi từ $0{,}028$ đến $0{,}254$~m và $y$ từ $-0{,}105$ đến $-0{,}006$~m. Khi marker bị mất trước điều kiện chuyển sang pha mù, PID chuyển sang trạng thái an toàn và đưa lệnh về không; vì vậy đoạn $v_z=-0{,}20$~m/s xuất hiện ngắn trong giai đoạn tiếp cận rồi cũng kết thúc bằng lệnh bằng không. Đây là bằng chứng về phản ứng an toàn khi mất marker, không phải kết quả của một lần hạ cánh PX4 hoàn chỉnh.
+Phiên front-right cho thấy rõ ảnh hưởng của việc dịch chuyển trong lúc ghi: $x$ thay đổi từ $0{,}028$ đến $0{,}254$~m và $y$ từ $-0{,}105$ đến $-0{,}006$~m. Khi marker bị mất trước điều kiện chuyển sang pha mù, PID chuyển sang trạng thái an toàn và đưa hai lệnh ngang về không. Đây là bằng chứng về phản ứng an toàn khi mất marker, không phải kết quả của một lần hạ cánh PX4 hoàn chỉnh.
 
 \subsubsection{Ảnh hưởng của góc nghiêng}
 
