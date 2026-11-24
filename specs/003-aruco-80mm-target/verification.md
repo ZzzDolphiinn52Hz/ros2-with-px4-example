@@ -35,3 +35,16 @@ Print the PDF with Actual size / 100% and disable Fit/Shrink. Measure both
 outer black edges with a ruler; each must be 80 mm before collecting pose.
 Then run ArUco-only static tests on the Raspberry Pi. Flight validation remains
 NOT RUN.
+
+## Raspberry Pi Synchronization
+
+SSH checks to both configured aliases were attempted after pushing commit
+`58113ad`:
+
+```text
+raspi      (192.168.1.120): No route to host
+raspi-home (192.168.1.18):  No route to host
+```
+
+Fast-forward pull, Pi build and camera validation: NOT RUN. No Pi files were
+changed.

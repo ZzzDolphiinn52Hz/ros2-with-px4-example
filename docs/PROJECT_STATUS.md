@@ -41,8 +41,9 @@ still NOT RUN.
 
 ## Working Tree
 
-The 80 mm target work started from commit `6a1b6cd`. Raspberry Pi deployment
-has not run yet and must follow `docs/RASPI_SYNC.md` after commit/push.
+The 80 mm implementation was pushed as commit `58113ad`. Raspberry Pi
+deployment is NOT RUN because both configured SSH aliases returned
+`No route to host`; no Pi files were changed.
 
 ## Next Action
 
