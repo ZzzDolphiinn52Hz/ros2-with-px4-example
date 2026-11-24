@@ -241,6 +241,48 @@ Nhóm thử nghiệm này xác nhận đường truyền dữ liệu và các kh
 
 Micro XRCE-DDS Agent được khởi động với cổng \texttt{/dev/ttyAMA0} và baudrate $921600$. Thử nghiệm đạt yêu cầu khi agent nhận client từ PX4, các topic \texttt{/fmu/in/*} và \texttt{/fmu/out/*} xuất hiện, đồng thời đọc được dữ liệu thay đổi hợp lý từ attitude, vehicle status và local position. Cần kiểm tra liên tục trong vài phút để phát hiện mất kết nối ngắt quãng hoặc lỗi tăng dần theo thời gian.
 
+Lệnh kiểm tra được thực hiện trong container ROS~2 sau khi khởi động Agent và profile \texttt{aruco-vehicle} trên Raspberry Pi. Trước tiên, danh sách topic và kiểu message được kiểm tra để xác nhận đường truyền hai chiều giữa PX4 và ROS~2:
+
+\begin{lstlisting}[style=terminaloutput,caption={Lệnh kiểm tra topic và kiểu message của uXRCE-DDS},label={lst:uxrce_topic_check}]
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+
+ros2 topic list | grep -E "/fmu/(in|out)/"
+ros2 topic type /fmu/out/vehicle_status_v1
+ros2 topic type /fmu/out/vehicle_attitude
+ros2 topic type /fmu/out/vehicle_local_position
+ros2 topic echo /fmu/out/vehicle_status_v1 --once
+ros2 topic echo /fmu/out/vehicle_local_position --once
+\end{lstlisting}
+
+Một phần kết quả thực tế được ghi lại như sau:
+
+\begin{lstlisting}[style=terminaloutput,caption={Kết quả đọc topic PX4 qua uXRCE-DDS},label={lst:uxrce_topic_result}]
+/fmu/in/offboard_control_mode
+/fmu/in/trajectory_setpoint
+/fmu/in/vehicle_command
+/fmu/out/vehicle_attitude
+/fmu/out/vehicle_command_ack
+/fmu/out/vehicle_local_position
+/fmu/out/vehicle_status_v1
+
+px4_msgs/msg/VehicleStatus
+arming_state: 1
+failsafe: false
+safety_off: true
+power_input_valid: true
+pre_flight_checks_pass: false
+
+xy_valid: false
+z_valid: true
+v_xy_valid: false
+v_z_valid: true
+heading_good_for_control: false
+dead_reckoning: true
+\end{lstlisting}
+
+Kết quả cho thấy uXRCE-DDS đã truyền được dữ liệu hai chiều: các nhóm topic \texttt{/fmu/in/*} và \texttt{/fmu/out/*} xuất hiện, kiểu message đúng với bộ \texttt{px4\_msgs} và có thể đọc được attitude, trạng thái phương tiện và local position. Tuy nhiên, tại thời điểm ghi nhận, bộ ước lượng PX4 chưa có vị trí ngang hợp lệ ($\texttt{xy\_valid=false}$ và $\texttt{v\_xy\_valid=false}$), đồng thời đang ở trạng thái dead-reckoning. Vì vậy, kết quả của tiểu mục này được đánh giá là \textbf{đạt về kết nối uXRCE-DDS} nhưng \textbf{chưa đạt điều kiện tiền đề để enable bridge và yêu cầu Offboard}; không thực hiện lệnh enable trong phiên đo này.
+
 \subsubsection{Kiểm tra Offboard khi tháo cánh quạt}
 
 Sau khi xác nhận local position và attitude hợp lệ, bridge được enable trong khi setpoint vận tốc bằng không. Hệ thống phát heartbeat và setpoint đủ lâu trước khi gửi yêu cầu Offboard. Kết quả cần được xác nhận đồng thời bằng \texttt{VehicleCommandAck}, \texttt{VehicleStatus} và log của bridge. Tiếp theo, chủ động dừng luồng setpoint để kiểm tra PX4 rời Offboard hoặc kích hoạt failsafe theo đúng cấu hình.
