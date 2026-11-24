@@ -1,6 +1,7 @@
 DISABLE_WAYLAND=1 GTK_IM_MODULE=xim code
 
-
+sudo rfcomm release 0 2>/dev/null
+sudo rfcomm bind 0 F7:E9:68:97:FA:06 1
 
 Sau khi clone, trước tiên chọn integration tương ứng:
 cd ~/ros2_ws

@@ -139,16 +139,15 @@ Mỗi lần ghi rosbag kéo dài khoảng 30~s, sau đó các mẫu trên các t
     \begin{tabular}{c c c c c c c}
         \toprule
         \textbf{\shortstack{$Z$ đặt\\(m)}} &
-        \textbf{\shortstack{ID~0 /\\phát hiện}} &
         \textbf{\shortstack{$\bar{x}$\\(m)}} &
         \textbf{\shortstack{$\bar{y}$\\(m)}} &
         \textbf{\shortstack{$\bar{z}\pm\sigma_z$\\(m)}} &
         \textbf{\shortstack{Độ trễ\\(ms)}} &
         \textbf{\shortstack{Tần số\\(Hz)}} \\
         \midrule
-        $0{,}50$ & $182/188$ ($96{,}8\%$) & $-0{,}0055$ & $-0{,}0081$ & $0{,}5493\pm0{,}0389$ & $155{,}7$ & $6{,}19$ \\
-        $0{,}80$ & $194/194$ ($100\%$) & $0{,}0066$ & $0{,}0458$ & $0{,}7845\pm0{,}0038$ & $147{,}3$ & $6{,}76$ \\
-        $1{,}00$ & $151/165$ ($91{,}5\%$) & $0{,}0402$ & $-0{,}0073$ & $1{,}0039\pm0{,}0035$ & $177{,}5$ & $5{,}13$ \\
+        $0{,}50$  & $-0{,}0055$ & $-0{,}0081$ & $0{,}5493\pm0{,}0389$ & $155{,}7$ & $6{,}19$ \\
+        $0{,}80$ & $0{,}0066$ & $0{,}0458$ & $0{,}7845\pm0{,}0038$ & $147{,}3$ & $6{,}76$ \\
+        $1{,}00$ & $0{,}0402$ & $-0{,}0073$ & $1{,}0039\pm0{,}0035$ & $177{,}5$ & $5{,}13$ \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -162,15 +161,15 @@ Mỗi lần ghi rosbag kéo dài khoảng 30~s, sau đó các mẫu trên các t
 
 Đồ thị trong Hình~\ref{fig:aruco_distance_z} thể hiện trực tiếp khoảng cách $z$ được bộ giải PnP ước lượng trong phép thử tĩnh. Tại $0{,}80$~m và $1{,}00$~m, giá trị ước lượng nằm gần khoảng cách danh định với độ lệch chuẩn lần lượt là $3{,}8$ và $3{,}5$~mm. Ở lần đo danh định $0{,}50$~m, marker ban đầu được đặt lệch xa khoảng $10$~cm; các mẫu đầu vì vậy nằm quanh $0{,}60$--$0{,}65$~m. Khi marker được kéo xuống gần mốc thử, giá trị $z$ giảm liên tục và ổn định quanh $0{,}53$--$0{,}55$~m. Như vậy, đồ thị phản ánh đúng sự thay đổi khoảng cách thực tế trong lúc bố trí marker; giá trị trung bình của toàn bộ lần đo tăng lên $0{,}549$~m và độ lệch chuẩn đạt $38{,}9$~mm chủ yếu do đoạn quá độ ban đầu, không phải do sai số ngẫu nhiên kéo dài của detector.
 
-Tỷ lệ nhận đúng ID~0 đạt $100\%$ ở $0{,}80$~m, giảm còn $96{,}8\%$ ở $0{,}50$~m và $91{,}5\%$ ở $1{,}00$~m. Ở khoảng cách $1{,}00$~m, số lần mất marker tăng nhẹ và tần số xuất bản tvec giảm còn $5{,}13$~Hz; đây là vùng cần tiếp tục kiểm tra khi bay. Độ lệch trung bình theo phương ngang vẫn nhỏ, ngoại trừ thành phần $y=0{,}0458$~m tại $0{,}80$~m và $x=0{,}0402$~m tại $1{,}00$~m, cho thấy việc đặt marker bằng tay chưa hoàn toàn trùng tâm camera. Độ trễ đo được trong khoảng $147{,}3$--$177{,}5$~ms là thông số cần ghi nhận khi thiết kế và hiệu chỉnh PID ở các thí nghiệm sau.
+Ở khoảng cách $1{,}00$~m tần số publish tvec giảm còn $5{,}13$~Hz; đây là vùng cần tiếp tục kiểm tra khi bay. Độ lệch trung bình theo phương ngang vẫn nhỏ, ngoại trừ thành phần $y=0{,}0458$~m tại $0{,}80$~m và $x=0{,}0402$~m tại $1{,}00$~m, cho thấy việc đặt marker bằng tay chưa hoàn toàn trùng tâm camera. Độ trễ đo được trong khoảng $147{,}3$--$177{,}5$~ms là thông số cần ghi nhận khi thiết kế và hiệu chỉnh PID ở các thí nghiệm sau.
 
 Khoảng cách phát hiện ổn định không nên được xác định từ một frame đơn lẻ. Với ba lần đo này, detector nhận dạng đáng tin cậy trong khoảng $0{,}50$--$1{,}00$~m, nhưng bộ điều khiển vẫn nên dùng điều kiện khóa nhiều frame liên tiếp và bộ lọc pose để loại bỏ quá độ hoặc các khoảng mất marker ngắn.
 
 \subsubsection{Ảnh hưởng của vị trí marker trong ảnh}
 
-Marker được đặt tại ba cấu hình đã ghi rosbag: chính giữa (center), bên phải (right) và một lần di chuyển đa hướng (multidirectional3). Mục tiêu của phép thử là kiểm chứng đồng thời dấu của pose trong hệ camera quang học và chiều lệnh vận tốc sau khi bộ điều khiển biến đổi sang hệ body-FLU. Với camera quang học hiện tại, $x>0$ biểu thị marker nằm về phía phải ảnh, $y<0$ biểu thị marker nằm về phía trước ảnh; trong hệ body-FLU, $v_x>0$ là chuyển động về phía trước và $v_y<0$ là chuyển động sang phải. Vì vậy, khi dấu của sai số $x,y$ thay đổi, hai thành phần ngang của \texttt{cmd\_vel} cũng phải đổi chiều để giảm sai số tương ứng.
+Marker được đặt tại ba vị trí: chính giữa (center), bên phải (right) và một lần di chuyển đa hướng (multidirectional). Mục tiêu của phép thử là kiểm chứng đồng thời dấu của pose trong hệ camera quang học và chiều lệnh vận tốc sau khi bộ điều khiển biến đổi sang hệ body-FLU. Với camera quang học hiện tại, $x>0$ biểu thị marker nằm về phía phải ảnh, $y<0$ biểu thị marker nằm về phía trước ảnh; trong hệ body-FLU, $v_x>0$ là chuyển động về phía trước và $v_y<0$ là chuyển động sang phải. Vì vậy, khi dấu của sai số $x,y$ thay đổi, hai thành phần ngang của \texttt{cmd\_vel} cũng phải đổi chiều để giảm sai số tương ứng.
 
-Các lần đo center và right được ghi ở độ cao danh định $1{,}1208$~m. Lần thử multidirectional3 kéo dài $42{,}25$~s, trong đó UAV/marker được xê dịch tuần tự qua nhiều hướng ở độ cao đo được khoảng $1{,}29$~m để quan sát đáp ứng theo thời gian; do đó đây là phép thử động trên mặt đất, không phải phép đo tĩnh thuần túy. Kết quả pose được tổng hợp trong Bảng~\ref{tab:marker_position_pose_result}.
+Các lần đo center và right được ghi ở độ cao danh định $1{,}1208$~m. Lần thử multidirectional kéo dài $42{,}25$~s, trong đó UAV/marker được xê dịch tuần tự qua nhiều hướng ở độ cao đo được khoảng $1{,}29$~m để quan sát đáp ứng theo thời gian; do đó đây là phép thử động trên mặt đất, không phải phép đo tĩnh thuần túy. Kết quả pose được tổng hợp trong Bảng~\ref{tab:marker_position_pose_result}.
 
 \begin{table}[H]
     \centering
@@ -184,7 +183,7 @@ Các lần đo center và right được ghi ở độ cao danh định $1{,}120
         \midrule
         Center & $154$ & $-0{,}0075\pm0{,}0003$ & $0{,}0100\pm0{,}0018$ & $1{,}1228\pm0{,}0023$ & $175{,}6$ \\
         Right & $217$ & $0{,}1643\pm0{,}0006$ & $0{,}0550\pm0{,}0011$ & $1{,}1189\pm0{,}0047$ & $178{,}1$ \\
-        Multidirectional3 & $233$ & $0{,}0133\pm0{,}1379$ & $0{,}0564\pm0{,}1341$ & $1{,}2941\pm0{,}0304$ & $180{,}3$ \\
+        Multidirectional & $233$ & $0{,}0133\pm0{,}1379$ & $0{,}0564\pm0{,}1341$ & $1{,}2941\pm0{,}0304$ & $180{,}3$ \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -212,7 +211,7 @@ Mỗi cấu hình được biểu diễn bằng một đồ thị gồm bốn đ
     \label{fig:aruco_multidirectional_pose_cmdvel_xy}
 \end{figure}
 
-Các giá trị trung bình của hai thành phần lệnh ngang được trình bày trong Bảng~\ref{tab:marker_position_cmd_result}. Ở cấu hình right, pose có $x>0$ và $y>0$ trong hệ camera, tương ứng bộ điều khiển phát $v_x=-0{,}0459$ và $v_y=-0{,}0942$~m/s để đưa UAV lùi lại và dịch sang phải. Ở lần thử multidirectional3, các giá trị trung bình của toàn bộ lần thử là $v_x=-0{,}0447$ và $v_y=-0{,}0090$~m/s. Hai giá trị này chỉ mang tính mô tả toàn bộ lần thử vì marker được đưa qua nhiều góc phần tư; dấu và biên độ tức thời cần được đọc trên Hình~\ref{fig:aruco_multidirectional_pose_cmdvel_xy}. Khi $x,y$ đổi dấu, các đường nét đứt cũng đảo chiều hoặc tiến về không, cho thấy bộ điều khiển đang phản hồi theo sai số ngang thay vì giữ một lệnh cố định.
+Các giá trị trung bình của hai thành phần lệnh ngang được trình bày trong Bảng~\ref{tab:marker_position_cmd_result}. Ở cấu hình right, pose có $x>0$ và $y>0$ trong hệ camera, tương ứng bộ điều khiển phát $v_x=-0{,}0459$ và $v_y=-0{,}0942$~m/s để đưa UAV lùi lại và dịch sang phải. Ở lần thử multidirectional, các giá trị trung bình của toàn bộ lần thử là $v_x=-0{,}0447$ và $v_y=-0{,}0090$~m/s. Hai giá trị này chỉ mang tính mô tả toàn bộ lần thử vì marker được đưa qua nhiều góc phần tư; dấu và biên độ tức thời cần được đọc trên Hình~\ref{fig:aruco_multidirectional_pose_cmdvel_xy}. Khi $x,y$ đổi dấu, các đường nét đứt cũng đảo chiều hoặc tiến về không, cho thấy bộ điều khiển đang phản hồi theo sai số ngang thay vì giữ một lệnh cố định.
 
 \begin{table}[H]
     \centering
@@ -226,12 +225,12 @@ Các giá trị trung bình của hai thành phần lệnh ngang được trình
         \midrule
         Center & -- & \multicolumn{2}{c}{Chưa ghi topic \texttt{/aruco\_land/cmd\_vel}} \\
         Right & $775$ & $-0{,}0459$ & $-0{,}0942$ \\
-        Multidirectional3 & $846$ & $-0{,}0447$ & $-0{,}0090$ \\
+        Multidirectional & $846$ & $-0{,}0447$ & $-0{,}0090$ \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-Trong lần thử multidirectional3, $x$ thay đổi từ $-0{,}242$ đến $0{,}272$~m và $y$ từ $-0{,}161$ đến $0{,}342$~m; marker vẫn được nhận ở cả $233/233$ mẫu pose và bộ điều khiển duy trì trạng thái \texttt{visual\_approach}, không phát sinh \texttt{abort}. Do đó, đồ thị cho thấy rõ miền biến thiên pose và sự thay đổi tương ứng của lệnh ngang trong bài thử bench; kết quả này chưa phải là đánh giá hạ cánh khi UAV đang bay.
+Trong lần thử multidirectional, $x$ thay đổi từ $-0{,}242$ đến $0{,}272$~m và $y$ từ $-0{,}161$ đến $0{,}342$~m; marker vẫn được nhận ở cả $233/233$ mẫu pose và bộ điều khiển duy trì trạng thái \texttt{visual\_approach}, không phát sinh \texttt{abort}. Do đó, đồ thị cho thấy rõ miền biến thiên pose và sự thay đổi tương ứng của lệnh ngang trong bài thử bench; kết quả này chưa phải là đánh giá hạ cánh khi UAV đang bay.
 
 \subsection{Thử nghiệm kết nối ROS 2--PX4}
 
@@ -299,41 +298,6 @@ Kết quả cho thấy uXRCE-DDS đã truyền được dữ liệu hai chiều:
 \subsubsection{Kiểm tra Offboard khi tháo cánh quạt}
 
 Sau khi xác nhận local position và attitude hợp lệ, bridge được enable trong khi setpoint vận tốc bằng không. Hệ thống phát heartbeat và setpoint đủ lâu trước khi gửi yêu cầu Offboard. Kết quả cần được xác nhận đồng thời bằng \texttt{VehicleCommandAck}, \texttt{VehicleStatus} và log của bridge. Tiếp theo, chủ động dừng luồng setpoint để kiểm tra PX4 rời Offboard hoặc kích hoạt failsafe theo đúng cấu hình.
-
-\subsubsection{Kiểm tra các điều kiện từ chối}
-
-Các tình huống lỗi được tạo có kiểm soát để xác nhận bridge không phát lệnh nguy hiểm. Bảng~\ref{tab:offboard_rejection_test} liệt kê các trường hợp cần kiểm tra.
-
-\begin{table}[H]
-    \centering
-    \small
-    \caption{Kiểm tra điều kiện từ chối của PX4 bridge}
-    \label{tab:offboard_rejection_test}
-    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.31\textwidth} X >{\raggedright\arraybackslash}p{0.18\textwidth}}
-        \toprule
-        \textbf{Tình huống} & \textbf{Đáp ứng mong đợi} & \textbf{Kết quả} \\
-        \midrule
-        Local position không hợp lệ & Bridge từ chối enable hoặc từ chối yêu cầu Offboard. & -- \\
-        PX4 đang failsafe/preflight fail & Không gửi yêu cầu chuyển mode có hiệu lực. & -- \\
-        Marker chưa được phát hiện & PID không phát lệnh tiếp cận dựa trên pose cũ. & -- \\
-        Mất XRCE Agent & PX4 không tiếp tục sử dụng setpoint đã stale. & -- \\
-        Mất \texttt{cmd\_vel} quá timeout & Vận tốc ngang và yaw được đưa về không; giữ mục tiêu an toàn. & -- \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
-
-\subsection{Thử nghiệm bộ điều khiển trên mặt đất}
-
-UAV được giữ bằng tay hoặc đặt trên giá thử, camera vẫn quan sát marker nhưng FC không được arm. Marker hoặc UAV được dịch chuyển lần lượt theo các hướng trước, sau, trái và phải; đồng thời theo dõi \texttt{/aruco\_land/cmd\_vel} và trạng thái landing. Thử nghiệm phải xác nhận dấu lệnh làm giảm sai số, biên độ không vượt giới hạn và lệnh tiến về không khi marker nằm trong deadband.
-
-Các nội dung cần kiểm tra gồm:
-\begin{itemize}
-    \item Marker nằm bên trái hoặc bên phải tạo lệnh ngang đúng chiều sau phép đổi hệ camera--body.
-    \item Marker nằm phía trước hoặc phía sau tạo lệnh dọc thân đúng chiều.
-    \item Khi marker gần tâm ảnh, lệnh ngang nằm trong deadband và không dao động đổi dấu liên tục.
-    \item Vận tốc ngang, vận tốc hạ và yaw rate không vượt các giới hạn cấu hình.
-    \item Khi che marker lâu hơn timeout trong pha visual approach, máy trạng thái chuyển sang trạng thái an toàn hoặc \texttt{ABORT} theo thiết kế.
-\end{itemize}
 
 \subsection{Thử nghiệm bay theo từng giai đoạn}
 
