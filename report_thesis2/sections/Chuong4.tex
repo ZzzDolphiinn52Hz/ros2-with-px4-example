@@ -190,48 +190,27 @@ Các phiên center và right được ghi ở độ cao danh định $1{,}1208$~
     \end{tabular}
 \end{table}
 
-Mỗi phiên được biểu diễn bằng hai đồ thị cùng mốc thời gian tương đối: một đồ thị pose chỉ gồm $x,y$ và một đồ thị lệnh vận tốc chỉ gồm $v_x,v_y$. Như vậy, ba cấu hình tạo thành sáu đồ thị, giúp quan sát trực tiếp quan hệ giữa sai lệch ngang và lệnh điều khiển tương ứng. Rosbag center được ghi trước khi bổ sung topic \texttt{/aruco\_land/cmd\_vel}, vì vậy đồ thị lệnh của center được đánh dấu là chưa có dữ liệu thay vì suy diễn lệnh từ pose.
+Mỗi cấu hình được biểu diễn bằng một đồ thị gồm bốn đường: pose $x,y$ và lệnh vận tốc body-FLU $v_x,v_y$. Hai đại lượng dùng hai trục tung riêng vì khác đơn vị; đường liền biểu diễn pose (m), đường nét đứt biểu diễn vận tốc (m/s). Rosbag center được ghi trước khi bổ sung topic \texttt{/aruco\_land/cmd\_vel}, vì vậy phần lệnh trong đồ thị center được đánh dấu là chưa có dữ liệu thay vì suy diễn từ pose.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-center-pose-xy.png}
-    \caption{Pose $x,y$ của cấu hình center.}
-    \label{fig:aruco_center_pose_xy}
+    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-center-pose-cmdvel-xy.png}
+    \caption{Pose $x,y$ và lệnh \texttt{cmd\_vel.x,y} của cấu hình center.}
+    \label{fig:aruco_center_pose_cmdvel_xy}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-center-cmdvel-xy.png}
-    \caption{Lệnh \texttt{cmd\_vel.x,y} của cấu hình center; rosbag chưa ghi topic này.}
-    \label{fig:aruco_center_cmdvel_xy}
+    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-right-pose-cmdvel-xy.png}
+    \caption{Pose $x,y$ và lệnh \texttt{cmd\_vel.x,y} của cấu hình right.}
+    \label{fig:aruco_right_pose_cmdvel_xy}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-right-pose-xy.png}
-    \caption{Pose $x,y$ của cấu hình right.}
-    \label{fig:aruco_right_pose_xy}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-right-cmdvel-xy.png}
-    \caption{Lệnh \texttt{cmd\_vel.x,y} của cấu hình right.}
-    \label{fig:aruco_right_cmdvel_xy}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-front_right-pose-xy.png}
-    \caption{Pose $x,y$ của cấu hình front-right khi có dịch chuyển trong lúc ghi.}
-    \label{fig:aruco_front_right_pose_xy}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-front_right-cmdvel-xy.png}
-    \caption{Lệnh \texttt{cmd\_vel.x,y} của cấu hình front-right.}
-    \label{fig:aruco_front_right_cmdvel_xy}
+    \includegraphics[width=0.98\textwidth]{aruco_static/04-aruco-front_right-pose-cmdvel-xy.png}
+    \caption{Pose $x,y$ và lệnh \texttt{cmd\_vel.x,y} của cấu hình front-right khi có dịch chuyển trong lúc ghi.}
+    \label{fig:aruco_front_right_pose_cmdvel_xy}
 \end{figure}
 
 Các giá trị trung bình của hai thành phần lệnh ngang được trình bày trong Bảng~\ref{tab:marker_position_cmd_result}. Ở cấu hình right, pose có $x>0$ và $y>0$ trong hệ camera, tương ứng bộ điều khiển phát $v_x=-0{,}0459$ và $v_y=-0{,}0942$~m/s để đưa UAV lùi lại và dịch sang phải. Ở cấu hình front-right, pose có $x>0$ và $y<0$, còn lệnh trung bình là $v_x=+0{,}0072$ và $v_y=-0{,}0388$~m/s; chiều tiến và chiều sang phải phù hợp với vị trí quan sát được.
