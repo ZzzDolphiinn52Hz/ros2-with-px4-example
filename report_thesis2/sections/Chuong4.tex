@@ -24,7 +24,6 @@ Các điều kiện chung cần được giữ cố định hoặc ghi lại tro
         Máy tính nhúng & Raspberry Pi~5 chạy Raspberry Pi OS và ROS~2 Humble trong Docker. \\
         Bộ điều khiển bay & NxtPx4V2, PX4 v1.17; kết nối UART ở $921600$ baud. \\
         Độ cao bắt đầu & Ghi lại theo từng lần thử; giá trị đề xuất cho thử nghiệm hoàn chỉnh là khoảng $1{,}5$~m. \\
-        Điều kiện ánh sáng & Ghi mức độ chiếu sáng, hướng nguồn sáng, bóng đổ và hiện tượng phản xạ trên marker. \\
         Thông số điều khiển & Lưu phiên bản file cấu hình, hệ số PID, giới hạn vận tốc và ngưỡng chuyển pha. \\
         Dữ liệu ghi lại & Rosbag, log PX4, trạng thái ArUco, trạng thái landing, dữ liệu tài nguyên và video thử nghiệm. \\
         An toàn & Có vùng bay cách ly, công tắc dừng khẩn cấp và người điều khiển sẵn sàng chuyển về Position mode. \\
@@ -234,48 +233,6 @@ Các giá trị trung bình của hai thành phần lệnh ngang được trình
 
 Trong phiên multidirectional3, $x$ thay đổi từ $-0{,}242$ đến $0{,}272$~m và $y$ từ $-0{,}161$ đến $0{,}342$~m; marker vẫn được nhận ở cả $233/233$ mẫu pose và bộ điều khiển duy trì trạng thái \texttt{visual\_approach}, không phát sinh \texttt{abort}. Do đó, đồ thị cho thấy rõ miền biến thiên pose và sự thay đổi tương ứng của lệnh ngang trong bài thử bench; kết quả này chưa phải là đánh giá hạ cánh khi UAV đang bay.
 
-\subsubsection{Ảnh hưởng của góc nghiêng}
-
-Marker được nghiêng lần lượt $0^\circ$, $15^\circ$, $30^\circ$ và $45^\circ$ trong khi giữ gần như không đổi khoảng cách đến camera. Tại mỗi góc, cần ghi tỷ lệ nhận đúng ID, độ trễ và độ dao động của các thành phần pose. Kết quả cho phép xác định miền góc quan sát mà detector còn đủ tin cậy để sử dụng cho visual servoing.
-
-\begin{table}[H]
-    \centering
-    \small
-    \caption{Mẫu kết quả thử nghiệm theo góc nghiêng marker}
-    \label{tab:marker_tilt_test}
-    \begin{tabularx}{\textwidth}{c c c c X}
-        \toprule
-        \textbf{Góc nghiêng} & \textbf{Tỷ lệ phát hiện} & \textbf{Độ trễ} & \textbf{Độ lệch chuẩn pose} & \textbf{Nhận xét} \\
-        \midrule
-        $0^\circ$ & -- & -- & -- & -- \\
-        $15^\circ$ & -- & -- & -- & -- \\
-        $30^\circ$ & -- & -- & -- & -- \\
-        $45^\circ$ & -- & -- & -- & -- \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
-
-\subsubsection{Ảnh hưởng của điều kiện ánh sáng}
-
-Bốn trường hợp được khảo sát gồm ánh sáng đầy đủ, ánh sáng yếu, marker xuất hiện bóng đổ và marker bị che một phần. Camera giữ nguyên cấu hình để kết quả phản ánh trực tiếp độ bền vững của detector. Ngoài tỷ lệ phát hiện và độ trễ, cần ghi nhận hiện tượng nhòe ảnh hoặc thay đổi thời gian phơi sáng nếu có.
-
-\begin{table}[H]
-    \centering
-    \small
-    \caption{Mẫu kết quả thử nghiệm theo điều kiện quan sát}
-    \label{tab:lighting_test}
-    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.25\textwidth} c c X}
-        \toprule
-        \textbf{Điều kiện} & \textbf{Tỷ lệ phát hiện} & \textbf{Độ trễ} & \textbf{Nhận xét chất lượng pose} \\
-        \midrule
-        Ánh sáng đầy đủ & -- & -- & -- \\
-        Ánh sáng yếu & -- & -- & -- \\
-        Có bóng đổ & -- & -- & -- \\
-        Marker bị che một phần & -- & -- & -- \\
-        \bottomrule
-    \end{tabularx}
-\end{table}
-
 \subsection{Thử nghiệm kết nối ROS 2--PX4}
 
 Nhóm thử nghiệm này xác nhận đường truyền dữ liệu và các khóa an toàn trước khi điều khiển động cơ. Toàn bộ cánh quạt phải được tháo, FC giữ disarmed và các setpoint ban đầu bằng không.
@@ -429,7 +386,6 @@ Kết quả thực nghiệm cần được phân tích theo quan hệ nguyên nh
 \begin{itemize}
     \item Sai số nội tại còn lại sau hiệu chuẩn camera và sai lệch do thay đổi độ phân giải hoặc tiêu cự hiệu dụng.
     \item Rung động khung UAV, nhòe ảnh, thời gian phơi sáng và ảnh hưởng của rolling shutter đến ước lượng pose.
-    \item Thay đổi ánh sáng, bóng đổ, phản xạ và che khuất làm giảm tỷ lệ phát hiện marker.
     \item Marker phóng lớn hoặc ra khỏi khung hình ở độ cao thấp, dẫn đến yêu cầu chuyển sang pha hạ cuối không phụ thuộc thị giác.
     \item Sai số và độ trôi của local position PX4 trong pha giữ $X,Y$ sau khi mất marker.
     \item Hạn chế của một marker đơn khi góc quan sát lớn hoặc marker bị che khuất.
