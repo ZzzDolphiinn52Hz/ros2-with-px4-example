@@ -38,6 +38,7 @@ aruco_landing_pid:
     camera_to_body_flu_rotation: [0.0, -1.0, 0.0,
                                   -1.0, 0.0, 0.0,
                                   0.0, 0.0, -1.0]
-    # Camera and gripper are centred on the same body XY. Their confirmed
-    # 15 cm vertical separation is configured separately above for AGL.
-    camera_position_body_flu_m: [0.0, 0.0, 0.0]
+    # Camera lens is 2 cm behind the gripper/contact point in body FLU.
+    # The confirmed 15 cm vertical separation is configured separately above
+    # for AGL clearance.
+    camera_position_body_flu_m: [-0.02, 0.0, 0.0]
