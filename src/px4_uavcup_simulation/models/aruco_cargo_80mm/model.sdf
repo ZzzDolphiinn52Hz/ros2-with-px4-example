@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version="1.9">
+  <model name="aruco_cargo_80mm">
+    <static>true</static>
+    <link name="cargo_link">
+      <collision name="cargo_collision">
+        <pose>0 0 0.05 0 0 0</pose>
+        <geometry><box><size>0.12 0.12 0.10</size></box></geometry>
+      </collision>
+      <visual name="cargo_white_backing">
+        <pose>0 0 0.05 0 0 0</pose>
+        <geometry><box><size>0.12 0.12 0.10</size></box></geometry>
+        <material>
+          <ambient>1 1 1 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.05 0.05 0.05 1</specular>
+        </material>
+      </visual>
+      <!-- OpenCV marker_size_m is the 80 mm black outer square. -->
+      <visual name="aruco_5x5_50_id_0">
+        <pose>0 0 0.1005 0 0 0</pose>
+        <geometry>
+          <plane><normal>0 0 1</normal><size>0.08 0.08</size></plane>
+        </geometry>
+        <material>
+          <ambient>1 1 1 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0 0 0 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>model://aruco_cargo_80mm/materials/textures/aruco_5x5_50_id_0.png</albedo_map>
+              <roughness>1.0</roughness>
+              <metalness>0.0</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

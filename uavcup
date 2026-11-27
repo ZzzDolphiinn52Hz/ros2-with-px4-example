@@ -12,6 +12,9 @@ ROS_PACKAGES=(
   px4_uavcup_bringup
 )
 
+SIMULATION_PACKAGE=px4_uavcup_simulation
+PX4_AUTOPILOT_DIR="${PX4_AUTOPILOT_DIR:-$HOME/Documents/px4-myself/firmware/PX4-Autopilot}"
+
 usage() {
   cat <<'EOF'
 Usage: ./uavcup COMMAND
@@ -32,6 +35,13 @@ Commands:
   vehicle           Run the full perception/control/PX4 ROS stack.
   agent             Start the PX4 Micro XRCE-DDS serial agent.
   agent-logs        Follow Micro XRCE-DDS agent logs.
+  sim-doctor        Check PC Gazebo/PX4 SITL prerequisites (read-only).
+  sim-setup         Build the optional host-side simulation ROS package.
+  sim-gazebo        Start the ArUco detector world (GUI by default).
+  sim-agent         Start Micro XRCE-DDS Agent on UDP port 8888.
+  sim-px4           Attach PX4 v1.17 SITL to the Gazebo X500.
+  sim-aruco         Bridge the simulated camera and run ArUco only.
+  sim-status        Print phase-1 and phase-2 ROS evidence.
   unit-test         Run tests for the four project packages.
   shell             Open a ROS workspace shell.
   stop              Stop Compose services.
@@ -60,6 +70,38 @@ require_zipdepth_model() {
     echo "Set UAV_MODELS_DIR or copy the model into ~/models." >&2
     exit 1
   fi
+}
+
+require_px4_sitl() {
+  local px4_binary="$PX4_AUTOPILOT_DIR/build/px4_sitl_default/bin/px4"
+  local gz_environment="$PX4_AUTOPILOT_DIR/build/px4_sitl_default/rootfs/gz_env.sh"
+  if [[ ! -x "$px4_binary" || ! -f "$gz_environment" ]]; then
+    echo "ERROR: PX4 SITL build is missing under: $PX4_AUTOPILOT_DIR" >&2
+    echo "Build it first: cd '$PX4_AUTOPILOT_DIR' && make px4_sitl_default" >&2
+    exit 1
+  fi
+}
+
+source_host_ros() {
+  if [[ ! -f /opt/ros/humble/setup.bash ]]; then
+    echo "ERROR: ROS 2 Humble is not installed on this PC." >&2
+    exit 1
+  fi
+  # The user's site currently contains NumPy 2, while Ubuntu OpenCV 4.5 was
+  # built against NumPy 1. Disable user site packages only for host simulation.
+  export PYTHONNOUSERSITE=1
+  # ROS environment hooks may probe unset variables and are not nounset-safe.
+  set +u
+  # shellcheck disable=SC1091
+  source /opt/ros/humble/setup.bash
+  set -u
+}
+
+source_workspace() {
+  set +u
+  # shellcheck disable=SC1091
+  source install/setup.bash
+  set -u
 }
 
 ros_run() {
@@ -247,6 +289,112 @@ case "$command" in
 
   agent-logs)
     docker compose logs -f xrce-agent
+    ;;
+
+  sim-doctor)
+    require_command gz
+    require_command MicroXRCEAgent
+    require_command colcon
+    require_px4_sitl
+    source_host_ros
+    /usr/bin/python3 -c \
+      'import cv2, rclpy; from gz.transport13 import Node; assert hasattr(cv2, "aruco")'
+    ros2 pkg prefix sensor_msgs >/dev/null
+    echo "Gazebo: $(gz sim --versions)"
+    echo "PX4 SITL: $PX4_AUTOPILOT_DIR/build/px4_sitl_default/bin/px4"
+    echo "Micro XRCE-DDS Agent: $(command -v MicroXRCEAgent)"
+    echo "Gazebo Python transport: gz.transport13 OK"
+    echo "OpenCV ArUco: OK (user site packages isolated)"
+    git -C "$PX4_AUTOPILOT_DIR" status --short --branch
+    ;;
+
+  sim-setup)
+    require_command colcon
+    require_px4_sitl
+    source_host_ros
+    colcon build --symlink-install --packages-select \
+      px4_msgs px4_uavcup_perception px4_uavcup_control \
+      px4_uavcup_px4_bridge px4_uavcup_bringup "$SIMULATION_PACKAGE"
+    ;;
+
+  sim-gazebo)
+    require_command gz
+    require_px4_sitl
+    simulation_source="$WORKSPACE_DIR/src/$SIMULATION_PACKAGE"
+    world_file="$simulation_source/worlds/aruco_detector.sdf"
+    set +u
+    # shellcheck disable=SC1091
+    source "$PX4_AUTOPILOT_DIR/build/px4_sitl_default/rootfs/gz_env.sh"
+    set -u
+    export GZ_SIM_RESOURCE_PATH="$simulation_source/models:$simulation_source/worlds:${GZ_SIM_RESOURCE_PATH:-}"
+    if [[ "${UAV_SIM_HEADLESS:-0}" == "1" ]]; then
+      exec gz sim -r -s -v 2 "$world_file"
+    fi
+    exec gz sim -r -v 2 "$world_file"
+    ;;
+
+  sim-agent)
+    require_command MicroXRCEAgent
+    exec MicroXRCEAgent udp4 -p 8888
+    ;;
+
+  sim-px4)
+    require_px4_sitl
+    if ! gz service -l 2>/dev/null | \
+        grep -q '^/world/aruco_detector/scene/info$'; then
+      echo "ERROR: aruco_detector Gazebo world is not running." >&2
+      echo "Start it in another terminal: ./uavcup sim-gazebo" >&2
+      exit 1
+    fi
+    cd "$PX4_AUTOPILOT_DIR"
+    set +u
+    # shellcheck disable=SC1091
+    source build/px4_sitl_default/rootfs/gz_env.sh
+    set -u
+    export PX4_GZ_STANDALONE=1
+    export PX4_SYS_AUTOSTART=4001
+    export PX4_GZ_WORLD=aruco_detector
+    export PX4_GZ_MODEL_NAME=x500_uavcup_aruco
+    exec ./build/px4_sitl_default/bin/px4
+    ;;
+
+  sim-aruco)
+    require_workspace_build
+    source_host_ros
+    source_workspace
+    if ! ros2 pkg prefix "$SIMULATION_PACKAGE" >/dev/null 2>&1; then
+      echo "ERROR: simulation package is not built. Run: ./uavcup sim-setup" >&2
+      exit 1
+    fi
+    exec ros2 launch "$SIMULATION_PACKAGE" sim_aruco_detector.launch.py \
+      publish_debug_image:=true
+    ;;
+
+  sim-status)
+    require_workspace_build
+    source_host_ros
+    source_workspace
+    echo "=== PX4 v1.17 DDS topics ==="
+    ros2 topic list --no-daemon --spin-time 3 --show-types | \
+      grep -E '^/fmu/(in|out)/' || true
+    echo "=== PX4 types ==="
+    ros2 topic info /fmu/out/vehicle_status_v1 \
+      --no-daemon --spin-time 2 || true
+    ros2 topic info /fmu/out/vehicle_local_position_v1 \
+      --no-daemon --spin-time 2 || true
+    ros2 topic info /fmu/out/vehicle_attitude \
+      --no-daemon --spin-time 2 || true
+    echo "=== Perception profile PX4-input safety check ==="
+    ros2 topic info /fmu/in/trajectory_setpoint \
+      --no-daemon --spin-time 2 || true
+    echo "=== Simulated camera ==="
+    timeout 8s ros2 topic hz /camera/down/image_raw || true
+    echo "=== ArUco status ==="
+    timeout 5s ros2 topic echo /uav/aruco/status --once || true
+    echo "=== ArUco ID ==="
+    timeout 5s ros2 topic echo /uav/aruco/ids --once || true
+    echo "=== ArUco target pose ==="
+    timeout 5s ros2 topic echo /uav/aruco/target_pose --once || true
     ;;
 
   unit-test)

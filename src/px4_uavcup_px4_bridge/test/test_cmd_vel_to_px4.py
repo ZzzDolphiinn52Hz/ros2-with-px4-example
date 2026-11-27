@@ -1,6 +1,8 @@
 import math
+from pathlib import Path
 
 import pytest
+import yaml
 
 from px4_uavcup_px4_bridge.cmd_vel_to_px4 import (
     body_flu_to_ned_velocity,
@@ -15,6 +17,15 @@ from px4_uavcup_px4_bridge.cmd_vel_to_px4 import (
     vehicle_command_result_text,
 )
 from px4_msgs.msg import VehicleCommandAck
+
+
+def test_runtime_config_uses_px4_v117_local_position_topic():
+    config_path = Path(__file__).resolve().parents[1] / 'config/px4_bridge.yaml'
+    with config_path.open(encoding='utf-8') as stream:
+        parameters = yaml.safe_load(stream)['cmd_vel_to_px4'][
+            'ros__parameters']
+    assert parameters['local_position_topic'] == (
+        '/fmu/out/vehicle_local_position_v1')
 
 
 def test_forward_at_north_heading_becomes_north_velocity():

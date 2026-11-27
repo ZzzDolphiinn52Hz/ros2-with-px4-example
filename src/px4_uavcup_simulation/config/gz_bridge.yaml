@@ -1,0 +1,7 @@
+gazebo_down_camera_bridge:
+  ros__parameters:
+    gz_image_topic: /camera/down/image_raw
+    gz_camera_info_topic: /camera/down/camera_info
+    ros_image_topic: /camera/down/image_raw
+    ros_camera_info_topic: /camera/down/camera_info
+    fallback_frame_id: down_camera_optical_frame

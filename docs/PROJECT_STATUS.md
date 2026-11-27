@@ -1,13 +1,27 @@
 # Project Handoff Status
 
-**Updated**: 2026-11-24
+**Updated**: 2026-11-27
 
-**Active feature**: `specs/003-aruco-80mm-target/`
+**Active feature**: `specs/004-gazebo-aruco-sitl/`
 
-**Branch**: `main`
-**State**: 80 mm target implemented; print and camera validation pending
+**Branch**: `feature/gazebo-aruco-sitl`
+**State**: Gazebo/PX4 SITL phase 1 and phase 2 complete; operator GUI check next
 
 ## Last Completed
+
+- Added the optional PC-only `px4_uavcup_simulation` package with a Gazebo
+  Harmonic X500/down-camera model, 80 mm ID 0 marker cargo and detector world.
+- Added a Harmonic-native one-way camera adapter and reused the production
+  ArUco detector through the ROS image/CameraInfo contract.
+- Added safe `./uavcup sim-*` commands for setup, Gazebo, XRCE Agent, PX4 SITL,
+  detector and combined status evidence.
+- Verified PX4 v1.17 DDS, valid SITL local position, simulated camera, marker
+  ID 0 and target pose while PX4 remained disarmed and `/fmu/in/trajectory_setpoint`
+  had zero publishers.
+- Corrected the PX4 v1.17 local-position topic contract to
+  `/fmu/out/vehicle_local_position_v1` in bridge/control config and defaults.
+- Updated the latest centred camera mount offset to `[0.0, 0.0, 0.0]` while
+  retaining the separate 0.15 m lens-to-contact vertical clearance.
 
 - Generated an A4 `DICT_5X5_50`, ID 0 target with an 80 mm black outer
   square and a matching 300 DPI PNG.
@@ -34,23 +48,24 @@
 
 ## Last Evidence
 
-Read `specs/003-aruco-80mm-target/verification.md`. The configuration test
-passed, the PDF is A4, and the 300 DPI marker region measures approximately
-80.01 x 80.01 mm after pixel rounding. Printing and camera validation are
-still NOT RUN.
+Read `specs/004-gazebo-aruco-sitl/verification.md`. Host build passed and the
+five project packages produced 104 passing tests. Headless end-to-end evidence
+showed target ID 0, `target_visible=true`, pose z approximately 0.901 m, valid
+PX4 local position, disarmed status and no trajectory-setpoint publisher.
 
 ## Working Tree
 
-The 80 mm implementation was pushed as commit `58113ad`. Raspberry Pi
-deployment is NOT RUN because both configured SSH aliases returned
-`No route to host`; no Pi files were changed.
+The completed feature is ready to commit on branch
+`feature/gazebo-aruco-sitl`. The external PX4 checkout retained its prior dirty
+`Tools/simulation/gz` state and was not modified. Raspberry Pi synchronization
+is NOT RUN because the simulation package is intentionally PC-only.
 
 ## Next Action
 
-Print the new PDF at Actual size / 100%, measure both outer black edges, then
-deploy the matching commit to the Raspberry Pi with a fast-forward-only pull.
-Repeat static pose tests to determine the reliable range of the smaller marker
-before any flight test.
+Run the documented four-terminal workflow with the Gazebo GUI and confirm the
+camera view and ID 0 pose. The next feature may then add a separate free-flight
+world and manually gated PID/Offboard tests; phases 1--2 do not authorize arm
+or flight.
 
 ## Known Constraints
 
@@ -58,6 +73,8 @@ before any flight test.
   checkout selects `codex`, `claude`, `grok`, or `agy` locally.
 - Camera/UART/flight checks require Raspberry Pi hardware and remain separate
   from software-only verification.
+- Gazebo Ogre2 does not render Brown lens distortion, so the simulation uses
+  the measured IMX500 intrinsic matrix with `D=0`; real calibration is unchanged.
 - The accepted power artifacts are on the Pi and are not committed because
   `artifacts/` is intentionally ignored. Their path and summary are recorded
   in the feature verification file.

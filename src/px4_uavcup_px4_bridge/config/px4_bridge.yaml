@@ -1,7 +1,7 @@
 cmd_vel_to_px4:
   ros__parameters:
     cmd_vel_topic: /aruco_land/cmd_vel
-    local_position_topic: /fmu/out/vehicle_local_position
+    local_position_topic: /fmu/out/vehicle_local_position_v1
     attitude_topic: /fmu/out/vehicle_attitude
     vehicle_status_topic: /fmu/out/vehicle_status_v1
     land_detected_topic: /fmu/out/vehicle_land_detected

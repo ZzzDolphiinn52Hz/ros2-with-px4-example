@@ -1,5 +1,8 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
+import yaml
 
 from px4_uavcup_control.landing.landing_state import (
     LandingState,
@@ -16,6 +19,16 @@ from px4_uavcup_control.landing.pid import (
     gripper_clearance_from_marker,
     ready_for_blind_descent,
 )
+
+
+def test_landing_config_matches_v117_and_centred_camera_mount():
+    config_path = Path(__file__).resolve().parents[1] / 'config/landing.yaml'
+    with config_path.open(encoding='utf-8') as stream:
+        parameters = yaml.safe_load(stream)['aruco_landing_pid'][
+            'ros__parameters']
+    assert parameters['local_position_topic'] == (
+        '/fmu/out/vehicle_local_position_v1')
+    assert parameters['camera_position_body_flu_m'] == [0.0, 0.0, 0.0]
 
 
 def test_down_camera_axes_match_nose_aligned_mounting():

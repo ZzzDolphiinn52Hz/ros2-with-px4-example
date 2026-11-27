@@ -39,6 +39,12 @@ as metres.
 Camera image topics use sensor-data/best-effort semantics. Control and status
 topics currently use bounded in-process queue depths defined by their nodes.
 
+The optional Gazebo profile publishes `/camera/down/image_raw` and
+`/camera/down/camera_info` with the same frame and sensor-data QoS. It uses the
+measured IMX500 intrinsic matrix but an ideal pinhole model (`D=0`) because the
+Gazebo Harmonic Ogre2 renderer does not implement Brown lens distortion. This
+does not change the real-camera calibration contract.
+
 ## Control Contracts
 
 | Interface | Type | Contract |
@@ -61,7 +67,7 @@ configured alignment/confirmation gates have passed.
 Inputs:
 
 - `/aruco_land/cmd_vel` (`geometry_msgs/Twist` by current configuration).
-- `/fmu/out/vehicle_local_position`, `/fmu/out/vehicle_attitude`,
+- `/fmu/out/vehicle_local_position_v1`, `/fmu/out/vehicle_attitude`,
   `/fmu/out/vehicle_status_v1`, `/fmu/out/vehicle_land_detected`, and
   `/fmu/out/vehicle_command_ack` using PX4 v1.17 messages.
 

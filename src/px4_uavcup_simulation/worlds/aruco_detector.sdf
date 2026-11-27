@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version="1.9">
+  <world name="aruco_detector">
+    <physics name="1ms" type="ode">
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+    </physics>
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type="adiabatic"/>
+    <scene>
+      <grid>true</grid>
+      <ambient>0.55 0.55 0.55 1</ambient>
+      <background>0.70 0.78 0.90 1</background>
+      <shadows>true</shadows>
+    </scene>
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>47.397971057728974</latitude_deg>
+      <longitude_deg>8.546163739800146</longitude_deg>
+      <elevation>0</elevation>
+    </spherical_coordinates>
+    <light name="sun" type="directional">
+      <pose>0 0 10 0 0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <intensity>1.0</intensity>
+      <direction>-0.4 0.2 -0.9</direction>
+      <diffuse>0.95 0.95 0.92 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="ground_link">
+        <collision name="ground_collision">
+          <geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry>
+        </collision>
+        <visual name="ground_visual">
+          <geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry>
+          <material>
+            <ambient>0.35 0.35 0.35 1</ambient>
+            <diffuse>0.45 0.45 0.45 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <include>
+      <uri>model://aruco_cargo_80mm</uri>
+      <name>aruco_cargo_80mm</name>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <!--
+      Phase-2 detector stand. It has collision but intentionally no visual,
+      so the camera sees the marker while the disarmed X500 remains supported.
+      The stand is not used by the later free-flight world.
+    -->
+    <model name="invisible_detector_stand">
+      <static>true</static>
+      <link name="stand_link">
+        <collision name="stand_collision">
+          <pose>0 0 0.825 0 0 0</pose>
+          <geometry><box><size>0.60 0.60 0.05</size></box></geometry>
+        </collision>
+      </link>
+    </model>
+
+    <include>
+      <uri>model://x500_uavcup_aruco</uri>
+      <name>x500_uavcup_aruco</name>
+      <pose>0 0 0.85 0 0 0</pose>
+    </include>
+  </world>
+</sdf>

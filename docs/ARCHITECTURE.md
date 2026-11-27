@@ -29,6 +29,7 @@ IMX500 down ──┘                                      │
 | `px4_uavcup_px4_bridge` | Bounded body-FLU velocity to PX4 NED setpoints and explicit mode services | `config/px4_bridge.yaml` | `test/test_cmd_vel_to_px4.py` |
 | `px4_uavcup_bringup` | Compose existing nodes into test/bench/vehicle launch profiles | no duplicated component config | launch composition |
 | `px4_msgs` | PX4 v1.17 ROS interfaces | Git submodule | upstream package checks |
+| `px4_uavcup_simulation` | Optional PC-only Gazebo Harmonic/PX4 SITL assets and camera bridge | `config/gz_bridge.yaml`, `models/`, `worlds/` | simulation asset/bridge tests |
 
 The root `uavcup` command is the supported operator interface. Direct launch
 commands are useful for development but must not create a second production
@@ -98,3 +99,11 @@ does not command PX4 directly.
 | Operator workflow | root README and `uavcup` |
 
 Update this file when package ownership or runtime data flow changes.
+
+## Optional PC Simulation
+
+Gazebo Harmonic and PX4 SITL run on the development host. The optional
+`px4_uavcup_simulation` package publishes the simulated down camera through the
+same ROS image/CameraInfo contract used by the detector. Micro XRCE-DDS uses
+UDP port 8888 instead of the Raspberry Pi UART. This package is intentionally
+excluded from the Raspberry Pi default setup command.

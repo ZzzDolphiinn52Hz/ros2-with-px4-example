@@ -6,8 +6,10 @@ Repository bàn giao cho Raspberry Pi 5, gồm hai pipeline đang dùng trên dr
 - CAM1 IMX500 nhìn xuống: ArUco `DICT_5X5_50`, pose ID mục tiêu và landing PID.
 - PX4 v1.17 qua TELEM2/UART: Micro XRCE-DDS Agent và Offboard adapter có khóa an toàn.
 
-Các package SLAM/Gazebo, Nav2, Jetson/Depth Anything và node Offboard thử nghiệm
-không thuộc sản phẩm Pi 5 đã được loại khỏi repository. Hai thư mục
+Các package SLAM, Nav2, Jetson/Depth Anything và node Offboard thử nghiệm
+không thuộc sản phẩm Pi 5 đã được loại khỏi repository. Package Gazebo/PX4
+SITL mới là tùy chọn chỉ dành cho PC và không nằm trong build mặc định của Pi.
+Hai thư mục
 `report_thesis2/` và `report_thesis_final/` được giữ làm tài liệu luận văn,
 không tham gia build/runtime.
 
@@ -41,6 +43,7 @@ src/
   px4_uavcup_control/       obstacle guidance và ArUco landing
   px4_uavcup_px4_bridge/    cmd_vel -> PX4 Offboard
   px4_uavcup_bringup/       launch ghép toàn hệ thống
+  px4_uavcup_simulation/    Gazebo/PX4 SITL tùy chọn, chỉ dùng trên PC
 Dockerfile                  hai target: ros-runtime và xrce-agent
 docker-compose.yml          runtime container definitions
 uavcup                      giao diện setup/test/run duy nhất
@@ -150,6 +153,25 @@ Trong terminal khác:
 vẫn disabled. Nó không tự arm và không tự chuyển Offboard. Chỉ gọi các service
 enable/request mode sau khi kiểm tra PX4 local position, attitude và tháo cánh
 quạt trong bench test.
+
+## Mô phỏng Gazebo/PX4 SITL trên PC
+
+Giai đoạn 1–2 của môi trường mô phỏng thay UAV, camera và UART thật bằng PX4
+SITL, Gazebo Harmonic và camera nhìn xuống. Thuật toán nhận dạng vẫn dùng nguyên
+node ArUco của hệ thống thật; marker mô phỏng là `DICT_5X5_50`, ID 0, cạnh
+80 mm. Các profile này không tự arm, không request Offboard và không khởi động
+PID hay PX4 bridge.
+
+Kiểm tra và build một lần:
+
+```bash
+./uavcup sim-doctor
+./uavcup sim-setup
+```
+
+Sau đó chạy Gazebo, XRCE Agent, PX4 SITL và detector ở bốn terminal riêng.
+Toàn bộ trình tự cùng kết quả mong đợi nằm trong
+[`docs/GAZEBO_ARUCO_SITL.md`](docs/GAZEBO_ARUCO_SITL.md).
 
 ## Camera và gá lắp đã cấu hình
 

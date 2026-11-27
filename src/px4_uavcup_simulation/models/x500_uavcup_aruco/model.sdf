@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version="1.9">
+  <model name="x500_uavcup_aruco">
+    <self_collide>false</self_collide>
+    <include merge="true">
+      <uri>model://x500</uri>
+    </include>
+
+    <!--
+      Gazebo cameras look along local +X. A +90 degree pitch maps local +X to
+      body -Z, local -Y (image right) to body -Y, and local -Z (image down) to
+      body -X. Therefore image-top is vehicle-forward, matching landing.yaml.
+
+      The X500 base origin rests about 0.24 m above the ground. Placing the
+      lens 0.09 m below base_link makes its nominal ground clearance 0.15 m,
+      matching camera_to_gripper_vertical_m.
+    -->
+    <link name="down_camera_link">
+      <pose relative_to="base_link">0 0 -0.09 0 1.57079632679 0</pose>
+      <inertial>
+        <mass>0.03</mass>
+        <inertia>
+          <ixx>0.0000125</ixx>
+          <iyy>0.0000125</iyy>
+          <izz>0.0000125</izz>
+        </inertia>
+      </inertial>
+      <visual name="housing">
+        <geometry><box><size>0.035 0.035 0.020</size></box></geometry>
+        <material>
+          <ambient>0.04 0.04 0.04 1</ambient>
+          <diffuse>0.08 0.08 0.08 1</diffuse>
+        </material>
+      </visual>
+      <sensor name="down_imx500" type="camera">
+        <gz_frame_id>down_camera_optical_frame</gz_frame_id>
+        <topic>/camera/down/image_raw</topic>
+        <camera>
+          <camera_info_topic>/camera/down/camera_info</camera_info_topic>
+          <horizontal_fov>1.1760</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R8G8B8</format>
+            <anti_aliasing>4</anti_aliasing>
+          </image>
+          <clip>
+            <near>0.05</near>
+            <far>30.0</far>
+          </clip>
+          <!--
+            Ogre2 in Gazebo Sim 8 does not support the Brown distortion pass.
+            The simulator therefore uses an internally consistent pinhole
+            image and CameraInfo (D=0) while preserving the measured K below.
+            The real-camera profile keeps the measured IMX500 distortion.
+          -->
+          <lens>
+            <type>gnomonical</type>
+            <scale_to_hfov>true</scale_to_hfov>
+            <cutoff_angle>1.5707</cutoff_angle>
+            <env_texture_size>256</env_texture_size>
+            <intrinsics>
+              <fx>480.125104</fx>
+              <fy>480.224260</fy>
+              <cx>320.272190</cx>
+              <cy>228.696135</cy>
+              <s>0.0</s>
+            </intrinsics>
+          </lens>
+          <optical_frame_id>down_camera_optical_frame</optical_frame_id>
+        </camera>
+        <always_on>true</always_on>
+        <update_rate>15</update_rate>
+        <visualize>true</visualize>
+      </sensor>
+    </link>
+
+    <joint name="down_camera_joint" type="fixed">
+      <parent>base_link</parent>
+      <child>down_camera_link</child>
+    </joint>
+  </model>
+</sdf>
