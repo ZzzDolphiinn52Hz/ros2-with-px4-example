@@ -55,7 +55,7 @@ PX4 local position, disarmed status and no trajectory-setpoint publisher.
 
 ## Working Tree
 
-The completed feature is ready to commit on branch
+The implementation and recorded evidence are committed as `6f931d6` on branch
 `feature/gazebo-aruco-sitl`. The external PX4 checkout retained its prior dirty
 `Tools/simulation/gz` state and was not modified. Raspberry Pi synchronization
 is NOT RUN because the simulation package is intentionally PC-only.
