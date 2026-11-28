@@ -119,6 +119,9 @@ Tất cả mục phải PASS, đặc biệt:
 - `ArUco target is ID 0`.
 
 Nếu marker chưa visible, tiếp tục chỉnh UAV bằng QGC; không enable adapter.
+Mục `ArUco capture fresh` cũng phải PASS. Readiness so timestamp chụp với
+đồng hồ Gazebo và yêu cầu đồng hồ tiếp tục tiến. Nếu reset world, khởi động
+lại stack mô phỏng trước khi thử tiếp.
 
 ## 5. Chuyển quyền điều khiển theo từng gate
 

@@ -4,8 +4,8 @@
 
 **Active feature**: `specs/005-gazebo-aruco-landing-e2e/`
 
-**Branch**: `feature/gazebo-aruco-landing-e2e`
-**State**: Free-flight stack implemented and verified disarmed. Operator flight pending.
+**Branch**: `feature/sitl-camera-freshness`
+**State**: Gazebo camera queue and pose-age checks verified in perception-only tests. Operator flight pending.
 
 ## Last Completed
 
@@ -54,6 +54,10 @@
 
 ## Last Evidence
 
+See the camera freshness follow-up in `specs/005-gazebo-aruco-landing-e2e/verification.md`.
+The camera-only baseline did not reproduce the earlier 199 s lag. The revised
+bridge sustained 15 FPS and stale-capture regressions passed.
+
 Read `specs/004-gazebo-aruco-sitl/verification.md`. Host build passed and the
 five project packages produced 104 passing tests. Headless end-to-end evidence
 showed target ID 0, `target_visible=true`, pose z approximately 0.901 m, valid
@@ -71,7 +75,8 @@ separate calls.
 
 Run the operator QGC flight and ROS takeover procedure in
 `docs/GAZEBO_ARUCO_LANDING_E2E.md` and record airborne Offboard, landing
-state transitions, touchdown and disarm in the flight bag.
+state transitions, touchdown and disarm in the flight bag. Confirm capture
+freshness before takeover. Keep the 1.7 m recognition test separate.
 
 ## Known Constraints
 

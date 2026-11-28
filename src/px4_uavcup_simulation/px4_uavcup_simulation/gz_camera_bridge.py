@@ -10,16 +10,19 @@ the same sensor_msgs contract consumed by the production detector.
 
 from __future__ import annotations
 
+from array import array
 import threading
 from typing import Dict, Tuple
 
 from gz.msgs10.camera_info_pb2 import CameraInfo as GzCameraInfo
+from gz.msgs10.clock_pb2 import Clock as GzClock
 from gz.msgs10.image_pb2 import Image as GzImage
 from gz.msgs10.image_pb2 import PixelFormatType
 from gz.transport13 import Node as GzNode
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
+from rosgraph_msgs.msg import Clock
 from sensor_msgs.msg import CameraInfo, Image
 
 
@@ -61,10 +64,11 @@ def image_to_ros(message: GzImage, fallback_frame_id: str) -> Image:
     expected_step = int(message.width) * bytes_per_pixel
     step = int(message.step) or expected_step
     expected_size = step * int(message.height)
-    if step < expected_step or len(message.data) != expected_size:
+    data = message.data
+    if step < expected_step or len(data) != expected_size:
         raise ValueError(
             f'invalid Gazebo image buffer: {message.width}x{message.height}, '
-            f'step={step}, bytes={len(message.data)}')
+            f'step={step}, bytes={len(data)}')
 
     output = Image()
     _copy_header(message.header, output.header, fallback_frame_id)
@@ -73,7 +77,8 @@ def image_to_ros(message: GzImage, fallback_frame_id: str) -> Image:
     output.encoding = encoding
     output.is_bigendian = 0
     output.step = step
-    output.data = bytes(message.data)
+    # An unsigned-byte array takes the ROS setter's bulk-copy path.
+    output.data = array('B', data)
     return output
 
 
@@ -101,6 +106,7 @@ class GazeboCameraBridge(Node):
     def __init__(self) -> None:
         super().__init__('gazebo_down_camera_bridge')
         self.declare_parameter('gz_image_topic', '/camera/down/image_raw')
+        self.declare_parameter('gz_clock_topic', '/world/aruco_detector/clock')
         self.declare_parameter(
             'gz_camera_info_topic', '/camera/down/camera_info')
         self.declare_parameter('ros_image_topic', '/camera/down/image_raw')
@@ -118,12 +124,17 @@ class GazeboCameraBridge(Node):
             CameraInfo,
             str(self.get_parameter('ros_camera_info_topic').value),
             qos_profile_sensor_data)
-        # Gazebo transport invokes callbacks from its own worker threads. Keep
-        # shutdown and ROS publisher use mutually exclusive so Ctrl+C cannot
-        # race a callback against rclpy publisher destruction.
+        self._clock_pub = self.create_publisher(
+            Clock, '/uav/sim/clock', 1)
+        # Transport callbacks only replace pending messages. All ROS publishing
+        # runs on the executor, outside the lock.
         self._callback_lock = threading.Lock()
         self._shutting_down = False
+        self._latest_image = None
+        self._latest_info = None
+        self._latest_clock = None
         self._gz_node = GzNode()
+        self._clock_topic = str(self.get_parameter('gz_clock_topic').value)
         self._image_topic = str(self.get_parameter('gz_image_topic').value)
         self._camera_info_topic = str(
             self.get_parameter('gz_camera_info_topic').value)
@@ -131,8 +142,10 @@ class GazeboCameraBridge(Node):
             GzImage, self._image_topic, self._on_image)
         self._gz_node.subscribe(
             GzCameraInfo, self._camera_info_topic, self._on_camera_info)
+        self._gz_node.subscribe(GzClock, self._clock_topic, self._on_clock)
         self._frames = 0
         self._last_frames = 0
+        self.create_timer(0.02, self._publish_pending)
         self.create_timer(2.0, self._report_rate)
         self.get_logger().info(
             f'Gazebo Harmonic camera bridge ready: '
@@ -140,39 +153,40 @@ class GazeboCameraBridge(Node):
 
     def _on_image(self, message: GzImage) -> None:
         with self._callback_lock:
-            if self._shutting_down:
-                return
-            try:
-                output = image_to_ros(message, self._fallback_frame_id)
-            except ValueError as error:
-                self.get_logger().error(
-                    str(error), throttle_duration_sec=5.0)
-                return
-            try:
-                self._image_pub.publish(output)
-            except RuntimeError as error:
-                # launch may invalidate the rcl context before rclpy.spin()
-                # returns and before stop() can unsubscribe Gazebo callbacks.
-                if self._shutting_down or not rclpy.ok():
-                    return
-                self.get_logger().error(
-                    f'failed to publish Gazebo image: {error}',
-                    throttle_duration_sec=5.0)
-                return
-            self._frames += 1
+            if not self._shutting_down:
+                self._latest_image = message
 
     def _on_camera_info(self, message: GzCameraInfo) -> None:
         with self._callback_lock:
-            if self._shutting_down:
-                return
-            try:
+            if not self._shutting_down:
+                self._latest_info = message
+
+    def _on_clock(self, message: GzClock) -> None:
+        with self._callback_lock:
+            if not self._shutting_down:
+                self._latest_clock = message.sim.sec, message.sim.nsec
+
+    def _publish_pending(self) -> None:
+        with self._callback_lock:
+            clock, self._latest_clock = self._latest_clock, None
+            info, self._latest_info = self._latest_info, None
+            image, self._latest_image = self._latest_image, None
+        try:
+            if clock is not None:
+                msg = Clock()
+                msg.clock.sec, msg.clock.nanosec = clock
+                self._clock_pub.publish(msg)
+            if info is not None:
                 self._camera_info_pub.publish(camera_info_to_ros(
-                    message, self._fallback_frame_id))
-            except RuntimeError as error:
-                if self._shutting_down or not rclpy.ok():
-                    return
+                    info, self._fallback_frame_id))
+            if image is not None:
+                self._image_pub.publish(image_to_ros(
+                    image, self._fallback_frame_id))
+                self._frames += 1
+        except (RuntimeError, ValueError) as error:
+            if rclpy.ok():
                 self.get_logger().error(
-                    f'failed to publish Gazebo CameraInfo: {error}',
+                    f'failed to publish Gazebo camera data: {error}',
                     throttle_duration_sec=5.0)
 
     def stop(self) -> None:
@@ -184,6 +198,7 @@ class GazeboCameraBridge(Node):
         if self._gz_node is not None:
             self._gz_node.unsubscribe(self._image_topic)
             self._gz_node.unsubscribe(self._camera_info_topic)
+            self._gz_node.unsubscribe(self._clock_topic)
             self._gz_node = None
 
     def _report_rate(self) -> None:

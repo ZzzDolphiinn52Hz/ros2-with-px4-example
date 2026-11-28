@@ -9,6 +9,7 @@ import sys
 import time
 
 from diagnostic_msgs.msg import DiagnosticArray
+from px4_uavcup_control.landing.capture_clock import CaptureClock, stamp_ns
 from px4_msgs.msg import (
     VehicleAttitude,
     VehicleLandDetected,
@@ -24,6 +25,7 @@ from rclpy.qos import (
     QoSReliabilityPolicy,
 )
 from rclpy.utilities import remove_ros_args
+from rosgraph_msgs.msg import Clock
 
 
 def _diagnostic_values(message: DiagnosticArray) -> dict[str, str]:
@@ -49,6 +51,11 @@ class LandingReadiness(Node):
         self.land_detected = None
         self.aruco_status = None
         self.landing_status = None
+        self.capture_clock = CaptureClock()
+        self.create_subscription(
+            Clock, '/uav/sim/clock',
+            lambda message: self.capture_clock.update(
+                stamp_ns(message.clock), time.monotonic()), 1)
         self.create_subscription(
             VehicleStatus, '/fmu/out/vehicle_status_v1',
             lambda message: setattr(self, 'vehicle_status', message),
@@ -80,6 +87,7 @@ class LandingReadiness(Node):
             self.land_detected,
             self.aruco_status,
             self.landing_status,
+            self.capture_clock.latest_ns,
         ))
 
 
@@ -100,11 +108,14 @@ def _report(node: LandingReadiness, stage: str) -> bool:
                                    for value in node.attitude.q),
     }
     if stage in ('takeover', 'offboard'):
+        fresh = node.capture_clock.is_fresh(
+            stamp_ns(node.aruco_status.header.stamp), time.monotonic(), 0.35)
         checks.update({
             'vehicle armed': int(status.arming_state)
             == int(VehicleStatus.ARMING_STATE_ARMED),
             'vehicle airborne': not bool(land.landed),
-            'ArUco target visible': aruco.get('target_visible') == 'true',
+            'ArUco capture fresh': fresh,
+            'ArUco target visible': fresh and aruco.get('target_visible') == 'true',
             'ArUco target is ID 0': aruco.get('target_marker_id') == '0',
         })
     if stage == 'offboard':
@@ -146,7 +157,7 @@ def main(args=None) -> None:
         while time.monotonic() < deadline and not node.base_messages_ready():
             rclpy.spin_once(node, timeout_sec=0.2)
         if not node.base_messages_ready():
-            print('FAIL  timed out waiting for PX4/ArUco/landing status')
+            print('FAIL  timed out waiting for PX4/ArUco/landing status or Gazebo clock')
             raise SystemExit(1)
         raise SystemExit(0 if _report(node, parsed.stage) else 1)
     finally:

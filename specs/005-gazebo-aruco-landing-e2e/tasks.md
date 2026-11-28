@@ -10,3 +10,7 @@
 - [x] Verify safe startup publishes no setpoint messages before adapter enable.
 - [ ] Run and record an end-to-end SITL landing.
 - [x] Update contracts, architecture and project handoff state.
+- [x] Measure raw Gazebo, bridge callback and ROS camera timing with the
+  detector-only setup and compare before/after.
+- [x] Check capture age in readiness and PID and regression-test an
+  increasing backlog, pause, reset and duplicate poses.

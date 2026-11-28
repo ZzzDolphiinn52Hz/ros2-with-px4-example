@@ -20,6 +20,9 @@ from rclpy.qos import (
 )
 from std_msgs.msg import String
 from std_srvs.srv import SetBool, Trigger
+from rosgraph_msgs.msg import Clock
+
+from .capture_clock import CaptureClock, stamp_ns
 
 from .landing_state import (
     LandingState,
@@ -59,6 +62,7 @@ class ArucoLandingPidNode(Node):
             'disarm_service', '/cmd_vel_to_px4/request_disarm')
         self.declare_parameter('publish_rate_hz', 20.0)
         self.declare_parameter('marker_timeout_s', 0.35)
+        self.declare_parameter('capture_clock_topic', '')
         self.declare_parameter('latch_timeout_s', 1.0)
         self.declare_parameter('lock_confirmation_frames', 5)
         self.declare_parameter('horizontal_kp', 0.55)
@@ -139,6 +143,11 @@ class ArucoLandingPidNode(Node):
         self._left_pid = PidAxis(**pid_args)
         self._command = Twist()
         self._last_pose_time = float('-inf')
+        self._last_capture_ns = None
+        clock_topic = str(self.get_parameter('capture_clock_topic').value)
+        self._capture_clock = CaptureClock() if clock_topic else None
+        if self._capture_clock is not None:
+            self.create_subscription(Clock, clock_topic, self._on_capture_clock, 1)
         self._last_pid_time = None
         self._horizontal_error = float('nan')
         self._marker_distance = float('nan')
@@ -311,6 +320,7 @@ class ArucoLandingPidNode(Node):
     def _reset_session(self) -> None:
         self._reset_controller()
         self._last_pose_time = float('-inf')
+        self._last_capture_ns = None
         self._horizontal_error = float('nan')
         self._marker_distance = float('nan')
         self._gripper_clearance = float('nan')
@@ -339,10 +349,21 @@ class ArucoLandingPidNode(Node):
         if self._state is LandingState.BLIND_FINAL_DESCENT and self._landed:
             self._complete()
 
+    def _on_capture_clock(self, message: Clock) -> None:
+        self._capture_clock.update(stamp_ns(message.clock), time.monotonic())
+
     def _on_pose(self, message: PoseStamped) -> None:
         if not uses_marker(self._state):
             return
         now = time.monotonic()
+        capture_ns = stamp_ns(message.header.stamp)
+        if self._capture_clock is not None:
+            if not self._capture_clock.is_fresh(
+                    capture_ns, now, self._marker_timeout):
+                return
+            if (self._last_capture_ns is not None
+                    and capture_ns <= self._last_capture_ns):
+                return
         camera_xyz = np.array([
             message.pose.position.x,
             message.pose.position.y,
@@ -367,6 +388,7 @@ class ArucoLandingPidNode(Node):
         else:
             self._consecutive_pose_frames += 1
         self._last_pose_time = now
+        self._last_capture_ns = capture_ns
         self._horizontal_error = math.hypot(body[0], body[1])
 
         if self._state in (LandingState.SEARCH, LandingState.LOCK):
@@ -489,10 +511,11 @@ class ArucoLandingPidNode(Node):
         if not publishes_command(self._state):
             return
         now = time.monotonic()
-        self._poll_latch(now)
-
         if uses_marker(self._state):
             fresh = now - self._last_pose_time <= self._marker_timeout
+            if self._capture_clock is not None:
+                fresh = fresh and self._capture_clock.is_fresh(
+                    self._last_capture_ns, now, self._marker_timeout)
             if not fresh:
                 next_state = on_marker_stale(self._state)
                 if next_state is LandingState.ABORT:
@@ -504,6 +527,8 @@ class ArucoLandingPidNode(Node):
                     self._reset_controller()
                 else:
                     self._command = Twist()
+
+        self._poll_latch(now)
 
         if self._state is LandingState.BLIND_FINAL_DESCENT:
             command = Twist()

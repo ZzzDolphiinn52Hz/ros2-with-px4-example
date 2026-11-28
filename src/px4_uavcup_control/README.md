@@ -23,6 +23,11 @@ PID khởi động disabled, không arm và không tự request Offboard. Servic
 marker ở visual phase tạo lệnh zero. Blind phase chỉ bắt đầu sau khi PX4
 adapter xác nhận đã latch XY/yaw.
 
+Profile SITL đặt `capture_clock_topic=/uav/sim/clock` để PID kiểm tra tuổi
+ảnh theo thời gian Gazebo. Ngưỡng dùng chung với `marker_timeout_s` (0,35 s
+mặc định). Khi Gazebo reset đồng hồ, khởi động lại stack. Profile Pi dùng giá
+trị mặc định rỗng và tiếp tục kiểm tra thời điểm nhận pose như trước.
+
 Test ZipDepth shadow không cần FC:
 
 ```bash

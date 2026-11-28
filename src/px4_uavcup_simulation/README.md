@@ -10,6 +10,10 @@ transport ABI than the Gazebo Harmonic installation used by PX4 v1.17 on this
 machine. The adapter publishes standard ROS 2 `sensor_msgs/Image` and
 `sensor_msgs/CameraInfo` with sensor-data QoS.
 
+The bridge replaces its single pending frame on arrival and publishes the
+Gazebo world clock on `/uav/sim/clock`. The landing profile uses this clock
+to check capture freshness while retaining the original image header stamp.
+
 The phase-2 `aruco_detector.sdf` world places a disarmed X500 on an invisible
 collision stand above a `DICT_5X5_50`, ID 0, 80 mm marker. The stand prevents
 the vehicle from falling without introducing an automatic arm path.

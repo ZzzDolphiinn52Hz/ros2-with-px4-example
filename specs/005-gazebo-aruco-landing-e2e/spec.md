@@ -35,6 +35,10 @@ adapter then take over only after each explicit service gate is invoked.
 
 ## Safety Boundaries
 
+- The simulation consumes only recent ArUco captures relative to the Gazebo
+  world clock. The camera bridge keeps one pending frame. The flight adapter's
+  altitude behavior on abort and the 80 mm detection range are separate work.
+
 - No command or launch file automatically arms, enables PID/adapter, or
   requests Offboard.
 - Operator actions remain one gate per command; no bundled landing-start

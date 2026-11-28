@@ -37,7 +37,9 @@ def generate_launch_description() -> LaunchDescription:
             executable='gz_camera_bridge',
             name='gazebo_down_camera_bridge',
             output='screen',
-            parameters=[camera_bridge_config],
+            parameters=[camera_bridge_config, {
+                'gz_clock_topic': '/world/aruco_landing/clock',
+            }],
         ),
         Node(
             package='px4_uavcup_perception',
@@ -60,7 +62,9 @@ def generate_launch_description() -> LaunchDescription:
             executable='aruco_landing_pid_node',
             name='aruco_landing_pid',
             output='screen',
-            parameters=[landing_config],
+            parameters=[landing_config, {
+                'capture_clock_topic': '/uav/sim/clock',
+            }],
         ),
         Node(
             package='px4_uavcup_px4_bridge',

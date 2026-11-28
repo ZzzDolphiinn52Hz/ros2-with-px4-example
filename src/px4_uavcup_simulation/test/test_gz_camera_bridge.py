@@ -86,10 +86,38 @@ def test_stop_blocks_future_transport_callbacks():
     bridge._shutting_down = False
     bridge._image_topic = '/image'
     bridge._camera_info_topic = '/camera_info'
+    bridge._clock_topic = '/clock'
     bridge._gz_node = transport
 
     bridge.stop()
 
     assert bridge._shutting_down is True
     assert bridge._gz_node is None
-    assert transport.unsubscribed == ['/image', '/camera_info']
+    assert transport.unsubscribed == ['/image', '/camera_info', '/clock']
+
+
+def test_pending_image_is_replaced_before_publish():
+    class Publisher:
+        def __init__(self):
+            self.messages = []
+
+        def publish(self, message):
+            self.messages.append(message)
+
+    bridge = GazeboCameraBridge.__new__(GazeboCameraBridge)
+    bridge._callback_lock = threading.Lock()
+    bridge._shutting_down = False
+    bridge._latest_info = None
+    bridge._latest_clock = None
+    bridge._fallback_frame_id = 'camera'
+    bridge._image_pub = Publisher()
+    bridge._frames = 0
+    for seq in range(1, 11):
+        message = GzImage(
+            width=1, height=1, pixel_format_type=PixelFormatType.L_INT8,
+            data=b'\x01')
+        message.header.stamp.sec = seq
+        bridge._on_image(message)
+    bridge._publish_pending()
+    bridge._publish_pending()
+    assert [m.header.stamp.sec for m in bridge._image_pub.messages] == [10]

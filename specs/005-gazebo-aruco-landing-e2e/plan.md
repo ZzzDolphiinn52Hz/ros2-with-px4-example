@@ -12,3 +12,5 @@
    and expected QGC/PX4/ROS state transitions.
 6. Add regression tests, build the workspace, run the static safety checks and
    execute a controlled SITL landing when the environment permits.
+7. Measure simulation capture stamps at Gazebo, the bridge callback, and ROS.
+   Keep one pending frame and add Gazebo-clock age checks to readiness/PID.

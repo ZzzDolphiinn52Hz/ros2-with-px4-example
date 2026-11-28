@@ -16,6 +16,7 @@
   <exec_depend>px4_uavcup_px4_bridge</exec_depend>
   <exec_depend>px4_msgs</exec_depend>
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>rosgraph_msgs</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
 
   <test_depend>python3-pytest</test_depend>

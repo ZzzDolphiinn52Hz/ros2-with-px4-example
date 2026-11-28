@@ -45,6 +45,14 @@ measured IMX500 intrinsic matrix but an ideal pinhole model (`D=0`) because the
 Gazebo Harmonic Ogre2 renderer does not implement Brown lens distortion. This
 does not change the real-camera calibration contract.
 
+The Gazebo bridge keeps one pending frame and preserves its capture stamp. It
+publishes the Gazebo world clock on `/uav/sim/clock` (`rosgraph_msgs/Clock`,
+reliable, volatile, depth 1). SITL readiness and the landing PID require a
+capture no more than 0.35 s behind this clock by default. They also require
+clock progress within the same timeout in monotonic time. Restart the
+simulation stack after a world-clock reset. The PID opts in through
+`capture_clock_topic`. An empty value preserves the Pi socket behavior.
+
 ## Control Contracts
 
 | Interface | Type | Contract |
