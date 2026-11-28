@@ -47,6 +47,8 @@ setup(
         'console_scripts': [
             'gz_camera_bridge = '
             'px4_uavcup_simulation.gz_camera_bridge:main',
+            'landing_readiness = '
+            'px4_uavcup_simulation.landing_readiness:main',
         ],
     },
 )

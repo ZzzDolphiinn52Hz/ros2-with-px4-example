@@ -17,9 +17,11 @@ Config duy nhất của landing là `config/landing.yaml`. Gá hiện tại:
 - Camera cao hơn điểm tiếp xúc cơ cấu gắp 0.15 m.
 - Chuyển blind descent ở gripper AGL xấp xỉ 0.30 m khi sai số XY đủ nhỏ.
 
-PID khởi động disabled, không arm và không tự request Offboard. Mất marker ở
-visual phase tạo lệnh zero. Blind phase chỉ bắt đầu sau khi PX4 adapter xác nhận
-đã latch XY/yaw.
+PID khởi động disabled, không arm và không tự request Offboard. Service
+`enable` chỉ chuẩn bị controller ở trạng thái `IDLE`; operator phải gọi riêng
+`start_landing` thì state machine mới vào `SEARCH` và bắt đầu xuất lệnh. Mất
+marker ở visual phase tạo lệnh zero. Blind phase chỉ bắt đầu sau khi PX4
+adapter xác nhận đã latch XY/yaw.
 
 Test ZipDepth shadow không cần FC:
 

@@ -24,6 +24,7 @@ from std_srvs.srv import SetBool, Trigger
 from .landing_state import (
     LandingState,
     approach_height_m,
+    can_start_landing,
     lock_state_from_frames,
     on_marker_stale,
     publishes_command,
@@ -155,9 +156,10 @@ class ArucoLandingPidNode(Node):
         self._dist_bottom = float('nan')
         self._approach_substate = ''
         self._abort_reason = ''
-        enabled = bool(self.get_parameter('enabled').value)
-        self._state = (
-            LandingState.SEARCH if enabled else LandingState.IDLE)
+        self._enabled = bool(self.get_parameter('enabled').value)
+        # Enabling only prepares the controller. A distinct start_landing
+        # request is always required before it can publish motion commands.
+        self._state = LandingState.IDLE
 
         self._commands = self.create_publisher(
             Twist, str(self.get_parameter('cmd_vel_topic').value), 10)
@@ -197,7 +199,8 @@ class ArucoLandingPidNode(Node):
         self.create_timer(1.0 / rate, self._publish)
         self.create_timer(1.0, self._publish_status)
         self.get_logger().warning(
-            f'ArUco landing state={self._state.value}; it only publishes '
+            f'ArUco landing enabled={self._enabled} '
+            f'state={self._state.value}; it only publishes '
             'bounded cmd_vel on /aruco_land/cmd_vel and never creates a '
             'second PX4 command path. start_landing does not request Offboard. '
             f'camera_position_body_flu_m={self._camera_position.tolist()}')
@@ -240,23 +243,36 @@ class ArucoLandingPidNode(Node):
 
     def _on_enable(self, request, response):
         if request.data:
-            self._enter_search('enable')
-            response.success = True
-            response.message = f'ArUco landing {self._state.value}'
-        else:
+            if self._enabled:
+                response.success = True
+                response.message = f'Already enabled in {self._state.value}'
+                return response
+            self._enabled = True
             self._enter_idle()
             response.success = True
-            response.message = 'ArUco landing idle'
+            response.message = (
+                'ArUco landing enabled; waiting for explicit start_landing')
+        else:
+            self._enabled = False
+            self._enter_idle()
+            response.success = True
+            response.message = 'ArUco landing disabled and idle'
         self.get_logger().warning(response.message)
         return response
 
     def _on_start_landing(self, request, response):
         del request
+        if not can_start_landing(self._enabled, self._state):
+            response.success = False
+            response.message = (
+                'landing controller is disabled; enable it first'
+                if not self._enabled
+                else f'landing already active in state {self._state.value}')
+            return response
         self._enter_search('start_landing')
         response.success = True
         response.message = (
-            'landing started: SEARCH. Enable cmd_vel_to_px4 and request '
-            'Offboard separately before the vehicle will follow cmd_vel.')
+            'landing started: SEARCH; PX4 mode is unchanged')
         self.get_logger().warning(response.message)
         return response
 
@@ -527,6 +543,7 @@ class ArucoLandingPidNode(Node):
             status.level = DiagnosticStatus.OK
         status.message = self._state.value
         status.values = [
+            KeyValue(key='enabled', value=str(self._enabled).lower()),
             KeyValue(key='state', value=self._state.value),
             KeyValue(key='approach_substate', value=self._approach_substate),
             KeyValue(key='abort_reason', value=self._abort_reason),

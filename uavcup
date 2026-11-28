@@ -14,6 +14,7 @@ ROS_PACKAGES=(
 
 SIMULATION_PACKAGE=px4_uavcup_simulation
 PX4_AUTOPILOT_DIR="${PX4_AUTOPILOT_DIR:-$HOME/Documents/px4-myself/firmware/PX4-Autopilot}"
+QGC_APPIMAGE="${QGC_APPIMAGE:-$HOME/Downloads/QGroundControl-x86_64.AppImage}"
 
 usage() {
   cat <<'EOF'
@@ -42,6 +43,21 @@ Commands:
   sim-px4           Attach PX4 v1.17 SITL to the Gazebo X500.
   sim-aruco         Bridge the simulated camera and run ArUco only.
   sim-status        Print phase-1 and phase-2 ROS evidence.
+  sim-landing-gazebo Start the free-flight ArUco landing world.
+  sim-landing-px4   Attach PX4 SITL to the free-flight world.
+  sim-landing-agent Start the free-flight XRCE Agent on UDP port 8890.
+  sim-qgc           Open QGroundControl for manual arm/takeoff/approach.
+  sim-landing-stack Run camera, detector, PID and adapter (both disabled).
+  sim-landing-check Read-only check: startup, takeover or offboard stage.
+  sim-adapter-enable Explicitly enable the PX4 adapter; no mode request.
+  sim-adapter-disable Explicitly disable the PX4 adapter.
+  sim-request-offboard Explicitly request PX4 Offboard mode.
+  sim-request-posctl Explicitly request PX4 Position mode.
+  sim-pid-enable    Explicitly enable PID; landing remains IDLE.
+  sim-pid-disable   Explicitly disable PID and return it to IDLE.
+  sim-landing-start Explicitly start the enabled landing state machine.
+  sim-landing-abort Explicitly abort landing and publish zero cmd_vel.
+  sim-landing-record Record landing/PX4 topics until Ctrl+C.
   unit-test         Run tests for the four project packages.
   shell             Open a ROS workspace shell.
   stop              Stop Compose services.
@@ -110,6 +126,12 @@ ros_run() {
 }
 
 command="${1:-}"
+case "$command" in
+  sim-landing-*|sim-adapter-*|sim-pid-*|sim-request-*)
+    export ROS_DOMAIN_ID=42 ROS_LOCALHOST_ONLY=0
+    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    ;;
+esac
 case "$command" in
   context)
     require_command git
@@ -321,7 +343,12 @@ case "$command" in
     require_command gz
     require_px4_sitl
     simulation_source="$WORKSPACE_DIR/src/$SIMULATION_PACKAGE"
-    world_file="$simulation_source/worlds/aruco_detector.sdf"
+    simulation_world="${UAV_SIM_WORLD:-aruco_detector}"
+    world_file="$simulation_source/worlds/$simulation_world.sdf"
+    if [[ ! -f "$world_file" ]]; then
+      echo "ERROR: simulation world does not exist: $world_file" >&2
+      exit 1
+    fi
     set +u
     # shellcheck disable=SC1091
     source "$PX4_AUTOPILOT_DIR/build/px4_sitl_default/rootfs/gz_env.sh"
@@ -340,10 +367,11 @@ case "$command" in
 
   sim-px4)
     require_px4_sitl
+    simulation_world="${UAV_SIM_WORLD:-aruco_detector}"
     if ! gz service -l 2>/dev/null | \
-        grep -q '^/world/aruco_detector/scene/info$'; then
-      echo "ERROR: aruco_detector Gazebo world is not running." >&2
-      echo "Start it in another terminal: ./uavcup sim-gazebo" >&2
+        grep -q "^/world/$simulation_world/scene/info$"; then
+      echo "ERROR: $simulation_world Gazebo world is not running." >&2
+      echo "Start the matching Gazebo command in another terminal." >&2
       exit 1
     fi
     cd "$PX4_AUTOPILOT_DIR"
@@ -353,7 +381,7 @@ case "$command" in
     set -u
     export PX4_GZ_STANDALONE=1
     export PX4_SYS_AUTOSTART=4001
-    export PX4_GZ_WORLD=aruco_detector
+    export PX4_GZ_WORLD="$simulation_world"
     export PX4_GZ_MODEL_NAME=x500_uavcup_aruco
     exec ./build/px4_sitl_default/bin/px4
     ;;
@@ -395,6 +423,123 @@ case "$command" in
     timeout 5s ros2 topic echo /uav/aruco/ids --once || true
     echo "=== ArUco target pose ==="
     timeout 5s ros2 topic echo /uav/aruco/target_pose --once || true
+    ;;
+
+  sim-landing-gazebo)
+    exec env UAV_SIM_WORLD=aruco_landing "$0" sim-gazebo
+    ;;
+
+  sim-landing-px4)
+    exec env PX4_UXRCE_DDS_PORT=8890 UAV_SIM_WORLD=aruco_landing "$0" sim-px4
+    ;;
+
+  sim-landing-agent)
+    require_command MicroXRCEAgent
+    exec MicroXRCEAgent udp4 -p 8890
+    ;;
+
+  sim-qgc)
+    if [[ ! -x "$QGC_APPIMAGE" ]]; then
+      echo "ERROR: QGroundControl AppImage is not executable: $QGC_APPIMAGE" >&2
+      echo "Set QGC_APPIMAGE to the correct executable path." >&2
+      exit 1
+    fi
+    exec "$QGC_APPIMAGE"
+    ;;
+
+  sim-landing-stack)
+    require_workspace_build
+    source_host_ros
+    source_workspace
+    exec ros2 launch "$SIMULATION_PACKAGE" sim_aruco_landing.launch.py
+    ;;
+
+  sim-landing-check)
+    require_workspace_build
+    source_host_ros
+    source_workspace
+    readiness_stage="${2:-takeover}"
+    exec ros2 run "$SIMULATION_PACKAGE" landing_readiness \
+      --stage "$readiness_stage"
+    ;;
+
+  sim-adapter-enable|sim-adapter-disable)
+    require_workspace_build
+    source_host_ros
+    source_workspace
+    adapter_value=false
+    if [[ "$command" == "sim-adapter-enable" ]]; then
+      adapter_value=true
+    fi
+    exec ros2 service call /cmd_vel_to_px4/enable std_srvs/srv/SetBool \
+      "{data: $adapter_value}"
+    ;;
+
+  sim-request-offboard)
+    require_workspace_build
+    source_host_ros
+    source_workspace
+    exec ros2 service call /cmd_vel_to_px4/request_offboard \
+      std_srvs/srv/Trigger '{}'
+    ;;
+
+  sim-request-posctl)
+    require_workspace_build
+    source_host_ros
+    source_workspace
+    exec ros2 service call /cmd_vel_to_px4/request_posctl \
+      std_srvs/srv/Trigger '{}'
+    ;;
+
+  sim-pid-enable|sim-pid-disable)
+    require_workspace_build
+    source_host_ros
+    source_workspace
+    pid_value=false
+    if [[ "$command" == "sim-pid-enable" ]]; then
+      pid_value=true
+    fi
+    exec ros2 service call /aruco_landing_pid/enable std_srvs/srv/SetBool \
+      "{data: $pid_value}"
+    ;;
+
+  sim-landing-start)
+    require_workspace_build
+    source_host_ros
+    source_workspace
+    exec ros2 service call /aruco_landing_pid/start_landing \
+      std_srvs/srv/Trigger '{}'
+    ;;
+
+  sim-landing-abort)
+    require_workspace_build
+    source_host_ros
+    source_workspace
+    exec ros2 service call /aruco_landing_pid/abort \
+      std_srvs/srv/Trigger '{}'
+    ;;
+
+  sim-landing-record)
+    require_workspace_build
+    source_host_ros
+    source_workspace
+    record_root="$WORKSPACE_DIR/artifacts/gazebo_aruco_landing"
+    mkdir -p "$record_root"
+    record_path="$record_root/landing_$(date +%Y%m%d_%H%M%S)"
+    echo "Recording to: $record_path"
+    exec ros2 bag record -o "$record_path" \
+      /camera/down/camera_info \
+      /uav/aruco/target_pose /uav/aruco/status \
+      /uav/aruco/landing_state /uav/aruco/landing_status \
+      /aruco_land/cmd_vel \
+      /fmu/out/vehicle_status_v1 \
+      /fmu/out/vehicle_local_position_v1 \
+      /fmu/out/vehicle_attitude \
+      /fmu/out/vehicle_land_detected \
+      /fmu/out/vehicle_command_ack \
+      /fmu/in/offboard_control_mode \
+      /fmu/in/trajectory_setpoint \
+      /fmu/in/vehicle_command
     ;;
 
   unit-test)

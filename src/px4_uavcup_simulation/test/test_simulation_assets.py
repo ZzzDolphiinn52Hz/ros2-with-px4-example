@@ -3,6 +3,7 @@ import xml.etree.ElementTree as ET
 
 import cv2
 import numpy as np
+import yaml
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
@@ -85,3 +86,40 @@ def test_detector_world_contains_supported_vehicle_and_marker():
     assert stand is not None
     assert stand.find('.//collision') is not None
     assert stand.find('.//visual') is None
+
+
+def test_landing_world_starts_away_from_marker_without_support_stand():
+    root = _root('worlds/aruco_landing.sdf')
+    world = root.find("world[@name='aruco_landing']")
+    assert world is not None
+    assert world.find(".//model[@name='invisible_detector_stand']") is None
+
+    includes = {
+        include.findtext('name'): [
+            float(value) for value in include.findtext('pose').split()]
+        for include in world.findall('include')
+    }
+    assert includes['x500_uavcup_aruco'][:3] == [-1.0, 0.0, 0.006]
+    assert includes['aruco_cargo_80mm'][:3] == [1.0, 0.0, 0.0]
+
+
+def test_full_landing_launch_reuses_disabled_component_configs():
+    launch_text = (
+        PACKAGE_ROOT / 'launch/sim_aruco_landing.launch.py'
+    ).read_text(encoding='utf-8')
+    assert "executable='gz_camera_bridge'" in launch_text
+    assert "executable='aruco_detector_node'" in launch_text
+    assert "executable='aruco_landing_pid_node'" in launch_text
+    assert "executable='cmd_vel_to_px4'" in launch_text
+
+    workspace_src = PACKAGE_ROOT.parent
+    landing_path = workspace_src / 'px4_uavcup_control/config/landing.yaml'
+    bridge_path = (
+        workspace_src / 'px4_uavcup_px4_bridge/config/px4_bridge.yaml')
+    with landing_path.open(encoding='utf-8') as stream:
+        landing = yaml.safe_load(stream)['aruco_landing_pid'][
+            'ros__parameters']
+    with bridge_path.open(encoding='utf-8') as stream:
+        bridge = yaml.safe_load(stream)['cmd_vel_to_px4']['ros__parameters']
+    assert landing['enabled'] is False
+    assert bridge['hold_current_altitude_on_enable'] is True

@@ -51,6 +51,17 @@ def publishes_command(state: LandingState) -> bool:
     return state is not LandingState.IDLE
 
 
+def can_start_landing(enabled: bool, state: LandingState) -> bool:
+    """Require an enabled controller and a non-active session to start."""
+    if not enabled:
+        return False
+    return state in (
+        LandingState.IDLE,
+        LandingState.ABORT,
+        LandingState.COMPLETE,
+    )
+
+
 def approach_height_m(
         gripper_clearance_m: float,
         dist_bottom_m: float = float('nan'),

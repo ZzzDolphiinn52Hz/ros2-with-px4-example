@@ -77,6 +77,8 @@ does not command PX4 directly.
 | `pi_aruco_vehicle.launch.py` | ArUco + landing + bridge | present, controllers disabled |
 | `pi_corridor_px4_bench.launch.py` | corridor + safety gates | present, disabled |
 | `pi_vehicle.launch.py` | complete vehicle stack | present, disabled |
+| `sim_aruco_detector.launch.py` | simulated detector only | none |
+| `sim_aruco_landing.launch.py` | simulated camera + production detector/PID/bridge | present, PID and bridge disabled |
 
 ## Environment and Artifacts
 
@@ -107,3 +109,7 @@ Gazebo Harmonic and PX4 SITL run on the development host. The optional
 same ROS image/CameraInfo contract used by the detector. Micro XRCE-DDS uses
 UDP port 8888 instead of the Raspberry Pi UART. This package is intentionally
 excluded from the Raspberry Pi default setup command.
+
+The free-flight `aruco_landing` world mirrors the real operator boundary: QGC
+owns manual arm, takeoff and target approach. ROS takeover remains four
+separate gates: adapter enable, Offboard request, PID enable and landing start.

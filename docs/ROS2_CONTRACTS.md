@@ -52,8 +52,8 @@ does not change the real-camera calibration contract.
 | `/aruco_land/cmd_vel` | `geometry_msgs/Twist` | Bounded body-FLU velocity; landing controller starts disabled |
 | `/uav/aruco/landing_state` | `std_msgs/String` | Landing state-machine state |
 | `/uav/aruco/landing_status` | `diagnostic_msgs/DiagnosticArray` | State, abort reason, pose/landing health |
-| `/aruco_landing_pid/enable` | `std_srvs/SetBool` | Explicit controller enable/disable |
-| `/aruco_landing_pid/start_landing` | `std_srvs/Trigger` | Starts landing logic; does not request Offboard |
+| `/aruco_landing_pid/enable` | `std_srvs/SetBool` | Explicitly prepares/disables controller; enabling remains `IDLE` and publishes no command |
+| `/aruco_landing_pid/start_landing` | `std_srvs/Trigger` | Requires enabled controller, then starts `SEARCH`; does not request Offboard |
 | `/aruco_landing_pid/abort` | `std_srvs/Trigger` | Aborts landing and returns to safe behavior |
 | `/uav/local_controller/advisory_velocity` | `geometry_msgs/TwistStamped` | Shadow-only body-FLU advisory |
 | `/uav/local_controller/cmd_vel` | `geometry_msgs/Twist` | Output of the optional bounded velocity gate |

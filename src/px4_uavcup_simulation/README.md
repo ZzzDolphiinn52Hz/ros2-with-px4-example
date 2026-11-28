@@ -14,6 +14,11 @@ The phase-2 `aruco_detector.sdf` world places a disarmed X500 on an invisible
 collision stand above a `DICT_5X5_50`, ID 0, 80 mm marker. The stand prevents
 the vehicle from falling without introducing an automatic arm path.
 
+The next-stage `aruco_landing.sdf` world removes that stand, starts the X500 on
+a blue takeoff pad and places the marker target 2 m away. The
+`sim_aruco_landing.launch.py` profile mirrors the real detector → landing PID →
+PX4 adapter path. Both motion components still start disabled.
+
 Run the commands documented in `docs/GAZEBO_ARUCO_SITL.md` from separate
 terminals. These profiles do not enable the PID, enable the PX4 adapter, arm,
 or request Offboard.

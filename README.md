@@ -173,6 +173,10 @@ Sau đó chạy Gazebo, XRCE Agent, PX4 SITL và detector ở bốn terminal ri�
 Toàn bộ trình tự cùng kết quả mong đợi nằm trong
 [`docs/GAZEBO_ARUCO_SITL.md`](docs/GAZEBO_ARUCO_SITL.md).
 
+Quy trình free-flight tiếp theo — mở QGC, arm/takeoff thủ công, tiếp cận marker,
+chuyển Offboard qua từng gate và ghi rosbag landing — nằm trong
+[`docs/GAZEBO_ARUCO_LANDING_E2E.md`](docs/GAZEBO_ARUCO_LANDING_E2E.md).
+
 ## Camera và gá lắp đã cấu hình
 
 - Profile ArUco-only: một IMX500 tại CAM0.

@@ -7,6 +7,7 @@ import yaml
 from px4_uavcup_control.landing.landing_state import (
     LandingState,
     approach_height_m,
+    can_start_landing,
     lock_state_from_frames,
     on_marker_stale,
     publishes_command,
@@ -94,6 +95,15 @@ def test_blind_descent_does_not_use_marker():
     assert not uses_marker(LandingState.BLIND_FINAL_DESCENT)
     assert not publishes_command(LandingState.IDLE)
     assert publishes_command(LandingState.ABORT)
+
+
+def test_enable_and_start_are_separate_explicit_gates():
+    assert not can_start_landing(False, LandingState.IDLE)
+    assert can_start_landing(True, LandingState.IDLE)
+    assert can_start_landing(True, LandingState.ABORT)
+    assert not can_start_landing(True, LandingState.SEARCH)
+    assert not can_start_landing(True, LandingState.VISUAL_APPROACH)
+    assert not can_start_landing(True, LandingState.BLIND_FINAL_DESCENT)
 
 
 def test_approach_height_prefers_the_higher_of_aruco_and_rangefinder():

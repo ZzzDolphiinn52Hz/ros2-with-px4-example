@@ -22,3 +22,6 @@ Các service chính:
 
 Disarm chỉ được gửi khi PX4 `VehicleLandDetected.landed == true`. Config duy
 nhất nằm tại `config/px4_bridge.yaml`.
+
+Trong workflow SITL/flight, operator phải enable adapter, chờ heartbeat tối
+thiểu 2 giây rồi mới gọi `request_offboard`. Enable adapter không tự đổi mode.

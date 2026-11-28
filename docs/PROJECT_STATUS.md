@@ -1,13 +1,19 @@
 # Project Handoff Status
 
-**Updated**: 2026-11-27
+**Updated**: 2026-11-28
 
-**Active feature**: `specs/004-gazebo-aruco-sitl/`
+**Active feature**: `specs/005-gazebo-aruco-landing-e2e/`
 
-**Branch**: `feature/gazebo-aruco-sitl`
-**State**: Gazebo/PX4 SITL phase 1 and phase 2 complete; operator GUI check next
+**Branch**: `feature/gazebo-aruco-landing-e2e`
+**State**: Free-flight stack implemented and verified disarmed. Operator flight pending.
 
 ## Last Completed
+
+- Operator confirmed the phase 1–2 GUI check. Added the free-flight world,
+  QGC entry point, production ROS pipeline, explicit service commands and a
+  landing rosbag profile.
+- Verified QGC connection, PX4 telemetry, disabled startup and distinct PID
+  enable/start gates. See `specs/005-gazebo-aruco-landing-e2e/verification.md`.
 
 - Added the optional PC-only `px4_uavcup_simulation` package with a Gazebo
   Harmonic X500/down-camera model, 80 mm ID 0 marker cargo and detector world.
@@ -55,17 +61,17 @@ PX4 local position, disarmed status and no trajectory-setpoint publisher.
 
 ## Working Tree
 
-The implementation and recorded evidence are committed as `6f931d6` on branch
-`feature/gazebo-aruco-sitl`. The external PX4 checkout retained its prior dirty
-`Tools/simulation/gz` state and was not modified. Raspberry Pi synchronization
-is NOT RUN because the simulation package is intentionally PC-only.
+Phase 1–2 implementation is recorded in `6f931d6`. Phase 3 verification
+covers the feature branch with the disarmed test procedure documented in
+`specs/005-gazebo-aruco-landing-e2e/verification.md`. Raspberry Pi sync is
+NOT RUN. The shared PID service contract now requires enable and start as
+separate calls.
 
 ## Next Action
 
-Run the documented four-terminal workflow with the Gazebo GUI and confirm the
-camera view and ID 0 pose. The next feature may then add a separate free-flight
-world and manually gated PID/Offboard tests; phases 1--2 do not authorize arm
-or flight.
+Run the operator QGC flight and ROS takeover procedure in
+`docs/GAZEBO_ARUCO_LANDING_E2E.md` and record airborne Offboard, landing
+state transitions, touchdown and disarm in the flight bag.
 
 ## Known Constraints
 
